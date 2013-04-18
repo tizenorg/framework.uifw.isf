@@ -114,7 +114,7 @@ static Eina_Bool _ecore_imf_event_commit_cb (void *data, int type, void *event)
     return ECORE_CALLBACK_CANCEL;
 }
 
-static void nf_back_event_cb (void *data, Evas_Object *obj, void *event_info)
+static Eina_Bool _nf_back_event_cb (void *data, Elm_Object_Item *it)
 {
     evas_object_event_callback_del (_label1, EVAS_CALLBACK_KEY_UP, NULL);
     evas_object_event_callback_del (_label2, EVAS_CALLBACK_KEY_UP, NULL);
@@ -135,6 +135,8 @@ static void nf_back_event_cb (void *data, Evas_Object *obj, void *event_info)
         ecore_event_handler_del (_commit_handler);
         _commit_handler = NULL;
     }
+
+    return EINA_TRUE;
 }
 
 static void isf_label_event_demo_bt (void *data, Evas_Object *obj, void *event_info)
@@ -227,8 +229,7 @@ static void isf_label_event_demo_bt (void *data, Evas_Object *obj, void *event_i
     evas_object_smart_callback_add (_ise_show_button, "clicked", _button_bt, NULL);
 
     Elm_Object_Item *it = elm_naviframe_item_push (ad->naviframe, _("Label Event"), NULL, NULL, layout, NULL);
-    Evas_Object *back_btn = elm_object_item_part_content_get (it, "prev_btn");
-    evas_object_smart_callback_add (back_btn, "clicked",  nf_back_event_cb, ad);
+    elm_naviframe_item_pop_cb_set (it, _nf_back_event_cb, ad);
 }
 
 static void _list_click (void *data, Evas_Object *obj, void *event_info)

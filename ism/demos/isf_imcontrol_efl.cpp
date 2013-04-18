@@ -241,12 +241,14 @@ static void test_api (void *data, Evas_Object *obj, void *event_info)
     }
 }
 
-static void _nf_back_event (void *data, Evas_Object *obj, void *event_info)
+static Eina_Bool _nf_back_event_cb (void *data, Elm_Object_Item *it)
 {
     if (imf_context) {
         ecore_imf_context_del (imf_context);
         imf_context = NULL;
     }
+
+    return EINA_TRUE;
 }
 
 static Evas_Object *_create_imcontrolapi_list (Evas_Object *parent)
@@ -287,9 +289,7 @@ void imcontrolapi_bt (void *data, Evas_Object *obj, void *event_info)
     gl = _create_imcontrolapi_list (ad->naviframe);
 
     Elm_Object_Item *navi_it = elm_naviframe_item_push (ad->naviframe, _("IM Control"), NULL, NULL, gl, NULL);
-
-    Evas_Object *back_btn = elm_object_item_part_content_get (navi_it, "prev_btn");
-    evas_object_smart_callback_add (back_btn, "clicked", _nf_back_event, ad);
+    elm_naviframe_item_pop_cb_set (navi_it, _nf_back_event_cb, ad);
 }
 
 /*
