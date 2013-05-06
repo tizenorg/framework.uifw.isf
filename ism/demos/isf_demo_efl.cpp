@@ -271,17 +271,6 @@ static Eina_Bool _keydown_event (void *data, int type, void *event)
 
     printf ("[ecore key down] keyname : '%s', key : '%s', string : '%s', compose : '%s'\n", ev->keyname, ev->key, ev->string, ev->compose);
 
-    if (strcmp (ev->keyname, "XF86Stop") == 0) {
-        if (ug_send_key_event (UG_KEY_EVENT_END) == -1) {
-            top_it = elm_naviframe_top_item_get (ad->naviframe);
-            bottom_it = elm_naviframe_bottom_item_get (ad->naviframe);
-            if (top_it && bottom_it && (elm_object_item_content_get (top_it) == elm_object_item_content_get (bottom_it))) {
-                elm_exit ();
-            } else {
-                elm_naviframe_item_pop (ad->naviframe);
-            }
-        }
-    }
     return ECORE_CALLBACK_RENEW;
 }
 
