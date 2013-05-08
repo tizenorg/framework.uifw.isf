@@ -553,6 +553,18 @@ set_prediction_allow (Ecore_IMF_Context *ctx, bool prediction)
     }
 }
 
+static Eina_Bool
+check_symbol (Eina_Unicode ucode, Eina_Unicode symbols[], int symbol_num)
+{
+    for (int i = 0; i < symbol_num; i++) {
+        // Check symbol
+        if (ucode == symbols[i])
+            return EINA_TRUE;
+    }
+
+    return EINA_FALSE;
+}
+
 static void
 autoperiod_insert (Ecore_IMF_Context *ctx)
 {
@@ -561,14 +573,16 @@ autoperiod_insert (Ecore_IMF_Context *ctx)
     int cursor_pos = 0;
     Eina_Unicode *ustr = NULL;
     Ecore_IMF_Event_Delete_Surrounding ev;
+    Eina_Unicode symbols[] = {':', ';', '.', '!', '?', 0x00BF /* ¿ */, 0x00A1 /* ¡ */};
+    const int symbol_num = sizeof (symbols) / sizeof (symbols[0]);
+
+    if (autoperiod_allow == EINA_FALSE)
+        return;
 
     if (!ctx) return;
 
     Ecore_IMF_Input_Panel_Layout layout = ecore_imf_context_input_panel_layout_get (ctx);
     if (layout != ECORE_IMF_INPUT_PANEL_LAYOUT_NORMAL)
-        return;
-
-    if (autoperiod_allow == EINA_FALSE)
         return;
 
     if ((ecore_time_get () - space_key_time) > DOUBLE_SPACE_INTERVAL)
@@ -587,10 +601,8 @@ autoperiod_insert (Ecore_IMF_Context *ctx)
 
     if (cursor_pos < 2) goto done;
 
-    if (((ustr[cursor_pos-2] != ':') && (ustr[cursor_pos-2] != ';') &&
-        (ustr[cursor_pos-2] != '.') && (ustr[cursor_pos-2] != ',') &&
-        (ustr[cursor_pos-2] != '?') && (ustr[cursor_pos-2] != '!') &&
-        (ustr[cursor_pos-2] != ' ')) && ((ustr[cursor_pos-1] == ' ') || (ustr[cursor_pos-1] == '\240'))) {
+    if (((ustr[cursor_pos-1] == ' ') || (ustr[cursor_pos-1] == 0x00A0)) &&
+        (!check_symbol (ustr[cursor_pos-2], symbols, symbol_num))) {
         ev.ctx = ctx;
         ev.n_chars = 1;
         ev.offset = -1;
@@ -599,7 +611,7 @@ autoperiod_insert (Ecore_IMF_Context *ctx)
 
         ecore_imf_context_commit_event_add (ctx, ".");
         ecore_imf_context_event_callback_call (ctx, ECORE_IMF_CALLBACK_COMMIT, (void *)".");
-     }
+    }
 
 done:
     if (markup_str) free (markup_str);
@@ -618,7 +630,7 @@ analyze_surrounding_text (Ecore_IMF_Context *ctx)
     Eina_Bool ret = EINA_FALSE;
     Eina_Bool detect_space = EINA_FALSE;
     int cursor_pos = 0;
-    int i = 0, j = 0;
+    int i = 0;
     const int punc_num = sizeof (puncs) / sizeof (puncs[0]);
     EcoreIMFContextISF *context_scim;
 
@@ -678,15 +690,14 @@ analyze_surrounding_text (Ecore_IMF_Context *ctx)
                 continue;
             }
 
-            for (j = 0; j < punc_num; j++) {
+            if (check_symbol (ustr[i-1], puncs, punc_num)) {
                 // Check punctuation and following the continuous space(s)
-                if ((ustr[i-1] == puncs[j]) && (detect_space == EINA_TRUE)) {
+                if ((detect_space == EINA_TRUE)) {
                     ret = EINA_TRUE;
                     goto done;
                 }
             }
-
-            if (j == punc_num) {
+            else {
                 // other character
                 break;
             }
