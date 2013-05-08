@@ -1362,7 +1362,6 @@ static void
 panel_slot_reload_config (int context)
 {
     SCIM_DEBUG_FRONTEND(1) << "panel_slot_reload_config...\n";
-    _config->reload ();
 }
 
 static void

@@ -1671,7 +1671,6 @@ X11FrontEnd::x_error_handler (Display *display, XErrorEvent *error)
 void
 X11FrontEnd::panel_slot_reload_config (int context)
 {
-    m_config->reload ();
 }
 
 void

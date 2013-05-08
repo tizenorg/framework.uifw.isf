@@ -1949,8 +1949,6 @@ static void
 panel_slot_reload_config (int context)
 {
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
-
-    _config->reload ();
 }
 
 static void
