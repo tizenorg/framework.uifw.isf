@@ -573,7 +573,7 @@ autoperiod_insert (Ecore_IMF_Context *ctx)
     int cursor_pos = 0;
     Eina_Unicode *ustr = NULL;
     Ecore_IMF_Event_Delete_Surrounding ev;
-    Eina_Unicode symbols[] = {':', ';', '.', '!', '?', 0x00BF /* ¿ */, 0x00A1 /* ¡ */};
+    Eina_Unicode symbols[] = {' ', 0x00A0 /* no-break space */, ':', ';', '.', '!', '?', 0x00BF /* ¿ */, 0x00A1 /* ¡ */};
     const int symbol_num = sizeof (symbols) / sizeof (symbols[0]);
 
     if (autoperiod_allow == EINA_FALSE)
