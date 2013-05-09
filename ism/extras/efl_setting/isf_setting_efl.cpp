@@ -736,12 +736,12 @@ static void _gl_ise_option_sel (void *data, Evas_Object *obj, void *event_info)
 {
     Elm_Object_Item *item = (Elm_Object_Item *)event_info;
     ug_data *ugd = (ug_data *)data;
-    const char *ise_uuid = NULL;
+    String ise_uuid = String ("");
     if (item == ugd->sw_ise_opt_item_tizen)
-        ise_uuid = (const char *)(sw_name_to_uuid (_sw_ise_name).c_str());
+        ise_uuid = sw_name_to_uuid (_sw_ise_name);
     else
-        ise_uuid = (const char *)(hw_name_to_uuid (_hw_ise_name).c_str());
-    ise_option_show (ugd, ise_uuid);
+        ise_uuid = hw_name_to_uuid (_hw_ise_name);
+    ise_option_show (ugd, ise_uuid.c_str ());
     elm_genlist_item_selected_set (item, EINA_FALSE);
 }
 
