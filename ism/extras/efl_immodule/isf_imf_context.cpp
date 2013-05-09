@@ -712,16 +712,14 @@ analyze_surrounding_text (Ecore_IMF_Context *ctx)
                 continue;
             }
 
-            if (check_symbol (ustr[i-1], puncs, punc_num)) {
-                // Check punctuation and following the continuous space(s)
-                if ((detect_space == EINA_TRUE)) {
-                    ret = EINA_TRUE;
-                    goto done;
-                }
+            // Check punctuation and following the continuous space(s)
+            if (detect_space && check_symbol (ustr[i-1], puncs, punc_num)) {
+                ret = EINA_TRUE;
+                goto done;
             }
             else {
-                // other character
-                break;
+                ret = EINA_FALSE;
+                goto done;
             }
         }
 
