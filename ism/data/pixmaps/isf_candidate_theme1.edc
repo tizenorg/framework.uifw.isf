@@ -1,4 +1,5 @@
 #define CANDIDATE_BG            "B09_predictive_bg.png"
+#define PREEDIT_BG              "B09_predictive_letter_bg.png"
 #define POPUP_LINE              "B09_predictive_horizon_line.png"
 #define BUTTON_NORMAL_BG        "B09_key_btn_01.png"
 #define BUTTON_PRESS_BG         "B09_key_btn_perss.png"

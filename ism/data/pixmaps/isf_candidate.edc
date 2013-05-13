@@ -96,6 +96,46 @@ collections {
         }
     }
 
+    group { name: "preedit_text";
+        images {
+            image: PREEDIT_BG COMP;
+        }
+
+        parts {
+            part { name: "bg";
+                mouse_events: 0;
+                description { state: "default" 0.0;
+                    rel1.relative: 0.0 0.0;
+                    rel2.relative: 1.0 1.0;
+                    image.normal: PREEDIT_BG;
+                    image.border: BG_IMAGE_BORDER 12 BG_IMAGE_BORDER BG_IMAGE_BORDER;
+                }
+            }
+            part { name: "preedit";
+                type: TEXT;
+                mouse_events: 0;
+                //effect: SHADOW;
+                description { state: "default" 0.0;
+                    color: COLOR_NORMAL_TEXT;
+                    color_class: "text_color";
+                    text {
+                        text_class: "preedit_text_class";
+                        text: "";
+                        font: FONT_NAME;
+                        size: FONT_SIZE;
+                        align: 0 0.5;
+                    }
+                    rel1.to: "bg";
+                    rel1.relative: 0.0 0.0;
+                    rel1.offset: 16 0;
+                    rel2.to: "bg";
+                    rel2.relative: 1.0 1.0;
+                    rel2.offset: -16 0;
+                }
+            }
+        }
+    }
+
     group { name: "candidate";
         images {
             image: BUTTON_NORMAL_BG COMP;

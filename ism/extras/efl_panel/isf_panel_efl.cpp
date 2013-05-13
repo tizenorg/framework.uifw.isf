@@ -83,6 +83,8 @@ using namespace scim;
 #define ISF_SYSTEM_WAIT_DELAY                           100 * 1000
 #define ISF_CANDIDATE_DESTROY_DELAY                     0.2
 
+#define ISF_PREEDIT_BORDER                              16
+
 #define LOG_TAG                                         "ISF_PANEL_EFL"
 
 /////////////////////////////////////////////////////////////////////////////
@@ -143,10 +145,14 @@ static void       slot_update_input_context            (int type, int value);
 static void       slot_update_ise_geometry             (int x, int y, int width, int height);
 static void       slot_update_spot_location            (int x, int y, int top_y);
 static void       slot_update_factory_info             (const PanelFactoryInfo &info);
+static void       slot_show_preedit_string             (void);
 static void       slot_show_aux_string                 (void);
 static void       slot_show_candidate_table            (void);
+static void       slot_hide_preedit_string             (void);
 static void       slot_hide_aux_string                 (void);
 static void       slot_hide_candidate_table            (void);
+static void       slot_update_preedit_string           (const String &str, const AttributeList &attrs);
+static void       slot_update_preedit_caret            (int caret);
 static void       slot_update_aux_string               (const String &str, const AttributeList &attrs);
 static void       slot_update_candidate_table          (const LookupTable &table);
 static void       slot_set_active_ise                  (const String &uuid, bool changeDefault);
@@ -237,6 +243,11 @@ static int                _candidate_scroll_width_max       = 663;
 static int                _candidate_scroll_height_min      = 124;
 static int                _candidate_scroll_height_max      = 190;
 
+static Evas_Object       *_preedit_window                   = 0;
+static Evas_Object       *_preedit_text                     = 0;
+static int                _preedit_width                    = 100;
+static int                _preedit_height                   = 54;
+
 static Evas_Object       *_aux_area                         = 0;
 static Evas_Object       *_aux_line                         = 0;
 static Evas_Object       *_aux_table                        = 0;
@@ -246,6 +257,7 @@ static int                _aux_land_width                   = 764;
 static std::vector<Evas_Object *> _aux_items;
 static std::vector<Evas_Object *> _aux_seperates;
 
+static Evas_Object       *_tmp_preedit_text                 = 0;
 static Evas_Object       *_tmp_aux_text                     = 0;
 static Evas_Object       *_tmp_candidate_text               = 0;
 
@@ -974,6 +986,8 @@ static void ui_candidate_window_rotate (int angle)
 
     LOGD ("elm_win_rotation_with_resize_set (%p, %d)\n", _candidate_window, angle);
     elm_win_rotation_with_resize_set (_candidate_window, angle);
+    if (_preedit_window)
+        elm_win_rotation_with_resize_set (_preedit_window, angle);
 }
 
 /**
@@ -1182,6 +1196,7 @@ static void ui_candidate_hide (bool bForce, bool bSetVirtualKbd)
         SCIM_DEBUG_MAIN (3) << "    Hide candidate window\n";
         _candidate_window_show = false;
         evas_object_hide (_candidate_window);
+        evas_object_hide (_preedit_window);
     }
 }
 
@@ -1518,6 +1533,34 @@ static void ui_mouse_click (int mouse_x, int mouse_y)
 }
 
 /**
+ * @brief Create preedit window.
+ */
+static void ui_create_preedit_window (void)
+{
+    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
+
+    _preedit_width  = 100;
+    _preedit_height = _preedit_height * _height_rate;
+    if (_preedit_window == NULL) {
+        _preedit_window = efl_create_window ("preedit", "Preedit Window");
+        evas_object_resize (_preedit_window, _preedit_width, _preedit_height);
+
+        int preedit_font_size = (int)(32 * _width_rate);
+
+        _preedit_text = edje_object_add (evas_object_evas_get (_preedit_window));
+        edje_object_file_set (_preedit_text, _candidate_edje_file.c_str (), "preedit_text");
+        edje_object_text_class_set (_preedit_text, "preedit_text_class", _candidate_font_name.c_str (), preedit_font_size);
+        evas_object_size_hint_fill_set (_preedit_text, EVAS_HINT_FILL, EVAS_HINT_FILL);
+        evas_object_size_hint_weight_set (_preedit_text, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+        elm_win_resize_object_add (_preedit_window, _preedit_text);
+        evas_object_show (_preedit_text);
+
+        _tmp_preedit_text = evas_object_text_add (evas_object_evas_get (_preedit_window));
+        evas_object_text_font_set (_tmp_preedit_text, _candidate_font_name.c_str (), preedit_font_size);
+    }
+}
+
+/**
  * @brief Create native style candidate window.
  */
 static void ui_create_native_candidate_window (void)
@@ -1760,6 +1803,15 @@ static void ui_destroy_candidate_window (void)
         _scroller_bg      = NULL;
     }
 
+    if (_preedit_window) {
+        evas_object_del (_preedit_text);
+        _preedit_text = NULL;
+
+        evas_object_hide (_preedit_window);
+        evas_object_del (_preedit_window);
+        _preedit_window = NULL;
+    }
+
     flush_memory ();
     check_time ("Exit ui_destroy_candidate_window");
 }
@@ -1868,6 +1920,20 @@ static void ui_settle_candidate_window (void)
         _candidate_x = spot_x;
         _candidate_y = spot_y;
         evas_object_move (_candidate_window, spot_x, spot_y);
+        if (_preedit_window) {
+            if (_candidate_angle == 90) {
+                spot_x -= _preedit_height;
+                spot_y = _screen_height - _preedit_width;
+            } else if (_candidate_angle == 270) {
+                spot_x += height2;
+            } else if (_candidate_angle == 180) {
+                spot_x = _screen_width - _preedit_width;
+                spot_y += height2;
+            } else {
+                spot_y -= _preedit_height;
+            }
+            evas_object_move (_preedit_window, spot_x, spot_y);
+        }
         if (evas_object_visible_get (_candidate_window)) {
             _panel_agent->update_candidate_panel_event ((uint32)ECORE_IMF_CANDIDATE_PANEL_GEOMETRY_EVENT, 0);
         }
@@ -2013,7 +2079,7 @@ static Eina_Bool efl_create_control_window (void)
     ecore_x_e_virtual_keyboard_control_window_set (root, _control_window, 0, EINA_TRUE);
 
     Ecore_X_Atom atom = ecore_x_atom_get ("_ISF_CONTROL_WINDOW");
-    ecore_x_window_prop_xid_set(root, atom, ECORE_X_ATOM_WINDOW, &_control_window, 1);
+    ecore_x_window_prop_xid_set (root, atom, ECORE_X_ATOM_WINDOW, &_control_window, 1);
 
     return EINA_TRUE;
 }
@@ -2161,10 +2227,14 @@ static bool initialize_panel_agent (const String &config, const String &display,
     _panel_agent->signal_connect_update_spot_location       (slot (slot_update_spot_location));
     _panel_agent->signal_connect_update_input_context       (slot (slot_update_input_context));
     _panel_agent->signal_connect_update_ise_geometry        (slot (slot_update_ise_geometry));
+    _panel_agent->signal_connect_show_preedit_string        (slot (slot_show_preedit_string));
     _panel_agent->signal_connect_show_aux_string            (slot (slot_show_aux_string));
     _panel_agent->signal_connect_show_lookup_table          (slot (slot_show_candidate_table));
+    _panel_agent->signal_connect_hide_preedit_string        (slot (slot_hide_preedit_string));
     _panel_agent->signal_connect_hide_aux_string            (slot (slot_hide_aux_string));
     _panel_agent->signal_connect_hide_lookup_table          (slot (slot_hide_candidate_table));
+    _panel_agent->signal_connect_update_preedit_string      (slot (slot_update_preedit_string));
+    _panel_agent->signal_connect_update_preedit_caret       (slot (slot_update_preedit_caret));
     _panel_agent->signal_connect_update_aux_string          (slot (slot_update_aux_string));
     _panel_agent->signal_connect_update_lookup_table        (slot (slot_update_candidate_table));
     _panel_agent->signal_connect_get_candidate_geometry     (slot (slot_get_candidate_geometry));
@@ -2362,6 +2432,46 @@ static void slot_update_ise_geometry (int x, int y, int width, int height)
 }
 
 /**
+ * @brief Show preedit slot function for PanelAgent.
+ */
+static void slot_show_preedit_string (void)
+{
+    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
+    if (_preedit_window == NULL) {
+        ui_create_preedit_window ();
+        int angle = efl_get_angle_for_app_window ();
+        elm_win_rotation_with_resize_set (_preedit_window, angle);
+
+        /* Move preedit window according to candidate window position */
+        if (_candidate_window) {
+            /* Get candidate window position */
+            int x, y, width, height;
+            ecore_evas_geometry_get (ecore_evas_ecore_evas_get (evas_object_evas_get (_candidate_window)), &x, &y, &width, &height);
+
+            int height2 = ui_candidate_get_valid_height ();
+            if (angle == 90) {
+                x -= _preedit_height;
+                y = _screen_height - _preedit_width;
+            } else if (_candidate_angle == 270) {
+                x += height2;
+            } else if (_candidate_angle == 180) {
+                x = _screen_width - _preedit_width;
+                y += height2;
+            } else {
+                y -= _preedit_height;
+            }
+            evas_object_move (_preedit_window, x, y);
+        }
+    }
+
+    if (evas_object_visible_get (_preedit_window))
+        return;
+
+    slot_show_candidate_table ();
+    evas_object_show (_preedit_window);
+}
+
+/**
  * @brief Show aux slot function for PanelAgent.
  */
 static void slot_show_aux_string (void)
@@ -2398,6 +2508,19 @@ static void slot_show_candidate_table (void)
 
     ui_candidate_show ();
     ui_settle_candidate_window ();
+}
+
+/**
+ * @brief Hide preedit slot function for PanelAgent.
+ */
+static void slot_hide_preedit_string (void)
+{
+    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
+
+    if (!_preedit_window || !evas_object_visible_get (_preedit_window))
+        return;
+
+    evas_object_hide (_preedit_window);
 }
 
 /**
@@ -2444,6 +2567,62 @@ static void slot_hide_candidate_table (void)
         ui_candidate_hide (false);
         ui_settle_candidate_window ();
     }
+}
+
+/**
+ * @brief Update preedit slot function for PanelAgent.
+ *
+ * @param str The new preedit string.
+ * @param attrs The attribute list of new preedit string.
+ */
+static void slot_update_preedit_string (const String &str, const AttributeList &attrs)
+{
+    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << " string=" << str << "\n";
+
+    if (str.length () <= 0)
+        return;
+
+    if (_preedit_window == NULL || !evas_object_visible_get (_preedit_window)) {
+        slot_show_preedit_string ();
+    }
+
+    int x, y, width, height, candidate_width;
+    evas_object_text_text_set (_tmp_preedit_text, str.c_str ());
+    evas_object_geometry_get (_tmp_preedit_text, &x, &y, &width, &height);
+    ecore_evas_geometry_get (ecore_evas_ecore_evas_get (evas_object_evas_get (_candidate_window)), &x, &y, &candidate_width, &height);
+    _preedit_width = (width + ISF_PREEDIT_BORDER * 2) < candidate_width ? (width + ISF_PREEDIT_BORDER * 2) : candidate_width;
+
+    /* Resize preedit window and avoid text blink */
+    int old_width, old_height;
+    evas_object_geometry_get (_preedit_window, &x, &y, &old_width, &old_height);
+    if (old_width < _preedit_width) {
+        evas_object_resize (_preedit_window, _preedit_width, _preedit_height);
+        edje_object_part_text_set (_preedit_text, "preedit", str.c_str ());
+    } else {
+        edje_object_part_text_set (_preedit_text, "preedit", str.c_str ());
+        evas_object_resize (_preedit_window, _preedit_width, _preedit_height);
+    }
+
+    /* Move preedit window */
+    if (_candidate_angle == 90 || _candidate_angle == 180) {
+        ecore_evas_geometry_get (ecore_evas_ecore_evas_get (evas_object_evas_get (_preedit_window)), &x, &y, &width, &height);
+        if (_candidate_angle == 90) {
+            y = _screen_height - _preedit_width;
+        } else if (_candidate_angle == 180) {
+            x = _screen_width - _preedit_width;
+        }
+        evas_object_move (_preedit_window, x, y);
+    }
+}
+
+/**
+ * @brief Update caret slot function for PanelAgent.
+ *
+ * @param caret The caret position.
+ */
+static void slot_update_preedit_caret (int caret)
+{
+    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << " caret=" << caret << "\n";
 }
 
 /**
@@ -3619,7 +3798,7 @@ static Eina_Bool x_event_window_property_cb (void *data, int ev_type, void *even
 
                 /* Make sure that we have the same rotation angle with the keyboard window */
                 if (_ise_window)
-                    _candidate_angle = efl_get_angle_for_ise_window();
+                    _candidate_angle = efl_get_angle_for_ise_window ();
 
                 if (_candidate_window_pending) {
                     _candidate_window_pending = false;
