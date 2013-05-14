@@ -41,7 +41,7 @@ msgstr "Escribir automáticamente en mayúscula la primera letra de una oración
 
 #: ism/extras/efl_setting/isf_setting_efl.cpp:882
 msgid "Automatic full stop"
-msgstr "Detención automática completa"
+msgstr "Puntuación automática"
 
 #: ism/extras/efl_setting/isf_setting_efl.cpp:899
 msgid "Automatically insert a full stop by tapping the space bar twice"

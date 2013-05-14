@@ -41,7 +41,7 @@ msgstr "Posar en majúscula la primera lletra de cada frase automàticament"
 
 #: ism/extras/efl_setting/isf_setting_efl.cpp:899
 msgid "Automatic full stop"
-msgstr "Punt automàtic"
+msgstr "Puntuar automàticament"
 
 #: ism/extras/efl_setting/isf_setting_efl.cpp:916
 msgid "Automatically insert a full stop by tapping the space bar twice"

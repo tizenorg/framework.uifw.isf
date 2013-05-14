@@ -42,7 +42,7 @@ msgstr "문장의 첫 글자를 자동으로 대문자로 변환합니다"
 
 #: ism/extras/efl_setting/isf_setting_efl.cpp:899
 msgid "Automatic full stop"
-msgstr "자동 마침표"
+msgstr "자동 구두점 입력"
 
 #: ism/extras/efl_setting/isf_setting_efl.cpp:916
 msgid "Automatically insert a full stop by tapping the space bar twice"

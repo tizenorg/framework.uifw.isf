@@ -41,7 +41,7 @@ msgstr "Käytä automaattisesti isoa kirjainta virkkeen alussa"
 
 #: ism/extras/efl_setting/isf_setting_efl.cpp:899
 msgid "Automatic full stop"
-msgstr "Automaattinen piste"
+msgstr "Automaattiset välimerkit"
 
 #: ism/extras/efl_setting/isf_setting_efl.cpp:916
 msgid "Automatically insert a full stop by tapping the space bar twice"

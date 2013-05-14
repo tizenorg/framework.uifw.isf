@@ -41,7 +41,7 @@ msgstr "Сөйлемнің бірінші әрпін автоматты түрд
 
 #: ism/extras/efl_setting/isf_setting_efl.cpp:899
 msgid "Automatic full stop"
-msgstr "Автоматты нүкте"
+msgstr "Авто тыныс белгі қою"
 
 #: ism/extras/efl_setting/isf_setting_efl.cpp:916
 msgid "Automatically insert a full stop by tapping the space bar twice"

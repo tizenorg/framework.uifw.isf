@@ -41,7 +41,7 @@ msgstr "文頭文字を大文字に自動変換"
 
 #: ism/extras/efl_setting/isf_setting_efl.cpp:899
 msgid "Automatic full stop"
-msgstr "自動ピリオド"
+msgstr "自動句読点挿入"
 
 #: ism/extras/efl_setting/isf_setting_efl.cpp:916
 msgid "Automatically insert a full stop by tapping the space bar twice"

@@ -41,7 +41,7 @@ msgstr "Automatycznie rozpoczynaj zdania od wielkiej litery"
 
 #: ism/extras/efl_setting/isf_setting_efl.cpp:899
 msgid "Automatic full stop"
-msgstr "Automatyczna kropka"
+msgstr "Automatyczna interpunkcja"
 
 #: ism/extras/efl_setting/isf_setting_efl.cpp:916
 msgid "Automatically insert a full stop by tapping the space bar twice"

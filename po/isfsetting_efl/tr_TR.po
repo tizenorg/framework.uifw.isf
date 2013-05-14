@@ -41,7 +41,7 @@ msgstr "Cümlenin ilk harfini otomatik olarak büyük harf yap"
 
 #: ism/extras/efl_setting/isf_setting_efl.cpp:899
 msgid "Automatic full stop"
-msgstr "Otomatik tam durdurma"
+msgstr "Oto. noktalama"
 
 #: ism/extras/efl_setting/isf_setting_efl.cpp:916
 msgid "Automatically insert a full stop by tapping the space bar twice"

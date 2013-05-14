@@ -41,7 +41,7 @@ msgstr "Inled automatiskt första bokstaven i en mening med versal"
 
 #: ism/extras/efl_setting/isf_setting_efl.cpp:899
 msgid "Automatic full stop"
-msgstr "Automatisk punkt"
+msgstr "Automatisk interpunktion"
 
 #: ism/extras/efl_setting/isf_setting_efl.cpp:916
 msgid "Automatically insert a full stop by tapping the space bar twice"
