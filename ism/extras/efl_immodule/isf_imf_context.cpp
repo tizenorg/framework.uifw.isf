@@ -34,6 +34,7 @@
 #include <sys/times.h>
 #include <pthread.h>
 #include <langinfo.h>
+#include <unistd.h>
 
 #include <Evas.h>
 #include <Ecore_Evas.h>
