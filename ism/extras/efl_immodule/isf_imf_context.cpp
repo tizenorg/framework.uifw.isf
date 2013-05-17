@@ -540,12 +540,15 @@ unregister_key_handler ()
 }
 
 static void
-set_prediction_allow (IMEngineInstancePointer si, bool prediction)
+set_prediction_allow (Ecore_IMF_Context *ctx, bool prediction)
 {
-    SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
+    EcoreIMFContextISF *context_scim = (EcoreIMFContextISF *)ecore_imf_context_data_get (ctx);
 
-    if (si)
-        si->set_prediction_allow (prediction);
+    if (context_scim && context_scim->impl) {
+        _panel_client.prepare (context_scim->id);
+        context_scim->impl->si->set_prediction_allow (prediction);
+        _panel_client.send ();
+    }
 }
 
 static void
@@ -1226,7 +1229,7 @@ isf_imf_context_focus_in (Ecore_IMF_Context *ctx)
 //            _panel_client.hide_lookup_table (context_scim->id);
             context_scim->impl->si->focus_in ();
             imengine_layout_set (ctx, ecore_imf_context_input_panel_layout_get (ctx));
-            set_prediction_allow (context_scim->impl->si, context_scim->impl->prediction_allow);
+            set_prediction_allow (ctx, context_scim->impl->prediction_allow);
             if (context_scim->impl->imdata)
                 context_scim->impl->si->set_imdata ((const char *)context_scim->impl->imdata, context_scim->impl->imdata_size);
         } else {
@@ -1661,7 +1664,7 @@ isf_imf_context_prediction_allow_set (Ecore_IMF_Context* ctx, Eina_Bool predicti
 
     if (context_scim && context_scim->impl && context_scim->impl->prediction_allow != prediction) {
         context_scim->impl->prediction_allow = prediction;
-        set_prediction_allow (context_scim->impl->si, prediction);
+        set_prediction_allow (ctx, prediction);
     }
 }
 
@@ -2618,7 +2621,7 @@ turn_on_ic (EcoreIMFContextISF *ic)
 //            _panel_client.hide_lookup_table (ic->id);
             ic->impl->si->focus_in ();
             ic->impl->si->set_layout (ecore_imf_context_input_panel_layout_get (ic->ctx));
-            set_prediction_allow (ic->impl->si, ic->impl->prediction_allow);
+            set_prediction_allow (ic->ctx, ic->impl->prediction_allow);
         }
 
         //Record the IC on/off status
