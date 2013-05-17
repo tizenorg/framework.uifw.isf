@@ -818,7 +818,9 @@ imengine_layout_set (Ecore_IMF_Context *ctx, Ecore_IMF_Input_Panel_Layout layout
     EcoreIMFContextISF *context_scim = (EcoreIMFContextISF *)ecore_imf_context_data_get (ctx);
 
     if (context_scim && context_scim->impl) {
+        _panel_client.prepare (context_scim->id);
         context_scim->impl->si->set_layout (layout);
+        _panel_client.send ();
     }
 }
 
