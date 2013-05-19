@@ -254,6 +254,9 @@ PKG_CHECK_MODULES(PRIVILEGE_CONTROL, [libprivilege-control >= 0])
 # Check notification library
 PKG_CHECK_MODULES(NOTIFICATION, [notification])
 
+# Check tts library
+PKG_CHECK_MODULES(TTS, [tts])
+
 # Check vconf library
 PKG_CHECK_MODULES(VCONF, [vconf],
                   [ISF_HAS_VCONF=yes],

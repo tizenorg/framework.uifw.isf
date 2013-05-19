@@ -57,7 +57,7 @@
 #include <privilege-control.h>
 #include "isf_panel_utility.h"
 #include <dlog.h>
-
+#include <tts.h>
 
 using namespace scim;
 
@@ -288,13 +288,14 @@ static Ecore_Timer       *_longpress_timer                  = NULL;
 static Ecore_Timer       *_destroy_timer                    = NULL;
 static Ecore_Timer       *_system_ready_timer               = NULL;
 
-static Ecore_X_Window    _ise_window                        = 0;
-static Ecore_X_Window    _app_window                        = 0;
-static Ecore_X_Window    _control_window                    = 0;
+static Ecore_X_Window     _ise_window                       = 0;
+static Ecore_X_Window     _app_window                       = 0;
+static Ecore_X_Window     _control_window                   = 0;
 
 static Ecore_File_Monitor *_helper_ise_em                   = NULL;
 static Ecore_File_Monitor *_keyboard_ise_em                 = NULL;
 
+static tts_h              _tts                              = NULL;
 
 /////////////////////////////////////////////////////////////////////////////
 // Implementation of internal functions.
@@ -1339,6 +1340,180 @@ static void ui_mouse_moved_cb (void *data, Evas *e, Evas_Object *button, void *e
         abs (_click_up_pos [1] - _click_down_pos [1]) >= (int)(15 * _height_rate)) {
         _is_click = false;
         ui_candidate_delete_longpress_timer ();
+    }
+}
+
+/**
+ * @brief Open TTS device.
+ *
+ * @return false if open is failed, otherwise return true.
+ */
+static bool ui_open_tts (void)
+{
+    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
+
+    int r = tts_create (&_tts);
+    if (TTS_ERROR_NONE != r) {
+        std::cerr << "tts_create FAILED : result(" << r << ")\n";
+        _tts = NULL;
+        return false;
+    }
+
+    r = tts_set_mode (_tts, TTS_MODE_SCREEN_READER);
+    if (TTS_ERROR_NONE != r) {
+        std::cerr << "tts_set_mode FAILED : result(" << r << ")\n";
+    }
+
+    tts_state_e current_state;
+    tts_get_state (_tts, &current_state);
+
+    if (TTS_STATE_CREATED == current_state)  {
+        r = tts_prepare (_tts);
+        if (TTS_ERROR_NONE != r) {
+            std::cerr << "tts_prepare FAILED : ret(" << r << ")\n";
+        }
+    }
+    return true;
+}
+
+/**
+ * @brief Close TTS device.
+ */
+static void ui_close_tts (void)
+{
+    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
+
+    if (_tts) {
+        int r = tts_unprepare (_tts);
+        if (TTS_ERROR_NONE != r) {
+            std::cerr << "tts_unprepare FAILED : result(" << r << ")\n";
+        }
+
+        r = tts_destroy (_tts);
+        if (TTS_ERROR_NONE != r) {
+            std::cerr << "tts_destroy FAILED : result(" << r << ")\n";
+        }
+    }
+}
+
+/**
+ * @brief Play string by TTS.
+ *
+ * @param str The string for playing.
+ */
+static void ui_play_tts (const char* str)
+{
+    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << " str=" << str << "\n";
+
+    if (_tts == NULL) {
+        if (!ui_open_tts ())
+            return;
+    }
+
+    if (str) {
+        int r;
+        int utt_id = 0;
+        tts_state_e current_state;
+
+        r = tts_get_state (_tts, &current_state);
+        if (TTS_ERROR_NONE != r) {
+            std::cerr << "Fail to get state from TTS : ret(" << r << ")\n";
+        }
+
+        if (TTS_STATE_PLAYING == current_state)  {
+            r = tts_stop (_tts);
+            if (TTS_ERROR_NONE != r) {
+                std::cerr << "Fail to stop TTS : ret(" << r << ")\n";
+            }
+        }
+        /* FIXME: Should support for all languages */
+        r = tts_add_text (_tts, str, "en_US", TTS_VOICE_TYPE_FEMALE, TTS_SPEED_NORMAL, &utt_id);
+        if (TTS_ERROR_NONE == r) {
+            r = tts_play (_tts);
+            if (TTS_ERROR_NONE != r) {
+                std::cerr << "Fail to play TTS : ret(" << r << ")\n";
+            }
+        }
+    }
+}
+
+/**
+ * @brief Mouse over (find focus object and play text by TTS) when screen reader is enabled.
+ *
+ * @param mouse_x Mouse X position.
+ * @param mouse_y Mouse Y position.
+ */
+static void ui_mouse_over (int mouse_x, int mouse_y)
+{
+    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
+    if (_candidate_window == NULL || !evas_object_visible_get (_candidate_window))
+        return;
+
+    int x, y, width, height;
+    for (int i = 0; i < SCIM_LOOKUP_TABLE_MAX_PAGESIZE; ++i) {
+        if (_candidate_0 [i]) {
+            evas_object_geometry_get (_candidate_0 [i], &x, &y, &width, &height);
+            if (mouse_x >= x && mouse_x <= x + width && mouse_y >= y && mouse_y <= y + height) {
+                /* FIXME: Should consider emoji case */
+                String mbs = utf8_wcstombs (g_isf_candidate_table.get_candidate_in_current_page (i));
+                SCIM_DEBUG_MAIN (3) << __FUNCTION__ << " play candidate string: " << mbs << "\n";
+                ui_play_tts (mbs.c_str ());
+                return;
+            }
+        }
+    }
+
+    String strTts = String ("");
+    if (evas_object_visible_get (_candidate_area_2)) {
+        evas_object_geometry_get (_close_btn, &x, &y, &width, &height);
+        if (mouse_x >= x && mouse_x <= x + width && mouse_y >= y && mouse_y <= y + height)
+            strTts = String ("close button");
+    } else {
+        evas_object_geometry_get (_more_btn, &x, &y, &width, &height);
+        if (mouse_x >= x && mouse_x <= x + width && mouse_y >= y && mouse_y <= y + height)
+            strTts = String ("more button");
+    }
+    if (strTts.length () > 0)
+        ui_play_tts (strTts.c_str ());
+}
+
+/**
+ * @brief Mouse click (find focus object and do click event) when screen reader is enabled.
+ *
+ * @param mouse_x Mouse X position.
+ * @param mouse_y Mouse Y position.
+ */
+static void ui_mouse_click (int mouse_x, int mouse_y)
+{
+    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
+    if (_candidate_window == NULL || !evas_object_visible_get (_candidate_window))
+        return;
+
+    int x, y, width, height;
+    for (int i = 0; i < SCIM_LOOKUP_TABLE_MAX_PAGESIZE; ++i) {
+        if (_candidate_0 [i]) {
+            evas_object_geometry_get (_candidate_0 [i], &x, &y, &width, &height);
+            if (mouse_x >= x && mouse_x <= x + width && mouse_y >= y && mouse_y <= y + height) {
+                Evas_Event_Mouse_Down event_info;
+                event_info.canvas.x = mouse_x;
+                event_info.canvas.y = mouse_y;
+                ui_mouse_button_pressed_cb (GINT_TO_POINTER ((i << 8) + ISF_EFL_CANDIDATE_0), NULL, NULL, &event_info);
+                ui_mouse_button_released_cb (GINT_TO_POINTER (i), NULL, NULL, &event_info);
+                return;
+            }
+        }
+    }
+
+    if (evas_object_visible_get (_candidate_area_2)) {
+        evas_object_geometry_get (_close_btn, &x, &y, &width, &height);
+        if (mouse_x >= x && mouse_x <= x + width && mouse_y >= y && mouse_y <= y + height) {
+            ui_candidate_window_close_button_cb (NULL, NULL, NULL, NULL);
+        }
+    } else {
+        evas_object_geometry_get (_more_btn, &x, &y, &width, &height);
+        if (mouse_x >= x && mouse_x <= x + width && mouse_y >= y && mouse_y <= y + height) {
+            ui_candidate_window_more_button_cb (NULL, NULL, NULL, NULL);
+        }
     }
 }
 
@@ -3571,6 +3746,29 @@ static Eina_Bool x_event_client_message_cb (void *data, int type, void *event)
         }
     }
 
+    /* Screen reader feature */
+    if (ev->message_type == ECORE_X_ATOM_E_ILLUME_ACCESS_CONTROL) {
+        static int last_pos_x = -10000;
+        static int last_pos_y = -10000;
+
+        if (_candidate_window) {
+            if ((unsigned int)ev->data.l[0] == elm_win_xwindow_get (_candidate_window)) {
+                if ((unsigned int)ev->data.l[1] == ECORE_X_ATOM_E_ILLUME_ACCESS_ACTION_ACTIVATE) {
+                    // 1 finger double tap
+                    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "    1 finger double tap (" << last_pos_x << ", " << last_pos_y << ")\n";
+                    ui_mouse_click (last_pos_x, last_pos_y);
+                } else if ((unsigned int)ev->data.l[1] == ECORE_X_ATOM_E_ILLUME_ACCESS_ACTION_READ) {
+                    // 1 finger tap
+                    // 1 finger touch & move
+                    last_pos_x = ev->data.l[2];
+                    last_pos_y = ev->data.l[3];
+                    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "    1 finger touch & move (" << last_pos_x << ", " << last_pos_y << ")\n";
+                    ui_mouse_over (last_pos_x, last_pos_y);
+                }
+            }
+        }
+    }
+
     return ECORE_CALLBACK_RENEW;
 }
 
@@ -3958,6 +4156,7 @@ cleanup:
     ui_candidate_delete_destroy_timer ();
     delete_keyboard_ise_em ();
     delete_helper_ise_em ();
+    ui_close_tts ();
 
     if (!_config.null ())
         _config.reset ();
