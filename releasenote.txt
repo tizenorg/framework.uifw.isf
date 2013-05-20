@@ -1,3 +1,10 @@
+ISF 2.4.6520 :
+ 1. fix build error on GCC 4.7.3
+ 2. [setting] fix prevent issue
+ 3. [immodule] fix bug hide_lookup_table doesn't work in set_layout of IMEngine
+ 4. [immodule] prepare and send is needed when set_prediction_allow is called in IMEngine
+
+
 ISF 2.4.6508 :
  1. Set default language for isf_get_normalized_language ()
  2. check cursor index of ecore_imf_context_surrounding_get
