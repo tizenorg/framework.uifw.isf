@@ -213,41 +213,6 @@ static int lang_changed (void *data)
     return 0;
 }
 
-static int _rotate_cb (enum appcore_rm m, void *data)
-{
-    struct appdata *ad = (struct appdata *)data;
-    if (ad == NULL || ad->win_main == NULL)
-        return 0;
-
-    int r;
-    switch (m) {
-    case APPCORE_RM_PORTRAIT_NORMAL:
-        ug_send_event (UG_EVENT_ROTATE_PORTRAIT);
-        r = 0;
-        break;
-    case APPCORE_RM_PORTRAIT_REVERSE:
-        ug_send_event (UG_EVENT_ROTATE_PORTRAIT_UPSIDEDOWN);
-        r = 180;
-        break;
-    case APPCORE_RM_LANDSCAPE_NORMAL:
-        ug_send_event (UG_EVENT_ROTATE_LANDSCAPE);
-        r = 270;
-        break;
-    case APPCORE_RM_LANDSCAPE_REVERSE:
-        ug_send_event (UG_EVENT_ROTATE_LANDSCAPE_UPSIDEDOWN);
-        r = 90;
-        break;
-    default:
-        r = -1;
-        break;
-    }
-
-    if (r >= 0)
-        elm_win_rotation_with_resize_set (ad->win_main, r);
-
-    return 0;
-}
-
 static void win_del (void *data, Evas_Object *obj, void *event)
 {
     elm_exit ();
