@@ -1548,11 +1548,6 @@ static void on_destroy (ui_gadget_h ug, service_h s, void *priv)
         ugd->layout_main = NULL;
     }
 
-    if (ugd->opt_eo != NULL) {
-        evas_object_del (ugd->opt_eo);
-        ugd->opt_eo = NULL;
-    }
-
     if (_mdl) {
         delete _mdl;
         _mdl = NULL;
