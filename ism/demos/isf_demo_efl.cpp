@@ -257,6 +257,7 @@ static Evas_Object* create_win (const char *name)
 {
     Evas_Object *eo = NULL;
     int w, h;
+    const int rots[4] = { 0, 90, 180, 270 };
 
     eo = elm_win_util_standard_add (name, name);
     if (eo != NULL) {
@@ -264,6 +265,10 @@ static Evas_Object* create_win (const char *name)
                                         win_del, NULL);
         ecore_x_window_size_get (ecore_x_window_root_first_get (), &w, &h);
         evas_object_resize (eo, w, h);
+    }
+
+    if (elm_win_wm_rotation_supported_get (eo)) {
+        elm_win_wm_rotation_available_rotations_set (eo, (const int *)&rots, 4);
     }
 
     return eo;
@@ -394,8 +399,6 @@ static int app_create (void *data)
 
     ecore_event_handler_add (ECORE_EVENT_KEY_DOWN, _keydown_event, ad);
     ecore_event_handler_add (ECORE_EVENT_KEY_UP, _keyup_event, ad);
-
-    appcore_set_rotation_cb (_rotate_cb, ad);
 
     appcore_measure_time ();
 
