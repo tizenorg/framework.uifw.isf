@@ -43,7 +43,7 @@ struct ug_data {
     Elm_Object_Item *hw_ise_item_tizen;     // HW
     Elm_Object_Item *sw_ise_opt_item_tizen; // SW option
     Elm_Object_Item *hw_ise_opt_item_tizen; // HW option
-    void (*key_end_cb)(void *, Evas_Object *, void *);
+    Eina_Bool (*key_end_cb)(void *, Elm_Object_Item *);
     ui_gadget_h      ug;
 };
 

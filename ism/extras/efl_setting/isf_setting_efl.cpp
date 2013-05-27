@@ -238,18 +238,21 @@ static Evas_Object *create_naviframe_layout (Evas_Object* parent)
     return naviframe;
 }
 
-static void back_cb (void *data, Evas_Object *obj, void *event_info)
+static Eina_Bool back_cb (void *data, Elm_Object_Item *it)
 {
     static bool in_exit = false;
 
     if (in_exit)
-        return;
+        return EINA_TRUE;
     in_exit = true;
 
     if (data == NULL)
-        return;
+        return EINA_TRUE;
+
     struct ug_data *ugd = (struct ug_data *)data;
     ug_destroy_me (ugd->ug);
+
+    return EINA_TRUE;
 }
 
 static void imeug_destroy_cb (ui_gadget_h ug, void *data)
@@ -477,10 +480,10 @@ static void set_active_sw_ise()
     }
 }
 
-static void sw_keyboard_selection_view_set_cb (void *data, Evas_Object *obj, void *event_info)
+static Eina_Bool sw_keyboard_selection_view_set_cb (void *data, Elm_Object_Item *it)
 {
     if (data == NULL)
-        return;
+        return EINA_TRUE;
 
     struct ug_data *ugd = (struct ug_data *)data;
 
@@ -489,6 +492,8 @@ static void sw_keyboard_selection_view_set_cb (void *data, Evas_Object *obj, voi
     update_setting_main_view (ugd);
 
     ugd->key_end_cb = back_cb;
+
+    return EINA_TRUE;
 }
 
 static void sw_keyboard_radio_cb (void *data, Evas_Object *obj, void *event_info)
@@ -505,9 +510,10 @@ static void hw_keyboard_radio_cb (void *data, Evas_Object *obj, void *event_info
     snprintf (_hw_ise_name, sizeof (_hw_ise_name), "%s", _hw_ise_list[index].c_str ());
 }
 
-static void language_view_back_cb (void *data, Evas_Object *obj, void *event_info)
+static Eina_Bool language_view_back_cb (void *data, Elm_Object_Item *it)
 {
     _common_ugd->key_end_cb = sw_keyboard_selection_view_set_cb;
+    return EINA_TRUE;
 }
 
 static void show_language_cb (void *data, Evas_Object *obj, void *event_info)
@@ -546,9 +552,7 @@ static void show_language_cb (void *data, Evas_Object *obj, void *event_info)
 
     // Push the layout along with function buttons and title
     Elm_Object_Item *it = elm_naviframe_item_push (_common_ugd->naviframe, _sw_ise_list[index].c_str (), NULL, NULL, layout, NULL);
-
-    Evas_Object *back_btn = elm_object_item_part_content_get (it, "prev_btn");
-    evas_object_smart_callback_add (back_btn, "clicked", language_view_back_cb, NULL);
+    elm_naviframe_item_pop_cb_set (it, language_view_back_cb, NULL);
 
     _common_ugd->key_end_cb = language_view_back_cb;
 }
@@ -570,16 +574,18 @@ static void helper_ise_reload_config (void)
     }
 }
 
-static void ise_option_view_set_cb (void *data, Evas_Object *obj, void *event_info)
+static Eina_Bool ise_option_view_set_cb (void *data, Elm_Object_Item *it)
 {
     if (!data)
-        return;
+        return EINA_TRUE;
 
     struct ug_data *ugd = (struct ug_data *)data;
     ugd->key_end_cb = back_cb;
     _mdl->save_config (_config);
 
     helper_ise_reload_config ();
+
+    return EINA_TRUE;
 }
 
 static void ise_option_show (ug_data *ugd, const char *ise_uuid)
@@ -603,9 +609,8 @@ static void ise_option_show (ug_data *ugd, const char *ise_uuid)
             ugd->opt_eo = _mdl->create_ui (ugd->layout_main, ugd->naviframe);
 
             Elm_Object_Item *it = elm_naviframe_item_push (ugd->naviframe, title, NULL, NULL, ugd->opt_eo, NULL);
+            elm_naviframe_item_pop_cb_set (it, ise_option_view_set_cb, ugd);
 
-            Evas_Object *back_btn = elm_object_item_part_content_get (it, "prev_btn");
-            evas_object_smart_callback_add (back_btn, "clicked", ise_option_view_set_cb, ugd);
             ugd->key_end_cb = ise_option_view_set_cb;
         }
     }
@@ -894,9 +899,7 @@ static void create_sw_keyboard_selection_view (ug_data *ugd)
 
     // Push the layout along with function buttons and title
     Elm_Object_Item *it = elm_naviframe_item_push (ugd->naviframe, _T("Keyboard selection"), NULL, NULL, genlist, NULL);
-
-    Evas_Object *back_btn = elm_object_item_part_content_get (it, "prev_btn");
-    evas_object_smart_callback_add (back_btn, "clicked", sw_keyboard_selection_view_set_cb, ugd);
+    elm_naviframe_item_pop_cb_set (it, sw_keyboard_selection_view_set_cb, ugd);
 
     unsigned int i = 0;
 
@@ -940,10 +943,10 @@ static void set_active_hw_ise (void)
     }
 }
 
-static void hw_keyboard_selection_view_set_cb (void *data, Evas_Object *obj, void *event_info)
+static Eina_Bool hw_keyboard_selection_view_set_cb (void *data, Elm_Object_Item *it)
 {
     if (!data)
-        return;
+        return EINA_TRUE;
 
     struct ug_data *ugd = (struct ug_data *)data;
 
@@ -952,6 +955,8 @@ static void hw_keyboard_selection_view_set_cb (void *data, Evas_Object *obj, voi
     update_setting_main_view (ugd);
 
     ugd->key_end_cb = back_cb;
+
+    return EINA_TRUE;
 }
 
 static void create_hw_keyboard_selection_view (ug_data * ugd)
@@ -970,9 +975,7 @@ static void create_hw_keyboard_selection_view (ug_data * ugd)
 
     // Push the layout along with function buttons and title
     Elm_Object_Item *nf_it = elm_naviframe_item_push (ugd->naviframe, _T("Keyboard selection"), NULL, NULL, genlist, NULL);
-
-    Evas_Object *back_btn = elm_object_item_part_content_get (nf_it, "prev_btn");
-    evas_object_smart_callback_add (back_btn, "clicked", hw_keyboard_selection_view_set_cb, ugd);
+    elm_naviframe_item_pop_cb_set (nf_it, hw_keyboard_selection_view_set_cb, ugd);
 
     unsigned int i = 0;
 
@@ -1304,9 +1307,9 @@ static Evas_Object *create_setting_main_view (ug_data *ugd)
         //==================================group end =========================
         Evas_Object *back_btn = elm_button_add (ugd->naviframe);
         elm_object_style_set (back_btn, "naviframe/back_btn/default");
-        evas_object_smart_callback_add (back_btn, "clicked", back_cb, ugd);
-
         nf_main_it = elm_naviframe_item_push (ugd->naviframe, _T("Keyboard"), back_btn, NULL, genlist, NULL);
+        elm_naviframe_item_pop_cb_set(nf_main_it, back_cb, ugd);
+
     }
     return ugd->naviframe;
 }
@@ -1627,7 +1630,7 @@ static void on_key_event (ui_gadget_h ug, enum ug_key_event event, service_h s, 
             if (top_it && (elm_object_item_content_get (top_it) != ugd->opt_eo) && (ugd->key_end_cb == ise_option_view_set_cb))
                 _mdl->key_proceeding (TYPE_KEY_END);
             else
-                ugd->key_end_cb (priv, NULL, NULL);
+                ugd->key_end_cb (priv, NULL);
 
             break;
         default:
