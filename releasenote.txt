@@ -1,3 +1,8 @@
+ISF 2.4.6527 :
+ 1. [setting] fix abort issue in case EFL abort option turn on
+ 2. [demo] Use the window manager rotation
+
+
 ISF 2.4.6520 :
  1. fix build error on GCC 4.7.3
  2. [setting] fix prevent issue
