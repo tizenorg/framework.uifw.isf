@@ -247,6 +247,10 @@ static Evas_Object * create_inner_layout (void *data)
     ef = _create_ef_layout (parent, _("NUMBERONLY WITH SIGNED AND DECIMAL LAYOUT"), _("click to enter NUMBERONLY WITH SIGNED AND DECIMAL"), ELM_INPUT_PANEL_LAYOUT_NUMBERONLY, ELM_INPUT_PANEL_LAYOUT_NUMBERONLY_VARIATION_SIGNED_AND_DECIMAL);
     elm_box_pack_end (bx, ef);
 
+    /* Datetime Layout */
+    ef = _create_ef_layout (parent, _("DATETIME LAYOUT"), _("click to enter DATETIME"), ELM_INPUT_PANEL_LAYOUT_DATETIME);
+    elm_box_pack_end (bx, ef);
+
     /* Password Layout */
     ef = _create_ef_layout (parent, _("PASSWORD LAYOUT"), _("click to enter PASSWORD"), ELM_INPUT_PANEL_LAYOUT_PASSWORD);
     elm_box_pack_end (bx, ef);
