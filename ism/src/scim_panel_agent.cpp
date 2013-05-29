@@ -4504,7 +4504,7 @@ private:
 
         if (m_recv_trans.get_data (target_ic)    &&
             m_recv_trans.get_data (target_uuid)  &&
-            m_recv_trans.get_data (wstr) && wstr.length () &&
+            m_recv_trans.get_data (wstr) &&
             m_recv_trans.get_data (attrs)) {
 
             int     target_client;
