@@ -3200,11 +3200,20 @@ static void send_x_key_event (const KeyEvent &key, bool fake)
     int shift = 0;
     char key_string[256] = {0};
     char keysym_str[256] = {0};
+    Window focus_win;
+    int revert = RevertToParent;
 
     // Obtain the X11 display.
     Display *display = (Display *)ecore_x_display_get ();
     if (display == NULL) {
         std::cerr << "ecore_x_display_get () failed\n";
+        return;
+    }
+
+    // Check focus window
+    XGetInputFocus (display, &focus_win, &revert);
+    if (focus_win == None) {
+        LOGE ("Input focus window is None\n");
         return;
     }
 

@@ -280,6 +280,8 @@ static void _send_input_panel_hide_request ()
 
     _win_focus_out_handler_del ();
 
+    LOGD ("Send input panel hide request\n");
+
     _isf_imf_context_input_panel_hide (get_panel_client_id (), hide_context_id);
     hide_context_id = -1;
 }
@@ -294,7 +296,7 @@ static Eina_Bool _hide_timer_handler (void *data)
 
 static Eina_Bool _will_show_timer_handler (void *data)
 {
-    LOGD ("reset input panel state as HIDE");
+    LOGD ("reset input panel state as HIDE\n");
 
     input_panel_state = ECORE_IMF_INPUT_PANEL_STATE_HIDE;
     will_show_timer = NULL;
@@ -496,7 +498,7 @@ void isf_imf_context_input_panel_show (Ecore_IMF_Context* ctx)
         (input_panel_state == ECORE_IMF_INPUT_PANEL_STATE_WILL_SHOW ||
          input_panel_state == ECORE_IMF_INPUT_PANEL_STATE_SHOW) &&
         (!will_hide)) {
-        LOGD ("already show");
+        LOGD ("already show\n");
         return;
     }
 
