@@ -284,6 +284,13 @@ static Eina_Bool                                        desktop_mode            
 
 static bool                                             _x_key_event_is_valid       = false;
 
+typedef enum {
+    INPUT_LANG_JAPANESE,
+    INPUT_LANG_OTHER
+} Input_Language;
+
+static Input_Language                                   input_lang                  = INPUT_LANG_OTHER;
+
 static Display *__current_display      = 0;
 static int      __current_alt_mask     = Mod1Mask;
 static int      __current_meta_mask    = 0;
@@ -573,8 +580,11 @@ autoperiod_insert (Ecore_IMF_Context *ctx)
     int cursor_pos = 0;
     Eina_Unicode *ustr = NULL;
     Ecore_IMF_Event_Delete_Surrounding ev;
-    Eina_Unicode symbols[] = {' ', 0x00A0 /* no-break space */, ':', ';', '.', '!', '?', 0x00BF /* ¿ */, 0x00A1 /* ¡ */};
+    Eina_Unicode space_symbols[] = {' ', 0x00A0 /* no-break space */, 0x3000 /* ideographic space */};
+    Eina_Unicode symbols[] = {' ', 0x00A0 /* no-break space */, 0x3000 /* ideographic space */,
+                              ':', ';', '.', '!', '?', 0x00BF /* ¿ */, 0x00A1 /* ¡ */, 0x3002 /* 。 */};
     const int symbol_num = sizeof (symbols) / sizeof (symbols[0]);
+    char *fullstop_mark = NULL;
 
     if (autoperiod_allow == EINA_FALSE)
         return;
@@ -601,7 +611,7 @@ autoperiod_insert (Ecore_IMF_Context *ctx)
 
     if (cursor_pos < 2) goto done;
 
-    if (((ustr[cursor_pos-1] == ' ') || (ustr[cursor_pos-1] == 0x00A0)) &&
+    if (check_symbol (ustr[cursor_pos-1], space_symbols, (sizeof (space_symbols) / sizeof (space_symbols[0]))) &&
         (!check_symbol (ustr[cursor_pos-2], symbols, symbol_num))) {
         ev.ctx = ctx;
         ev.n_chars = 1;
@@ -609,8 +619,19 @@ autoperiod_insert (Ecore_IMF_Context *ctx)
         ecore_imf_context_delete_surrounding_event_add (ctx, -1, 1);
         ecore_imf_context_event_callback_call (ctx, ECORE_IMF_CALLBACK_DELETE_SURROUNDING, &ev);
 
-        ecore_imf_context_commit_event_add (ctx, ".");
-        ecore_imf_context_event_callback_call (ctx, ECORE_IMF_CALLBACK_COMMIT, (void *)".");
+        if (input_lang == INPUT_LANG_JAPANESE) {
+            fullstop_mark = strdup ("。");
+        }
+        else {
+            fullstop_mark = strdup (".");
+        }
+
+        ecore_imf_context_commit_event_add (ctx, fullstop_mark);
+        ecore_imf_context_event_callback_call (ctx, ECORE_IMF_CALLBACK_COMMIT, (void *)fullstop_mark);
+
+        if (fullstop_mark) {
+            free (fullstop_mark);
+        }
     }
 
 done:
@@ -625,7 +646,8 @@ analyze_surrounding_text (Ecore_IMF_Context *ctx)
 {
     char *plain_str = NULL;
     char *markup_str = NULL;
-    Eina_Unicode puncs[] = {'.', '!', '?', 0x00BF /* ¿ */, 0x00A1 /* ¡ */};
+    Eina_Unicode puncs[] = {'.', '!', '?', 0x00BF /* ¿ */, 0x00A1 /* ¡ */, 0x3002 /* 。 */};
+    Eina_Unicode space_symbols[] = {' ', 0x00A0 /* no-break space */, 0x3000 /* ideographic space */};
     Eina_Unicode *ustr = NULL;
     Eina_Bool ret = EINA_FALSE;
     Eina_Bool detect_space = EINA_FALSE;
@@ -671,7 +693,7 @@ analyze_surrounding_text (Ecore_IMF_Context *ctx)
     if (cursor_pos >= 1) {
         if (context_scim->impl->autocapital_type == ECORE_IMF_AUTOCAPITAL_TYPE_WORD) {
             // Check space or no-break space
-            if (ustr[cursor_pos-1] == ' ' || ustr[cursor_pos-1] == 0x00A0) {
+            if (check_symbol (ustr[cursor_pos-1], space_symbols, (sizeof (space_symbols) / sizeof (space_symbols[0])))) {
                 ret = EINA_TRUE;
                 goto done;
             }
@@ -685,7 +707,7 @@ analyze_surrounding_text (Ecore_IMF_Context *ctx)
 
         for (i = cursor_pos; i > 0; i--) {
             // Check space or no-break space
-            if (ustr[i-1] == ' ' || ustr[i-1] == 0x00A0) {
+            if (check_symbol (ustr[i-1], space_symbols, (sizeof (space_symbols) / sizeof (space_symbols[0])))) {
                 detect_space = EINA_TRUE;
                 continue;
             }
@@ -802,6 +824,20 @@ evas_focus_out_cb (void *data, Evas *e, void *event_info)
     }
 }
 
+static void
+get_input_language ()
+{
+    char *input_lang_str = vconf_get_str (VCONFKEY_ISF_INPUT_LANGUAGE);
+    if (!input_lang_str) return;
+
+    if (strcmp (input_lang_str, "ja_JP") == 0)
+        input_lang = INPUT_LANG_JAPANESE;
+    else
+        input_lang = INPUT_LANG_OTHER;
+
+    free (input_lang_str);
+}
+
 static void autoperiod_allow_changed_cb (keynode_t *key, void* data)
 {
     SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
@@ -814,6 +850,13 @@ static void autocapital_allow_changed_cb (keynode_t *key, void* data)
     SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
 
     autocap_allow = vconf_keynode_get_bool (key);
+}
+
+static void input_language_changed_cb (keynode_t *key, void* data)
+{
+    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
+
+    get_input_language ();
 }
 
 EAPI void context_scim_imdata_get (Ecore_IMF_Context *ctx, void* data, int* length)
@@ -888,6 +931,11 @@ isf_imf_context_new (void)
         }
 
         vconf_notify_key_changed (VCONFKEY_AUTOCAPITAL_ALLOW_BOOL, autocapital_allow_changed_cb, NULL);
+
+        /* get input language vconf value */
+        get_input_language ();
+
+        vconf_notify_key_changed (VCONFKEY_ISF_INPUT_LANGUAGE, input_language_changed_cb, NULL);
     }
 
     return context_scim;
@@ -911,6 +959,7 @@ isf_imf_context_shutdown (void)
 
         vconf_ignore_key_changed (VCONFKEY_AUTOPERIOD_ALLOW_BOOL, autoperiod_allow_changed_cb);
         vconf_ignore_key_changed (VCONFKEY_AUTOCAPITAL_ALLOW_BOOL, autocapital_allow_changed_cb);
+        vconf_ignore_key_changed (VCONFKEY_ISF_INPUT_LANGUAGE, input_language_changed_cb);
 
         isf_imf_input_panel_shutdown ();
         finalize ();
@@ -1837,6 +1886,11 @@ isf_imf_context_filter_event (Ecore_IMF_Context *ctx, Ecore_IMF_Event_Type type,
         if (!_focused_ic || !_focused_ic->impl->is_on ||
             !_focused_ic->impl->si->process_key_event (key)) {
             ret = EINA_FALSE;
+            if (type == ECORE_IMF_EVENT_KEY_DOWN) {
+                if (key.code == SCIM_KEY_space ||
+                    key.code == SCIM_KEY_KP_Space)
+                    autoperiod_insert (ctx);
+            }
         }
     }
 
@@ -2142,6 +2196,9 @@ panel_slot_commit_string (int context, const WideString &wstr)
     if (ic && ic->impl) {
         if (_focused_ic != ic)
             return;
+
+        if (utf8_wcstombs (wstr) == String (" ") || utf8_wcstombs (wstr) == String ("　"))
+            autoperiod_insert (ic->ctx);
 
         if (ic->impl->need_commit_preedit)
             panel_slot_hide_preedit_string (ic->id);
@@ -3563,7 +3620,7 @@ slot_commit_string (IMEngineInstanceBase *si,
     EcoreIMFContextISF *ic = static_cast<EcoreIMFContextISF *> (si->get_frontend_data ());
 
     if (ic && ic->ctx) {
-        if (strcmp (utf8_wcstombs (str).c_str (), " ") == 0)
+        if (utf8_wcstombs (str) == String (" ") || utf8_wcstombs (str) == String ("　"))
             autoperiod_insert (ic->ctx);
 
         Eina_Bool auto_capitalized = EINA_FALSE;
