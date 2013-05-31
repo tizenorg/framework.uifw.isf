@@ -50,6 +50,7 @@ static unsigned int       hw_kbd_num = 0;
 static Ecore_Timer       *hide_timer = NULL;
 static Ecore_Timer       *will_show_timer = NULL;
 static Ecore_IMF_Input_Panel_State input_panel_state = ECORE_IMF_INPUT_PANEL_STATE_HIDE;
+static Ecore_IMF_Input_Panel_State notified_state = ECORE_IMF_INPUT_PANEL_STATE_HIDE;
 static int                hide_context_id = -1;
 static Evas              *active_context_canvas = NULL;
 static Ecore_X_Window     active_context_window = -1;
@@ -207,6 +208,7 @@ static void _event_callback_call (Ecore_IMF_Input_Panel_Event type, int value)
                     LOGD ("[input panel will be shown] ctx : %p\n", using_ic);
                     break;
             }
+            notified_state = (Ecore_IMF_Input_Panel_State)value;
             break;
         case ECORE_IMF_INPUT_PANEL_LANGUAGE_EVENT:
             LOGD ("[language is changed] ctx : %p\n", using_ic);
@@ -564,6 +566,10 @@ void isf_imf_context_input_panel_show (Ecore_IMF_Context* ctx)
 
     caps_mode_check (ctx, EINA_TRUE, EINA_TRUE);
     LOGD ("===============================================================\n");
+
+    if (notified_state == ECORE_IMF_INPUT_PANEL_STATE_HIDE &&
+        input_panel_state == ECORE_IMF_INPUT_PANEL_STATE_SHOW)
+        _event_callback_call (ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_SHOW);
 }
 
 void isf_imf_context_input_panel_hide (Ecore_IMF_Context *ctx)
