@@ -109,6 +109,7 @@ public:
     uint32       magic;
     uint32       magic_active;
     int          timeout;
+    uint32       focused_ic;
 
     HelperAgentSignalVoid           signal_exit;
     HelperAgentSignalVoid           signal_attach_input_context;
@@ -160,7 +161,7 @@ public:
     HelperAgentSignalInt                signal_longpress_candidate;
 
 public:
-    HelperAgentImpl () : magic (0), magic_active (0), timeout (-1) { }
+    HelperAgentImpl () : magic (0), magic_active (0), timeout (-1), focused_ic ((uint32) -1) { }
 };
 
 HelperAgent::HelperAgent ()
@@ -455,11 +456,13 @@ HelperAgent::filter_event ()
             case SCIM_TRANS_CMD_FOCUS_OUT:
             {
                 m_impl->signal_focus_out (this, ic, ic_uuid);
+                m_impl->focused_ic = (uint32) -1;
                 break;
             }
             case SCIM_TRANS_CMD_FOCUS_IN:
             {
                 m_impl->signal_focus_in (this, ic, ic_uuid);
+                m_impl->focused_ic = ic;
                 break;
             }
             case ISM_TRANS_CMD_SHOW_ISE_PANEL:
@@ -861,7 +864,11 @@ HelperAgent::send_key_event (int            ic,
         m_impl->send.put_command (SCIM_TRANS_CMD_REQUEST);
         m_impl->send.put_data (m_impl->magic_active);
         m_impl->send.put_command (SCIM_TRANS_CMD_PANEL_SEND_KEY_EVENT);
-        m_impl->send.put_data ((uint32)ic);
+        if (ic == -1) {
+            m_impl->send.put_data (m_impl->focused_ic);
+        } else {
+            m_impl->send.put_data ((uint32)ic);
+        }
         m_impl->send.put_data (ic_uuid);
         m_impl->send.put_data (key);
         m_impl->send.write_to_socket (m_impl->socket_active, m_impl->magic_active);
@@ -887,7 +894,11 @@ HelperAgent::forward_key_event (int            ic,
         m_impl->send.put_command (SCIM_TRANS_CMD_REQUEST);
         m_impl->send.put_data (m_impl->magic_active);
         m_impl->send.put_command (SCIM_TRANS_CMD_FORWARD_KEY_EVENT);
-        m_impl->send.put_data ((uint32)ic);
+        if (ic == -1) {
+            m_impl->send.put_data (m_impl->focused_ic);
+        } else {
+            m_impl->send.put_data ((uint32)ic);
+        }
         m_impl->send.put_data (ic_uuid);
         m_impl->send.put_data (key);
         m_impl->send.write_to_socket (m_impl->socket_active, m_impl->magic_active);
@@ -913,7 +924,11 @@ HelperAgent::commit_string (int               ic,
         m_impl->send.put_command (SCIM_TRANS_CMD_REQUEST);
         m_impl->send.put_data (m_impl->magic_active);
         m_impl->send.put_command (SCIM_TRANS_CMD_COMMIT_STRING);
-        m_impl->send.put_data ((uint32)ic);
+        if (ic == -1) {
+            m_impl->send.put_data (m_impl->focused_ic);
+        } else {
+            m_impl->send.put_data ((uint32)ic);
+        }
         m_impl->send.put_data (ic_uuid);
         m_impl->send.put_data (wstr);
         m_impl->send.write_to_socket (m_impl->socket_active, m_impl->magic_active);
