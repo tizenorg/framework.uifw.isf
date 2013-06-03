@@ -3549,17 +3549,17 @@ static Eina_Bool x_event_client_message_cb (void *data, int type, void *event)
                 ui_candidate_window_rotate (_candidate_angle);
                 LOGD("ECORE_X_ATOM_E_WINDOW_ROTATION_CHANGE_REQUEST : %d\n", _candidate_angle);
             }
-            else if (ev->message_type == ECORE_X_ATOM_E_ILLUME_ROTATE_ROOT_ANGLE) {
+            else if (ev->message_type == ECORE_X_ATOM_E_ILLUME_ROTATE_ROOT_ANGLE && !_ise_show) {
+                ecore_x_e_window_rotation_app_set (elm_win_xwindow_get (_candidate_window), EINA_TRUE);
                 _candidate_angle = (int)ev->data.l[0];
-                ui_candidate_window_rotate (_candidate_angle);
                 if (_candidate_angle == 90 || _candidate_angle == 270) {
-                    ui_candidate_window_resize (_candidate_land_width, _candidate_land_height_min);
                     evas_object_resize (_candidate_window, _candidate_land_width,_candidate_land_height_min);
                 } else {
-                    ui_candidate_window_resize (_candidate_port_width, _candidate_port_height_min);
                     evas_object_resize (_candidate_window, _candidate_port_width,_candidate_port_height_min);
                 }
+                ui_candidate_window_rotate (_candidate_angle);
                 ui_settle_candidate_window ();
+                ecore_x_e_window_rotation_app_set (elm_win_xwindow_get (_candidate_window), EINA_FALSE);
                 LOGD("ECORE_X_ATOM_E_ILLUME_ROTATE_ROOT_ANGLE : %d\n", _candidate_angle);
             }
             SCIM_DEBUG_MAIN (3) << __FUNCTION__ << " : ANGLE (" << _candidate_angle << ")\n";
