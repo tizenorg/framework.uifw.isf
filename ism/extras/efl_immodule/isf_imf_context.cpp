@@ -282,6 +282,8 @@ static Eina_Bool                                        autoperiod_allow        
 static Eina_Bool                                        autocap_allow               = EINA_FALSE;
 static Eina_Bool                                        desktop_mode                = EINA_FALSE;
 
+static bool                                             _x_key_event_is_valid       = false;
+
 static Display *__current_display      = 0;
 static int      __current_alt_mask     = Mod1Mask;
 static int      __current_meta_mask    = 0;
@@ -1299,6 +1301,7 @@ isf_imf_context_focus_out (Ecore_IMF_Context *ctx)
         _panel_client.send ();
         _focused_ic = 0;
     }
+    _x_key_event_is_valid = false;
 }
 
 /**
@@ -1741,6 +1744,13 @@ isf_imf_context_filter_event (Ecore_IMF_Context *ctx, Ecore_IMF_Event_Type type,
     if (ic == NULL || ic->impl == NULL)
         return ret;
 
+    if (type == ECORE_IMF_EVENT_KEY_DOWN || type == ECORE_IMF_EVENT_KEY_UP) {
+        if (hw_keyboard_num_get () == 0 && !_x_key_event_is_valid) {
+            std::cerr << "    Hardware keyboard is not connected and key event is not valid!!!\n";
+            return EINA_TRUE;
+        }
+    }
+
     KeyEvent key;
     unsigned int timestamp;
 
@@ -2062,6 +2072,9 @@ panel_slot_process_key_event (int context, const KeyEvent &key)
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << " context=" << context << " key=" << key.get_key_string () << " ic=" << ic << "\n";
     if (!(ic && ic->impl))
         return;
+    if (_focused_ic != ic)
+        return;
+
     KeyEvent _key = key;
     if (key.is_key_press () &&
         ecore_imf_context_input_panel_layout_get (ic->ctx) == ECORE_IMF_INPUT_PANEL_LAYOUT_NORMAL) {
@@ -2126,6 +2139,11 @@ panel_slot_forward_key_event (int context, const KeyEvent &key)
 {
     EcoreIMFContextISF *ic = find_ic (context);
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << " context=" << context << " key=" << key.get_key_string () << " ic=" << ic << "\n";
+
+    if (!(ic && ic->impl))
+        return;
+    if (_focused_ic != ic)
+        return;
 
     if (strlen (key.get_key_string ().c_str ()) >= 116)
         return;
@@ -3288,6 +3306,7 @@ static void send_x_key_event (const KeyEvent &key, bool fake)
             XSendEvent (event.display, event.window, True, KeyReleaseMask, (XEvent *)&event);
         }
     }
+    _x_key_event_is_valid = true;
 }
 
 static void
@@ -3702,9 +3721,18 @@ slot_get_surrounding_text (IMEngineInstanceBase *si,
         if (ecore_imf_context_surrounding_get (_focused_ic->ctx, &surrounding, &cursor_index)) {
             SCIM_DEBUG_FRONTEND(2) << "Surrounding text: " << surrounding <<"\n";
             SCIM_DEBUG_FRONTEND(2) << "Cursor Index    : " << cursor_index <<"\n";
-            if (cursor_index < 0)
+            if (cursor_index < 0) {
+                if (surrounding) {
+                    free (surrounding);
+                    surrounding = NULL;
+                }
                 return false;
+            }
             WideString before = utf8_mbstowcs (String (surrounding));
+            if (surrounding) {
+                free (surrounding);
+                surrounding = NULL;
+            }
             if (cursor_index > (int)before.length())
                 return false;
             WideString after = before;

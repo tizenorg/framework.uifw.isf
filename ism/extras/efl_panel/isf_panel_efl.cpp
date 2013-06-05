@@ -1185,17 +1185,6 @@ static void ui_candidate_hide (bool bForce, bool bSetVirtualKbd)
     }
 }
 
-static Eina_Bool _move_candidate_window_timer_cb (void *data)
-{
-    evas_object_hide (_more_btn);
-    evas_object_show (_close_btn);
-
-    ui_settle_candidate_window ();
-    flush_memory ();
-
-    return ECORE_CALLBACK_CANCEL;
-}
-
 /**
  * @brief Callback function for more button.
  *
@@ -1210,15 +1199,19 @@ static void ui_candidate_window_more_button_cb (void *data, Evas *e, Evas_Object
 
     _panel_agent->candidate_more_window_show ();
 
+    if (_candidate_angle == 180 || _candidate_angle == 270) {
+        Ecore_Evas *ee = ecore_evas_ecore_evas_get (evas_object_evas_get (_candidate_window));
+        ecore_evas_move_resize (ee, 0, 0, 0, 0);
+    }
+
     evas_object_show (_candidate_area_2);
     evas_object_show (_scroller_bg);
-    elm_win_raise (_candidate_window);
-    ui_candidate_window_adjust ();
+    evas_object_hide (_more_btn);
+    evas_object_show (_close_btn);
 
-    /* FIXME : use timer to move candidate window after rendering candidate window which is resized.
-               This code is added for avoiding a flickering problem changing the window size by the EVAS graphic rendering restriction(Retained mode)
-    */
-    ecore_timer_add (0.02, _move_candidate_window_timer_cb, NULL);
+    ui_candidate_window_adjust ();
+    ui_settle_candidate_window ();
+    flush_memory ();
 }
 
 /**
@@ -1243,9 +1236,15 @@ static void ui_candidate_window_close_button_cb (void *data, Evas *e, Evas_Objec
 
     evas_object_show (_candidate_area_1);
     evas_object_show (_more_btn);
+
+    elm_scroller_region_show (_candidate_area_2, 0, 0, _candidate_scroll_width, 100);
+    if (_candidate_angle == 180 || _candidate_angle == 270) {
+        Ecore_Evas *ee= ecore_evas_ecore_evas_get (evas_object_evas_get (_candidate_window));
+        ecore_evas_move_resize (ee, 0, 0, 0, 0);
+    }
+
     ui_candidate_window_adjust ();
     ui_settle_candidate_window ();
-    elm_scroller_region_show (_candidate_area_2, 0, 0, _candidate_scroll_width, 100);
     flush_memory ();
 }
 
@@ -3549,17 +3548,17 @@ static Eina_Bool x_event_client_message_cb (void *data, int type, void *event)
                 ui_candidate_window_rotate (_candidate_angle);
                 LOGD("ECORE_X_ATOM_E_WINDOW_ROTATION_CHANGE_REQUEST : %d\n", _candidate_angle);
             }
-            else if (ev->message_type == ECORE_X_ATOM_E_ILLUME_ROTATE_ROOT_ANGLE) {
+            else if (ev->message_type == ECORE_X_ATOM_E_ILLUME_ROTATE_ROOT_ANGLE && !_ise_show) {
+                ecore_x_e_window_rotation_app_set (elm_win_xwindow_get (_candidate_window), EINA_TRUE);
                 _candidate_angle = (int)ev->data.l[0];
-                ui_candidate_window_rotate (_candidate_angle);
                 if (_candidate_angle == 90 || _candidate_angle == 270) {
-                    ui_candidate_window_resize (_candidate_land_width, _candidate_land_height_min);
                     evas_object_resize (_candidate_window, _candidate_land_width,_candidate_land_height_min);
                 } else {
-                    ui_candidate_window_resize (_candidate_port_width, _candidate_port_height_min);
                     evas_object_resize (_candidate_window, _candidate_port_width,_candidate_port_height_min);
                 }
+                ui_candidate_window_rotate (_candidate_angle);
                 ui_settle_candidate_window ();
+                ecore_x_e_window_rotation_app_set (elm_win_xwindow_get (_candidate_window), EINA_FALSE);
                 LOGD("ECORE_X_ATOM_E_ILLUME_ROTATE_ROOT_ANGLE : %d\n", _candidate_angle);
             }
             SCIM_DEBUG_MAIN (3) << __FUNCTION__ << " : ANGLE (" << _candidate_angle << ")\n";
