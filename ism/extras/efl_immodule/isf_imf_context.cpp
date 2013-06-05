@@ -2070,9 +2070,11 @@ panel_slot_process_key_event (int context, const KeyEvent &key)
     EcoreIMFContextISF *ic = find_ic (context);
     Eina_Bool process_key = EINA_TRUE;
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << " context=" << context << " key=" << key.get_key_string () << " ic=" << ic << "\n";
+
     if (!(ic && ic->impl))
         return;
-    if (_focused_ic != ic)
+
+    if ((_focused_ic != NULL) && (_focused_ic != ic))
         return;
 
     KeyEvent _key = key;
@@ -2142,7 +2144,8 @@ panel_slot_forward_key_event (int context, const KeyEvent &key)
 
     if (!(ic && ic->impl))
         return;
-    if (_focused_ic != ic)
+
+    if ((_focused_ic != NULL) && (_focused_ic != ic))
         return;
 
     if (strlen (key.get_key_string ().c_str ()) >= 116)
