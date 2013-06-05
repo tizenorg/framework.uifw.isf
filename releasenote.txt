@@ -1,3 +1,12 @@
+ISF 2.4.6605 :
+ 1. [panel] Call window_rotation_app_set for ROOT_ANGLE_ROTATE
+ 2. [immodule] send show callback when show is requested after focused context is deleted
+ 3. [panel] fix flickering problem at more and close button clicked
+ 4. [immodule] Discard input keys that does not match with current ic value
+ 5. add fa.po th.po ur.po
+ 6. [immodule] fix memory leak issue when ecore_imf_context_surrounding_get is used
+
+
 ISF 2.4.6530 :
  1. [demo] Add DATETIME layout
  2. [setting] support Farsi, Thai, and Urdu language
