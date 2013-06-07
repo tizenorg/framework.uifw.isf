@@ -1029,6 +1029,8 @@ isf_imf_context_del (Ecore_IMF_Context *ctx)
                 ecore_imf_context_input_panel_hide (ctx);
                 input_panel_event_callback_call (ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_HIDE);
             }
+
+            isf_imf_context_input_panel_send_will_hide_ack ();
         }
 
         // Delete the instance.

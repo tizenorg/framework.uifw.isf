@@ -163,11 +163,11 @@ int _isf_imf_context_input_panel_show (int client_id, int context, void *data, i
     return 0;
 }
 
-int _isf_imf_context_input_panel_hide (int client_id, int context)
+int _isf_imf_context_input_panel_hide (int client_id, int context, int instant)
 {
     connect_panel ();
     _imcontrol_client.prepare ();
-    _imcontrol_client.hide_ise (client_id, context);
+    _imcontrol_client.hide_ise (client_id, context, instant);
     _imcontrol_client.send ();
     return 0;
 }

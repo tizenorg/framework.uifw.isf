@@ -351,7 +351,7 @@ class PanelAgent::PanelAgentImpl
     PanelAgentSignalVoid                m_signal_unlock;
 
     PanelAgentSignalVoid                m_signal_show_ise;
-    PanelAgentSignalVoid                m_signal_hide_ise;
+    PanelAgentSignalInt                 m_signal_hide_ise;
 
     PanelAgentSignalVoid                m_signal_will_show_ack;
     PanelAgentSignalVoid                m_signal_will_hide_ack;
@@ -1655,15 +1655,13 @@ public:
 
         uint32 client;
         uint32 context;
-        if (m_recv_trans.get_data (client) && m_recv_trans.get_data (context)) {
+        uint32 instant;
+        if (m_recv_trans.get_data (client) && m_recv_trans.get_data (context) && m_recv_trans.get_data (instant)) {
             SCIM_DEBUG_MAIN(4) << __func__ << " (client:" << client << " context:" << context << ")\n";
             if ((client_id == m_current_active_imcontrol_id || client_id == m_show_request_imcontrol_id) && TOOLBAR_HELPER_MODE == mode) {
-                uint32 ctx = get_helper_ic (client, context);
-                hide_helper (m_current_helper_uuid, ctx);
+                m_signal_hide_ise (instant);
             }
         }
-
-        m_signal_hide_ise ();
     }
 
     void set_default_ise (const DEFAULT_ISE_T &ise)
@@ -2871,7 +2869,7 @@ public:
         return m_signal_show_ise.connect (slot);
     }
 
-    Connection signal_connect_hide_ise                   (PanelAgentSlotVoid                *slot)
+    Connection signal_connect_hide_ise                   (PanelAgentSlotInt                 *slot)
     {
         return m_signal_hide_ise.connect (slot);
     }
@@ -6031,7 +6029,7 @@ PanelAgent::signal_connect_show_ise                   (PanelAgentSlotVoid       
 }
 
 Connection
-PanelAgent::signal_connect_hide_ise                   (PanelAgentSlotVoid                *slot)
+PanelAgent::signal_connect_hide_ise                   (PanelAgentSlotInt                 *slot)
 {
     return m_impl->signal_connect_hide_ise (slot);
 }

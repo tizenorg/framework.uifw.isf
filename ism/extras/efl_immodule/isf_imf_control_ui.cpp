@@ -47,7 +47,6 @@ static Ecore_Event_Handler *_prop_change_handler = NULL;
 static Ecore_X_Atom       prop_x_ext_keyboard_exist = 0;
 static Ecore_X_Window     _rootwin;
 static unsigned int       hw_kbd_num = 0;
-static Ecore_Timer       *hide_timer = NULL;
 static Ecore_Timer       *will_show_timer = NULL;
 static Ecore_IMF_Input_Panel_State input_panel_state = ECORE_IMF_INPUT_PANEL_STATE_HIDE;
 static Ecore_IMF_Input_Panel_State notified_state = ECORE_IMF_INPUT_PANEL_STATE_HIDE;
@@ -60,7 +59,7 @@ static Eina_Bool          conformant_reset_done = EINA_FALSE;
 static Eina_Bool          received_will_hide_event = EINA_FALSE;
 static Eina_Bool          will_hide = EINA_FALSE;
 
-static void _send_input_panel_hide_request ();
+static void _send_input_panel_hide_request (Eina_Bool instant = EINA_FALSE);
 
 static void _render_post_cb (void *data, Evas *e, void *event_info)
 {
@@ -75,17 +74,6 @@ static void _clear_will_show_timer ()
         ecore_timer_del (will_show_timer);
         will_show_timer = NULL;
     }
-}
-
-static Eina_Bool _clear_hide_timer ()
-{
-    if (hide_timer) {
-        ecore_timer_del (hide_timer);
-        hide_timer = NULL;
-        return EINA_TRUE;
-    }
-
-    return EINA_FALSE;
 }
 
 static Eina_Bool _conformant_get ()
@@ -276,24 +264,16 @@ static void _win_focus_out_handler_del ()
     }
 }
 
-static void _send_input_panel_hide_request ()
+static void _send_input_panel_hide_request (Eina_Bool instant)
 {
     if (hide_context_id < 0) return;
 
-    _win_focus_out_handler_del ();
-
     LOGD ("Send input panel hide request\n");
 
-    _isf_imf_context_input_panel_hide (get_panel_client_id (), hide_context_id);
+    _isf_imf_context_input_panel_hide (get_panel_client_id (), hide_context_id, instant);
+    _win_focus_out_handler_del ();
+
     hide_context_id = -1;
-}
-
-static Eina_Bool _hide_timer_handler (void *data)
-{
-    _send_input_panel_hide_request ();
-
-    hide_timer = NULL;
-    return ECORE_CALLBACK_CANCEL;
 }
 
 static Eina_Bool _will_show_timer_handler (void *data)
@@ -303,15 +283,6 @@ static Eina_Bool _will_show_timer_handler (void *data)
     input_panel_state = ECORE_IMF_INPUT_PANEL_STATE_HIDE;
     will_show_timer = NULL;
     return ECORE_CALLBACK_CANCEL;
-}
-
-static void _input_panel_hide_timer_start (void *data)
-{
-    Ecore_IMF_Context *ctx = (Ecore_IMF_Context *)data;
-    _save_hide_context_info (ctx);
-
-    if (!hide_timer)
-        hide_timer = ecore_timer_add (HIDE_TIMER_INTERVAL, _hide_timer_handler, data);
 }
 
 static void _input_panel_hide (Ecore_IMF_Context *ctx, Eina_Bool instant)
@@ -326,13 +297,8 @@ static void _input_panel_hide (Ecore_IMF_Context *ctx, Eina_Bool instant)
     will_hide = EINA_TRUE;
     hide_req_ic = ctx;
 
-    if (instant) {
-        _clear_hide_timer ();
-        _save_hide_context_info (ctx);
-        _send_input_panel_hide_request ();
-    } else {
-        _input_panel_hide_timer_start (ctx);
-    }
+    _save_hide_context_info (ctx);
+    _send_input_panel_hide_request (instant);
 }
 
 static Eina_Bool _compare_context (Ecore_IMF_Context *ctx1, Ecore_IMF_Context *ctx2)
@@ -354,6 +320,8 @@ static Eina_Bool _client_window_focus_out_cb (void *data, int ev_type, void *ev)
 {
     Ecore_X_Event_Window_Focus_Out *e = (Ecore_X_Event_Window_Focus_Out *)ev;
     Ecore_IMF_Context *ctx = (Ecore_IMF_Context *)data;
+
+    LOGD ("window focus out : %p\n", e->win);
 
     if (!ctx || !e) return ECORE_CALLBACK_PASS_ON;
     if (e->win != (Ecore_X_Window)ecore_imf_context_client_window_get (ctx)) return ECORE_CALLBACK_PASS_ON;
@@ -411,6 +379,12 @@ void isf_imf_input_panel_init (void)
 
 void isf_imf_input_panel_shutdown (void)
 {
+    if (will_hide) {
+        if (input_panel_state != ECORE_IMF_INPUT_PANEL_STATE_HIDE) {
+            _send_input_panel_hide_request (EINA_TRUE);
+        }
+    }
+
     if (_prop_change_handler) {
         ecore_event_handler_del (_prop_change_handler);
         _prop_change_handler = NULL;
@@ -419,14 +393,6 @@ void isf_imf_input_panel_shutdown (void)
     _win_focus_out_handler_del ();
 
     _clear_will_show_timer ();
-
-    if (hide_timer) {
-        if (input_panel_state != ECORE_IMF_INPUT_PANEL_STATE_HIDE) {
-            _send_input_panel_hide_request ();
-        }
-    }
-
-    _clear_hide_timer ();
 
     _isf_imf_control_finalize ();
 }
@@ -491,7 +457,7 @@ void isf_imf_context_input_panel_show (Ecore_IMF_Context* ctx)
         return;
     }
 
-    if (_clear_hide_timer ()) {
+    if (will_hide) {
         hide_req_ic = NULL;
     }
 
@@ -891,12 +857,16 @@ void isf_imf_context_input_panel_send_will_hide_ack ()
 
     if (_conformant_get ()) {
         if (conformant_reset_done && received_will_hide_event) {
+            LOGD ("Send will hide ack\n");
             _isf_imf_context_input_panel_send_will_hide_ack ();
             conformant_reset_done = EINA_FALSE;
             received_will_hide_event = EINA_FALSE;
         }
+        else
+            LOGD ("conformant reset done? : %d, will hide event? %d\n", conformant_reset_done, received_will_hide_event);
     }
     else {
+        LOGD ("send will hide ack really\n");
         _isf_imf_context_input_panel_send_will_hide_ack ();
     }
 }

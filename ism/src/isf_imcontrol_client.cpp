@@ -156,10 +156,11 @@ public:
         }
     }
 
-    void hide_ise (int client_id, int context) {
+    void hide_ise (int client_id, int context, int instant) {
         m_trans.put_command (ISM_TRANS_CMD_HIDE_ISE_PANEL);
         m_trans.put_data ((uint32)client_id);
         m_trans.put_data ((uint32)context);
+        m_trans.put_data (instant);
     }
 
     void show_control_panel (void) {
@@ -538,9 +539,9 @@ void IMControlClient::show_ise (int client_id, int context, void *data, int leng
     m_impl->show_ise (client_id, context, data,length, input_panel_show);
 }
 
-void IMControlClient::hide_ise (int client_id, int context)
+void IMControlClient::hide_ise (int client_id, int context, int instant)
 {
-    m_impl->hide_ise (client_id, context);
+    m_impl->hide_ise (client_id, context, instant);
 }
 
 void IMControlClient::show_control_panel (void)
