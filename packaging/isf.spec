@@ -109,8 +109,6 @@ mkdir -p /opt/apps/scim/lib/scim-1.0/1.4.0/IMEngine
 %{_libdir}/scim-1.0/scim-launcher
 %{_libdir}/scim-1.0/scim-helper-launcher
 %{_libdir}/libscim-*.so*
-%{_ugdir}/res/locale/*/LC_MESSAGES/keyboard-setting-wizard-efl.*
-%{_ugdir}/lib/libug-keyboard-setting-wizard-efl.so
 %{_datadir}/license/%{name}
 
 %files devel

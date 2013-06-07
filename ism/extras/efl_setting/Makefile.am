@@ -22,7 +22,7 @@ INCLUDES = -I$(top_builddir) \
 noinst_HEADERS =
 
 moduledir                       = /usr/ug/lib
-module_LTLIBRARIES              = libug-isfsetting-efl.la  libug-keyboard-setting-wizard-efl.la
+module_LTLIBRARIES              = libug-isfsetting-efl.la
 libug_isfsetting_efl_la_SOURCES = isf_setting_efl.cpp \
                                   scim_setup_module_efl.cpp \
                                   ../efl_panel/isf_panel_utility.cpp
@@ -42,27 +42,6 @@ libug_isfsetting_efl_la_LIBADD  =  @LIBTOOL_EXPORT_OPTIONS@ \
                                    @VCONF_LIBS@ \
                                    @UIGADGET_LIBS@ \
                                    @PKGMGR_INFO_LIBS@ \
-                                   $(top_builddir)/ism/src/libscim@SCIM_EPOCH@.la \
-                                   $(top_builddir)/ism/extras/efl_immodule/libisf-imf-module.la
-
-libug_keyboard_setting_wizard_efl_la_SOURCES = isf_setting_wizard.cpp \
-                                  ../efl_panel/isf_panel_utility.cpp
-
-libug_keyboard_setting_wizard_efl_la_CXXFLAGS = @EFL_CFLAGS@ \
-                                   @VCONF_CFLAGS@ \
-                                   @DLOG_CFLAGS@ \
-                                   @UIGADGET_CFLAGS@
-
-libug_keyboard_setting_wizard_efl_la_LDFLAGS  = -avoid-version \
-                                   -export-dynamic \
-                                   -rpath $(moduledir)
-
-libug_keyboard_setting_wizard_efl_la_LIBADD  =  @LIBTOOL_EXPORT_OPTIONS@ \
-                                   @LTLIBINTL@ \
-                                   @EFL_LIBS@ \
-                                   @VCONF_LIBS@ \
-                                   @DLOG_LIBS@ \
-                                   @UIGADGET_LIBS@ \
                                    $(top_builddir)/ism/src/libscim@SCIM_EPOCH@.la \
                                    $(top_builddir)/ism/extras/efl_immodule/libisf-imf-module.la
 

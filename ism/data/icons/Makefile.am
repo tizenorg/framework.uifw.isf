@@ -17,9 +17,7 @@
 
 MAINTAINERCLEANFILES	= Makefile.in
 
-INST_ICONS		= keyboard.png \
-                  01_header_icon_cancel.png \
-                  01_header_icon_done.png
+INST_ICONS		= keyboard.png
 
 SCTC_FILTER_ICONS	= sctc.png \
 			  sctc-sc-to-tc.png \

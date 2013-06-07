@@ -42,7 +42,6 @@
 #define BASE_THEME_WIDTH 720.0f
 
 static void isfsetting_bt (void *data, Evas_Object *obj, void *event_info);
-static void keyboard_setting_wizard_bt (void *data, Evas_Object *obj, void *event_info);
 
 static struct _menu_item isf_demo_menu_its[] = {
     { "ISF IM Control", imcontrolapi_bt },
@@ -56,7 +55,6 @@ static struct _menu_item isf_demo_menu_its[] = {
     { "ISF Event", isf_event_demo_bt },
     { "ISF Focus Movement", isf_focus_movement_bt },
     { "ISF Setting", isfsetting_bt },
-    { "Keyboard Setting Wizard", keyboard_setting_wizard_bt },
 
     /* do not delete below */
     { NULL, NULL }
@@ -116,14 +114,6 @@ static void result_cb (ui_gadget_h ug, service_h s, void *priv)
     printf ("get key [ %s ]\n", name);
 
     if (name) {
-        if (strcmp (name, "keyboard-setting-wizard-efl") == 0) {
-            char *desp = NULL;
-            service_get_extra_data (s, "description", &desp);
-            printf ("====================\nresult:%s\n====================\n", desp);
-            if (desp != NULL)
-                free (desp);
-        }
-
         free (name);
     }
 }
@@ -148,28 +138,6 @@ static void isfsetting_bt (void *data, Evas_Object *obj, void *event_info)
     cbs.destroy_cb = destroy_cb;
     cbs.priv       = ad;
     ad->ug = ug_create (NULL, "isfsetting-efl",
-                        UG_MODE_FULLVIEW,
-                        ad->data, &cbs);
-    service_destroy (ad->data);
-    ad->data = NULL;
-}
-
-static void keyboard_setting_wizard_bt (void *data, Evas_Object *obj, void *event_info)
-{
-    struct appdata *ad = (struct appdata *)data;
-    struct ug_cbs cbs = {0, };
-
-    UG_INIT_EFL (ad->win_main, UG_OPT_INDICATOR_ENABLE);
-
-    cbs.layout_cb  = layout_cb;
-    cbs.result_cb  = result_cb;
-    cbs.destroy_cb = destroy_cb;
-    cbs.priv       = ad;
-    service_create (&ad->data);
-    service_add_extra_data (ad->data, "navi_btn_left", _("Previous"));
-    //service_add_extra_data (ad->data, "navi_btn_left", NULL);
-    service_add_extra_data (ad->data, "navi_btn_right", _("Next"));
-    ad->ug = ug_create (NULL, "keyboard-setting-wizard-efl",
                         UG_MODE_FULLVIEW,
                         ad->data, &cbs);
     service_destroy (ad->data);

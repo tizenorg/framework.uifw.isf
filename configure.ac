@@ -631,7 +631,6 @@ AC_CONFIG_FILES([Makefile
                  ism/m4/Makefile
                  po/scim/Makefile.in
                  po/isfsetting_efl/Makefile.in
-                 po/kbwizard_efl/Makefile.in
                  ism/src/Makefile
                  ism/src/scim_types.h
                  ism/utils/Makefile
