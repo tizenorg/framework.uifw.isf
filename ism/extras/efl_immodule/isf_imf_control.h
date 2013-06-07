@@ -36,7 +36,7 @@ extern "C"
     void _isf_imf_control_finalize (void);
 
     int _isf_imf_context_input_panel_show (int client_id, int context, void *data, int length, bool &input_panel_show);
-    int _isf_imf_context_input_panel_hide (int client_id, int context);
+    int _isf_imf_context_input_panel_hide (int client_id, int context, int instant = 0);
     int _isf_imf_context_control_panel_show (void);
     int _isf_imf_context_control_panel_hide (void);
 

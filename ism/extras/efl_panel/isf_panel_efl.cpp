@@ -83,6 +83,8 @@ using namespace scim;
 #define ISF_SYSTEM_WAIT_DELAY                           100 * 1000
 #define ISF_CANDIDATE_DESTROY_DELAY                     0.2
 
+#define ISF_INPUT_PANEL_HIDE_TIMER_INTERVAL             0.05
+
 #define LOG_TAG                                         "ISF_PANEL_EFL"
 
 /////////////////////////////////////////////////////////////////////////////
@@ -167,7 +169,7 @@ static void       slot_exit                            (void);
 
 static void       slot_register_helper_properties      (int id, const PropertyList &props);
 static void       slot_show_ise                        (void);
-static void       slot_hide_ise                        (void);
+static void       slot_hide_ise                        (int instant);
 
 static void       slot_will_show_ack                   (void);
 static void       slot_will_hide_ack                   (void);
@@ -287,6 +289,7 @@ static Ecore_Timer       *_check_size_timer                 = NULL;
 static Ecore_Timer       *_longpress_timer                  = NULL;
 static Ecore_Timer       *_destroy_timer                    = NULL;
 static Ecore_Timer       *_system_ready_timer               = NULL;
+static Ecore_Timer       *_hide_timer                        = NULL;
 
 static Ecore_X_Window    _ise_window                        = 0;
 static Ecore_X_Window    _app_window                        = 0;
@@ -3087,6 +3090,12 @@ static void slot_show_ise (void)
     /* WMSYNC, #3 Clear the existing application's conformant area and set transient_for */
     // Unset conformant area
     Ecore_X_Window current_app_window = efl_get_app_window ();
+
+    if (_hide_timer) {
+        ecore_timer_del (_hide_timer);
+        _hide_timer = NULL;
+    }
+
     if (_app_window != current_app_window) {
         set_keyboard_geometry_atom_info (_app_window, KEYBOARD_STATE_OFF);
         LOGD ("Conformant reset for window %x\n", _app_window);
@@ -3099,10 +3108,31 @@ static void slot_show_ise (void)
     efl_set_transient_for_app_window (_ise_window);
 }
 
-static void slot_hide_ise (void)
+static Eina_Bool _hide_timer_handler (void *data)
+{
+    LOGD ("hide timer expired. Hide Helper\n");
+
+    String uuid = _panel_agent->get_current_helper_uuid ();
+    _panel_agent->hide_helper (uuid);
+
+    _hide_timer = NULL;
+    return ECORE_CALLBACK_CANCEL;
+}
+
+static void slot_hide_ise (int instant)
 {
     // From this point, slot_get_input_panel_geometry should return hidden state geometry
     _ise_show = false;
+
+    if (instant) {
+        LOGD ("Hide helper\n");
+        String uuid = _panel_agent->get_current_helper_uuid ();
+        _panel_agent->hide_helper (uuid);
+    }
+    else {
+        if (!_hide_timer)
+            _hide_timer = ecore_timer_add (ISF_INPUT_PANEL_HIDE_TIMER_INTERVAL, _hide_timer_handler, NULL);
+    }
 }
 
 static void slot_will_show_ack (void)

@@ -1139,7 +1139,7 @@ public:
      *
      * slot prototype: void hide_ise (void);
      */
-    Connection signal_connect_hide_ise                   (PanelAgentSlotVoid                *slot);
+    Connection signal_connect_hide_ise                   (PanelAgentSlotInt                 *slot);
 
     /**
      * @brief Signal: Notifies the client finished handling WILL_SHOW event
