@@ -253,6 +253,8 @@ class PanelAgent::PanelAgentImpl
     IntIntRepository                    m_imcontrol_map;
     bool                                m_should_shared_ise;
     bool                                m_ise_exiting;
+    bool                                m_is_imengine_aux;
+    bool                                m_is_imengine_candidate;
 
     int                                 m_last_socket_client;
     uint32                              m_last_client_context;
@@ -364,7 +366,7 @@ public:
           m_current_ise_style (0),
           m_current_active_imcontrol_id (-1), m_pending_active_imcontrol_id (-1),
           m_should_shared_ise (false),
-          m_ise_exiting (false),
+          m_ise_exiting (false), m_is_imengine_aux (false), m_is_imengine_candidate (false),
           m_last_socket_client (-1), m_last_client_context (0)
     {
         m_current_ise_name = String (_("English/Keyboard"));
@@ -740,30 +742,33 @@ public:
         uint32 context;
 
         get_focused_context (client, context);
-        if (client >= 0) {
-            Socket client_socket (client);
-            m_send_trans.clear ();
-            m_send_trans.put_command (SCIM_TRANS_CMD_REPLY);
-            m_send_trans.put_data ((uint32) context);
-            m_send_trans.put_command (ISM_TRANS_CMD_CANDIDATE_MORE_WINDOW_SHOW);
-            m_send_trans.write_to_socket (client_socket);
-        }
-
-        if (TOOLBAR_HELPER_MODE == m_current_toolbar_mode) {
-            HelperClientIndex::iterator it = m_helper_client_index.find (m_current_helper_uuid);
-
-            if (it != m_helper_client_index.end ()) {
-                Socket client_socket (it->second.id);
-                uint32 ctx = get_helper_ic (client, context);
-
+        if (m_is_imengine_candidate) {
+            if (client >= 0) {
+                Socket client_socket (client);
                 m_send_trans.clear ();
                 m_send_trans.put_command (SCIM_TRANS_CMD_REPLY);
-                m_send_trans.put_data (ctx);
-                m_send_trans.put_data (m_current_helper_uuid);
+                m_send_trans.put_data ((uint32) context);
                 m_send_trans.put_command (ISM_TRANS_CMD_CANDIDATE_MORE_WINDOW_SHOW);
                 m_send_trans.write_to_socket (client_socket);
-
                 return true;
+            }
+        } else {
+            if (TOOLBAR_HELPER_MODE == m_current_toolbar_mode) {
+                HelperClientIndex::iterator it = m_helper_client_index.find (m_current_helper_uuid);
+
+                if (it != m_helper_client_index.end ()) {
+                    Socket client_socket (it->second.id);
+                    uint32 ctx = get_helper_ic (client, context);
+
+                    m_send_trans.clear ();
+                    m_send_trans.put_command (SCIM_TRANS_CMD_REPLY);
+                    m_send_trans.put_data (ctx);
+                    m_send_trans.put_data (m_current_helper_uuid);
+                    m_send_trans.put_command (ISM_TRANS_CMD_CANDIDATE_MORE_WINDOW_SHOW);
+                    m_send_trans.write_to_socket (client_socket);
+
+                    return true;
+                }
             }
         }
 
@@ -778,30 +783,33 @@ public:
         uint32 context;
 
         get_focused_context (client, context);
-        if (client >= 0) {
-            Socket client_socket (client);
-            m_send_trans.clear ();
-            m_send_trans.put_command (SCIM_TRANS_CMD_REPLY);
-            m_send_trans.put_data ((uint32) context);
-            m_send_trans.put_command (ISM_TRANS_CMD_CANDIDATE_MORE_WINDOW_HIDE);
-            m_send_trans.write_to_socket (client_socket);
-        }
-
-        if (TOOLBAR_HELPER_MODE == m_current_toolbar_mode) {
-            HelperClientIndex::iterator it = m_helper_client_index.find (m_current_helper_uuid);
-
-            if (it != m_helper_client_index.end ()) {
-                Socket client_socket (it->second.id);
-                uint32 ctx = get_helper_ic (client, context);
-
+        if (m_is_imengine_candidate) {
+            if (client >= 0) {
+                Socket client_socket (client);
                 m_send_trans.clear ();
                 m_send_trans.put_command (SCIM_TRANS_CMD_REPLY);
-                m_send_trans.put_data (ctx);
-                m_send_trans.put_data (m_current_helper_uuid);
+                m_send_trans.put_data ((uint32) context);
                 m_send_trans.put_command (ISM_TRANS_CMD_CANDIDATE_MORE_WINDOW_HIDE);
                 m_send_trans.write_to_socket (client_socket);
-
                 return true;
+            }
+        } else {
+            if (TOOLBAR_HELPER_MODE == m_current_toolbar_mode) {
+                HelperClientIndex::iterator it = m_helper_client_index.find (m_current_helper_uuid);
+
+                if (it != m_helper_client_index.end ()) {
+                    Socket client_socket (it->second.id);
+                    uint32 ctx = get_helper_ic (client, context);
+
+                    m_send_trans.clear ();
+                    m_send_trans.put_command (SCIM_TRANS_CMD_REPLY);
+                    m_send_trans.put_data (ctx);
+                    m_send_trans.put_data (m_current_helper_uuid);
+                    m_send_trans.put_command (ISM_TRANS_CMD_CANDIDATE_MORE_WINDOW_HIDE);
+                    m_send_trans.write_to_socket (client_socket);
+
+                    return true;
+                }
             }
         }
 
@@ -819,19 +827,21 @@ public:
 
         get_focused_context (client, context);
 
-        if (client >= 0) {
-            Socket client_socket (client);
-            m_send_trans.clear ();
-            m_send_trans.put_command (SCIM_TRANS_CMD_REPLY);
-            m_send_trans.put_data ((uint32) context);
-            m_send_trans.put_command (ISM_TRANS_CMD_SELECT_AUX);
-            m_send_trans.put_data ((uint32)item);
-            m_send_trans.write_to_socket (client_socket);
+        if (m_is_imengine_aux) {
+            if (client >= 0) {
+                Socket client_socket (client);
+                m_send_trans.clear ();
+                m_send_trans.put_command (SCIM_TRANS_CMD_REPLY);
+                m_send_trans.put_data ((uint32) context);
+                m_send_trans.put_command (ISM_TRANS_CMD_SELECT_AUX);
+                m_send_trans.put_data ((uint32)item);
+                m_send_trans.write_to_socket (client_socket);
+            }
+        } else {
+            helper_select_aux (item);
         }
 
         unlock ();
-
-        helper_select_aux (item);
 
         return client >= 0;
     }
@@ -847,19 +857,21 @@ public:
 
         get_focused_context (client, context);
 
-        if (client >= 0) {
-            Socket client_socket (client);
-            m_send_trans.clear ();
-            m_send_trans.put_command (SCIM_TRANS_CMD_REPLY);
-            m_send_trans.put_data ((uint32) context);
-            m_send_trans.put_command (SCIM_TRANS_CMD_SELECT_CANDIDATE);
-            m_send_trans.put_data ((uint32)item);
-            m_send_trans.write_to_socket (client_socket);
+        if (m_is_imengine_candidate) {
+            if (client >= 0) {
+                Socket client_socket (client);
+                m_send_trans.clear ();
+                m_send_trans.put_command (SCIM_TRANS_CMD_REPLY);
+                m_send_trans.put_data ((uint32) context);
+                m_send_trans.put_command (SCIM_TRANS_CMD_SELECT_CANDIDATE);
+                m_send_trans.put_data ((uint32)item);
+                m_send_trans.write_to_socket (client_socket);
+            }
+        } else {
+            helper_select_candidate (item);
         }
 
         unlock ();
-
-        helper_select_candidate (item);
 
         return client >= 0;
     }
@@ -875,18 +887,20 @@ public:
 
         get_focused_context (client, context);
 
-        if (client >= 0) {
-            Socket client_socket (client);
-            m_send_trans.clear ();
-            m_send_trans.put_command (SCIM_TRANS_CMD_REPLY);
-            m_send_trans.put_data ((uint32) context);
-            m_send_trans.put_command (SCIM_TRANS_CMD_LOOKUP_TABLE_PAGE_UP);
-            m_send_trans.write_to_socket (client_socket);
+        if (m_is_imengine_candidate) {
+            if (client >= 0) {
+                Socket client_socket (client);
+                m_send_trans.clear ();
+                m_send_trans.put_command (SCIM_TRANS_CMD_REPLY);
+                m_send_trans.put_data ((uint32) context);
+                m_send_trans.put_command (SCIM_TRANS_CMD_LOOKUP_TABLE_PAGE_UP);
+                m_send_trans.write_to_socket (client_socket);
+            }
+        } else {
+            helper_lookup_table_page_up ();
         }
 
         unlock ();
-
-        helper_lookup_table_page_up ();
 
         return client >= 0;
     }
@@ -902,18 +916,20 @@ public:
 
         get_focused_context (client, context);
 
-        if (client >= 0) {
-            Socket client_socket (client);
-            m_send_trans.clear ();
-            m_send_trans.put_command (SCIM_TRANS_CMD_REPLY);
-            m_send_trans.put_data ((uint32) context);
-            m_send_trans.put_command (SCIM_TRANS_CMD_LOOKUP_TABLE_PAGE_DOWN);
-            m_send_trans.write_to_socket (client_socket);
+        if (m_is_imengine_candidate) {
+            if (client >= 0) {
+                Socket client_socket (client);
+                m_send_trans.clear ();
+                m_send_trans.put_command (SCIM_TRANS_CMD_REPLY);
+                m_send_trans.put_data ((uint32) context);
+                m_send_trans.put_command (SCIM_TRANS_CMD_LOOKUP_TABLE_PAGE_DOWN);
+                m_send_trans.write_to_socket (client_socket);
+            }
+        } else {
+            helper_lookup_table_page_down ();
         }
 
         unlock ();
-
-        helper_lookup_table_page_down ();
 
         return client >= 0;
     }
@@ -929,19 +945,21 @@ public:
 
         get_focused_context (client, context);
 
-        if (client >= 0) {
-            Socket client_socket (client);
-            m_send_trans.clear ();
-            m_send_trans.put_command (SCIM_TRANS_CMD_REPLY);
-            m_send_trans.put_data ((uint32) context);
-            m_send_trans.put_command (SCIM_TRANS_CMD_UPDATE_LOOKUP_TABLE_PAGE_SIZE);
-            m_send_trans.put_data (size);
-            m_send_trans.write_to_socket (client_socket);
+        if (m_is_imengine_candidate) {
+            if (client >= 0) {
+                Socket client_socket (client);
+                m_send_trans.clear ();
+                m_send_trans.put_command (SCIM_TRANS_CMD_REPLY);
+                m_send_trans.put_data ((uint32) context);
+                m_send_trans.put_command (SCIM_TRANS_CMD_UPDATE_LOOKUP_TABLE_PAGE_SIZE);
+                m_send_trans.put_data (size);
+                m_send_trans.write_to_socket (client_socket);
+            }
+        } else {
+            helper_update_lookup_table_page_size (size);
         }
 
         unlock ();
-
-        helper_update_lookup_table_page_size (size);
 
         return client >= 0;
     }
@@ -957,19 +975,21 @@ public:
 
         get_focused_context (client, context);
 
-        if (client >= 0) {
-            Socket client_socket (client);
-            m_send_trans.clear ();
-            m_send_trans.put_command (SCIM_TRANS_CMD_REPLY);
-            m_send_trans.put_data ((uint32) context);
-            m_send_trans.put_command (ISM_TRANS_CMD_UPDATE_CANDIDATE_ITEM_LAYOUT);
-            m_send_trans.put_data (row_items);
-            m_send_trans.write_to_socket (client_socket);
+        if (m_is_imengine_candidate) {
+            if (client >= 0) {
+                Socket client_socket (client);
+                m_send_trans.clear ();
+                m_send_trans.put_command (SCIM_TRANS_CMD_REPLY);
+                m_send_trans.put_data ((uint32) context);
+                m_send_trans.put_command (ISM_TRANS_CMD_UPDATE_CANDIDATE_ITEM_LAYOUT);
+                m_send_trans.put_data (row_items);
+                m_send_trans.write_to_socket (client_socket);
+            }
+        } else {
+            helper_update_candidate_item_layout (row_items);
         }
 
         unlock ();
-
-        helper_update_candidate_item_layout (row_items);
 
         return client >= 0;
     }
@@ -1093,18 +1113,21 @@ public:
 
         lock ();
         get_focused_context (client, context);
-        if (client >= 0) {
-            Socket client_socket (client);
-            m_send_trans.clear ();
-            m_send_trans.put_command (SCIM_TRANS_CMD_REPLY);
-            m_send_trans.put_data ((uint32) context);
-            m_send_trans.put_command (ISM_TRANS_CMD_UPDATE_DISPLAYED_CANDIDATE);
-            m_send_trans.put_data (size);
-            m_send_trans.write_to_socket (client_socket);
+
+        if (m_is_imengine_candidate) {
+            if (client >= 0) {
+                Socket client_socket (client);
+                m_send_trans.clear ();
+                m_send_trans.put_command (SCIM_TRANS_CMD_REPLY);
+                m_send_trans.put_data ((uint32) context);
+                m_send_trans.put_command (ISM_TRANS_CMD_UPDATE_DISPLAYED_CANDIDATE);
+                m_send_trans.put_data (size);
+                m_send_trans.write_to_socket (client_socket);
+            }
+        } else {
+            helper_update_displayed_candidate_number (size);
         }
         unlock ();
-
-        helper_update_displayed_candidate_number (size);
 
         return client >= 0;
     }
@@ -1117,17 +1140,19 @@ public:
         uint32 context;
 
         get_focused_context (client, context);
-        if (client >= 0) {
-            Socket client_socket (client);
-            m_send_trans.clear ();
-            m_send_trans.put_command (SCIM_TRANS_CMD_REPLY);
-            m_send_trans.put_data ((uint32) context);
-            m_send_trans.put_command (ISM_TRANS_CMD_LONGPRESS_CANDIDATE);
-            m_send_trans.put_data (index);
-            m_send_trans.write_to_socket (client_socket);
+        if (m_is_imengine_candidate) {
+            if (client >= 0) {
+                Socket client_socket (client);
+                m_send_trans.clear ();
+                m_send_trans.put_command (SCIM_TRANS_CMD_REPLY);
+                m_send_trans.put_data ((uint32) context);
+                m_send_trans.put_command (ISM_TRANS_CMD_LONGPRESS_CANDIDATE);
+                m_send_trans.put_data (index);
+                m_send_trans.write_to_socket (client_socket);
+            }
+        } else {
+            helper_longpress_candidate (index);
         }
-
-        helper_longpress_candidate (index);
     }
 
     bool trigger_property (const String  &property)
@@ -3100,11 +3125,13 @@ private:
                         socket_update_preedit_string ();
                     else if (cmd == SCIM_TRANS_CMD_UPDATE_PREEDIT_CARET)
                         socket_update_preedit_caret ();
-                    else if (cmd == SCIM_TRANS_CMD_UPDATE_AUX_STRING)
+                    else if (cmd == SCIM_TRANS_CMD_UPDATE_AUX_STRING) {
                         socket_update_aux_string ();
-                    else if (cmd == SCIM_TRANS_CMD_UPDATE_LOOKUP_TABLE)
+                        m_is_imengine_aux = true;
+                    } else if (cmd == SCIM_TRANS_CMD_UPDATE_LOOKUP_TABLE) {
                         socket_update_lookup_table ();
-                    else if (cmd == ISM_TRANS_CMD_UPDATE_ASSOCIATE_TABLE)
+                        m_is_imengine_candidate = true;
+                    } else if (cmd == ISM_TRANS_CMD_UPDATE_ASSOCIATE_TABLE)
                         socket_update_associate_table ();
                     else if (cmd == SCIM_TRANS_CMD_REGISTER_PROPERTIES)
                         socket_register_properties ();
@@ -3172,8 +3199,10 @@ private:
                     socket_helper_update_preedit_caret (client_id);
                 } else if (cmd == SCIM_TRANS_CMD_UPDATE_AUX_STRING) {
                     socket_update_aux_string ();
+                    m_is_imengine_aux = false;
                 } else if (cmd == SCIM_TRANS_CMD_UPDATE_LOOKUP_TABLE) {
                     socket_update_lookup_table ();
+                    m_is_imengine_candidate = false;
                 } else if (cmd == ISM_TRANS_CMD_UPDATE_ASSOCIATE_TABLE) {
                     socket_update_associate_table ();
                 } else if (cmd == SCIM_TRANS_CMD_PROCESS_KEY_EVENT ||
@@ -4341,6 +4370,8 @@ private:
                     m_send_trans.put_data (wstr);
                     m_send_trans.write_to_socket (socket_client);
                     unlock ();
+                } else {
+                    std::cerr << "target client is not existed!!!" << "\n";
                 }
             }
         }
