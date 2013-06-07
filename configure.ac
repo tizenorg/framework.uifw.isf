@@ -206,7 +206,7 @@ AC_CHECK_FUNCS([gethostbyname gethostbyname_r socket bind accept connect listen]
 
 AM_ICONV
 
-# Check if we should build scim-panel-gtk with gconf
+# Check gconf library
 PKG_CHECK_MODULES(GCONF, [gconf-2.0 phonestatus noti-service],
                   [ISF_HAS_GCONF=yes],
                   [ISF_HAS_GCONF=no])
@@ -215,7 +215,7 @@ if test "$ISF_HAS_GCONF" = "yes"; then
   AC_DEFINE(HAVE_GCONF,1,[Have GConf functions.])
 fi
 
-# Check if we should build isf-panel-efl daemon
+# Check EFL library
 PKG_CHECK_MODULES(EFL, [elementary ecore-x evas ecore ecore-evas ecore-file edje ecore-input ecore-imf],
                   [ISF_HAS_EFL=yes],
                   [ISF_HAS_EFL=no])
@@ -254,7 +254,7 @@ PKG_CHECK_MODULES(PRIVILEGE_CONTROL, [libprivilege-control >= 0])
 # Check notification library
 PKG_CHECK_MODULES(NOTIFICATION, [notification])
 
-# Check if we should build isf-setting-efl
+# Check vconf library
 PKG_CHECK_MODULES(VCONF, [vconf],
                   [ISF_HAS_VCONF=yes],
                   [ISF_HAS_VCONF=no])
@@ -263,7 +263,7 @@ if test "$ISF_HAS_VCONF" = "yes"; then
   AC_DEFINE(HAVE_VCONF,1,[Have VConf functions.])
 fi
 
-# Check if we should build scim-panel-gtk daemon
+# Check GTK2 library
 PKG_CHECK_MODULES(GTK2, [gtk+-2.0 >= 2.4.0 pango >= 1.1.0 gdk-pixbuf-2.0 >= 2.4.0],
                   [SCIM_HAS_GTK2=yes],
                   [SCIM_HAS_GTK2=no])
@@ -378,11 +378,6 @@ AC_ARG_ENABLE(gtk2-immodule,
               [  --disable-gtk2-immodule   Do not build GTK2 IMModule],
               enable_gtk2_immodule=no,
               enable_gtk2_immodule=yes)
-
-AC_ARG_ENABLE(panel-gtk,
-              [  --disable-panel-gtk       Do not build GTK2 Panel],
-              enable_panel_gtk=no,
-              enable_panel_gtk=check)
 
 AC_ARG_ENABLE(efl-immodule,
               [  --disable-efl-immodule    Do not build EFL IMModule],
@@ -506,15 +501,6 @@ else
   enable_tray_icon=no
 fi
 
-SCIM_BUILD_PANEL_GTK=0
-if test "$enable_panel_gtk" != "no"; then
-  enable_panel_gtk=no
-  if test "$SCIM_HAS_GTHREAD2" = "yes" -a "$SCIM_HAS_GTK2" = "yes"; then
-    SCIM_BUILD_PANEL_GTK=1
-    enable_panel_gtk=yes
-  fi
-fi
-
 if test "$enable_efl_immodule" = "yes" -a "$ISF_HAS_EFL" = "yes"; then
   ISF_BUILD_EFL_IMMODULE=1
 else
@@ -585,9 +571,6 @@ AM_CONDITIONAL(SCIM_BUILD_X11_UTILS,
 AM_CONDITIONAL(SCIM_BUILD_TRAY_ICON,
                 [test "$enable_tray_icon" = "yes"])
 
-AM_CONDITIONAL(SCIM_BUILD_PANEL_GTK,
-                [test "$enable_panel_gtk" = "yes"])
-
 AM_CONDITIONAL(ISF_BUILD_EFL_IMMODULE,
                 [test "$enable_efl_immodule" = "yes"])
 
@@ -611,7 +594,6 @@ AC_SUBST(SCIM_BUILD_IMENGINE_SOCKET)
 AC_SUBST(SCIM_BUILD_FILTER_SCTC)
 AC_SUBST(SCIM_BUILD_GTK2_IMMODULE)
 AC_SUBST(SCIM_BUILD_SCIM_SETUP)
-AC_SUBST(SCIM_BUILD_PANEL_GTK)
 AC_SUBST(SCIM_BUILD_GTK_UTILS)
 AC_SUBST(SCIM_BUILD_X11_UTILS)
 AC_SUBST(ISF_BUILD_EFL_IMMODULE)
@@ -665,7 +647,6 @@ AC_CONFIG_FILES([Makefile
                  ism/configs/Makefile
                  ism/extras/Makefile
                  ism/extras/gtk2_immodule/Makefile
-                 ism/extras/gtk_panel/Makefile
                  ism/extras/efl_immodule/Makefile
                  ism/extras/efl_panel/Makefile
                  ism/extras/efl_setting/Makefile
@@ -705,7 +686,6 @@ Module options:
 
   GTK2 IMModule            $enable_gtk2_immodule
   GTK2 IMModule dir        $GTK_IM_MODULEDIR
-  GTK2 Panel GUI           $enable_panel_gtk
 
   EFL  IMModule            $enable_efl_immodule
   EFL  IMModule dir        $EFL_IM_MODULEDIR

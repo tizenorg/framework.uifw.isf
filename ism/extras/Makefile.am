@@ -18,4 +18,4 @@
 MAINTAINERCLEANFILES	= Makefile.in
 CLEANFILES		= *.bak
 
-SUBDIRS			= gtk_panel gtk2_immodule efl_panel efl_immodule  efl_setting
+SUBDIRS			= gtk2_immodule efl_panel efl_immodule efl_setting

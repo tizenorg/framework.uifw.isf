@@ -17,35 +17,9 @@
 
 MAINTAINERCLEANFILES	= Makefile.in
 
-NOINST_ICONS		= setup.xpm \
-		  	  full-letter.xpm \
-			  half-letter.xpm \
-			  help.xpm \
-			  up.xpm \
-			  down.xpm \
-			  left.xpm \
-			  right.xpm \
-			  pin-down.xpm \
-			  pin-up.xpm \
-			  full-punct.xpm \
-			  half-punct.xpm \
-			  trademark.xpm \
-			  menu.xpm
-
-INST_ICONS		= up.png \
-                  down.png \
-                  left.png \
-                  right.png \
+INST_ICONS		= keyboard.png \
                   01_header_icon_cancel.png \
-                  01_header_icon_done.png \
-                  01_list_select_all.png \
-                  ISF_candidate_bg.png \
-                  ISF_candidate_divider.png \
-                  ISF_icon_31_help.png \
-                  ISF_icon_31_help_t.png \
-                  ISF_icon_help.png \
-                  ISF_icon_option.png \
-                  ISF_panel_bg.png
+                  01_header_icon_done.png
 
 SCTC_FILTER_ICONS	= sctc.png \
 			  sctc-sc-to-tc.png \
@@ -55,8 +29,7 @@ if SCIM_BUILD_FILTER_SCTC
 INST_SCTC_ICONS		= $(SCTC_FILTER_ICONS)
 endif
 
-EXTRA_DIST		= $(NOINST_ICONS) \
-			  $(INST_ICONS) \
+EXTRA_DIST		= $(INST_ICONS) \
 			  $(SCTC_FILTER_ICONS)
 
 icondir			= @SCIM_ICONDIR@
