@@ -1,3 +1,8 @@
+ISF 2.4.6610 :
+ 1. Revert "move hide timer from immodule to panel"
+ 2. Revert "Discard input keys that does not match with current ic value"
+
+
 ISF 2.4.6607 :
  1. [immodule] fix back space issue in MBE
  2. Remove gtk_panel source codes
