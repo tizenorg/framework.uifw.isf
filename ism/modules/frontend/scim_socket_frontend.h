@@ -117,7 +117,7 @@ protected:
     virtual void hide_lookup_table       (int id);
 
     virtual void update_preedit_caret    (int id, int caret);
-    virtual void update_preedit_string   (int id, const WideString & str, const AttributeList & attrs);
+    virtual void update_preedit_string   (int id, const WideString & str, const AttributeList & attrs, int caret);
     virtual void update_aux_string       (int id, const WideString & str, const AttributeList & attrs);
     virtual void commit_string           (int id, const WideString & str);
     virtual void forward_key_event       (int id, const KeyEvent & key);

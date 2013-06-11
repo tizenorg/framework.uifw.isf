@@ -268,15 +268,15 @@ X11FrontEnd::update_preedit_caret (int siid, int caret)
 }
 
 void
-X11FrontEnd::update_preedit_string (int siid, const WideString & str, const AttributeList & attrs)
+X11FrontEnd::update_preedit_string (int siid, const WideString & str, const AttributeList & attrs, int caret)
 {
     SCIM_DEBUG_FRONTEND(2) << " Update preedit string, siid=" << siid << "\n";
 
     if (is_inputing_ic (siid)) {
         if (ims_is_preedit_callback_mode (m_focus_ic))
-            ims_preedit_callback_draw (m_focus_ic, str, attrs);
+            ims_preedit_callback_draw (m_focus_ic, str, attrs, caret);
         else
-            m_panel_client.update_preedit_string (m_focus_ic->icid, str, attrs);
+            m_panel_client.update_preedit_string (m_focus_ic->icid, str, attrs, caret);
     }
 }
 
@@ -1284,7 +1284,7 @@ X11FrontEnd::ims_preedit_callback_done (X11IC *ic)
             << ic->icid << " Connect ID=" << ic->connect_id << "\n";
 
     // First clear the preedit string.
-    ims_preedit_callback_draw (ic, WideString ());
+    ims_preedit_callback_draw (ic, WideString (), AttributeList (), -1);
 
     ic->onspot_preedit_started = false;
 
@@ -1299,7 +1299,7 @@ X11FrontEnd::ims_preedit_callback_done (X11IC *ic)
 }
 
 void
-X11FrontEnd::ims_preedit_callback_draw (X11IC *ic, const WideString& str, const AttributeList & attrs)
+X11FrontEnd::ims_preedit_callback_draw (X11IC *ic, const WideString& str, const AttributeList & attrs, int caret)
 {
     if (!validate_ic (ic)) return;
 
@@ -1347,8 +1347,10 @@ X11FrontEnd::ims_preedit_callback_draw (X11IC *ic, const WideString& str, const 
     pcb.major_code = XIM_PREEDIT_DRAW;
     pcb.connect_id = ic->connect_id;
     pcb.icid = ic->icid;
-
-    pcb.todo.draw.caret = len;
+    if (caret>=0 && caret <= len)
+        pcb.todo.draw.caret = len;
+    else
+        pcb.todo.draw.caret = caret;
     pcb.todo.draw.chg_first = 0;
     pcb.todo.draw.chg_length = ic->onspot_preedit_length;
     pcb.todo.draw.text = &text;
@@ -1864,13 +1866,14 @@ X11FrontEnd::panel_slot_hide_preedit_string (int context)
 void
 X11FrontEnd::panel_slot_update_preedit_string (int context,
                                   const WideString    &str,
-                                  const AttributeList &attrs)
+                                  const AttributeList &attrs,
+                                  int            caret)
 {
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
 
     X11IC *ic = m_ic_manager.find_ic (context);
     if (validate_ic (ic)) {
-        update_preedit_string(ic->siid,str,attrs);
+        update_preedit_string(ic->siid,str,attrs,caret);
     }
 }
 

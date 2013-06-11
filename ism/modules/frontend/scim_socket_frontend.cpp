@@ -402,12 +402,14 @@ SocketFrontEnd::update_preedit_caret (int id, int caret)
 void
 SocketFrontEnd::update_preedit_string (int id,
                                        const WideString & str,
-                                       const AttributeList & attrs)
+                                       const AttributeList & attrs,
+                                       int caret)
 {
     if (m_current_instance == id) {
         m_send_trans.put_command (SCIM_TRANS_CMD_UPDATE_PREEDIT_STRING);
         m_send_trans.put_data (str);
         m_send_trans.put_data (attrs);
+        m_send_trans.put_data ((uint32) caret);
     }
 }
 

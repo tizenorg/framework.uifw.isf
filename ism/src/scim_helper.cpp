@@ -1087,6 +1087,27 @@ HelperAgent::update_preedit_string (int                  ic,
                                     const WideString    &str,
                                     const AttributeList &attrs) const
 {
+    update_preedit_string (ic, ic_uuid, str, attrs, -1);
+}
+
+/**
+ * @brief Update a new WideString for preedit.
+ *
+ * @param ic The handle of the client Input Context to receive the WideString.
+ *        -1 means the currently focused Input Context.
+ * @param ic_uuid The UUID of the IMEngine used by the Input Context.
+ *        Empty means don't match.
+ * @param wstr The WideString to be updated.
+ * @param attrs The attribute list for preedit string.
+ * @param caret The caret position in preedit string.
+ */
+void
+HelperAgent::update_preedit_string (int                  ic,
+                                    const String        &ic_uuid,
+                                    const WideString    &str,
+                                    const AttributeList &attrs,
+                                    int            caret) const
+{
     if (m_impl->socket_active.is_connected ()) {
         m_impl->send.clear ();
         m_impl->send.put_command (SCIM_TRANS_CMD_REQUEST);
@@ -1096,6 +1117,7 @@ HelperAgent::update_preedit_string (int                  ic,
         m_impl->send.put_data (ic_uuid);
         m_impl->send.put_data (str);
         m_impl->send.put_data (attrs);
+        m_impl->send.put_data (caret);
         m_impl->send.write_to_socket (m_impl->socket_active, m_impl->magic_active);
     }
 }

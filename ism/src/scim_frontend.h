@@ -569,7 +569,7 @@ protected:
      * @param str the new content of preedit string.
      * @param attrs the string attributes.
      */
-    virtual void update_preedit_string (int id, const WideString & str, const AttributeList & attrs);
+    virtual void update_preedit_string (int id, const WideString & str, const AttributeList & attrs, int caret);
 
     /**
      * @brief update the content of aux string for an IMEngine instance.

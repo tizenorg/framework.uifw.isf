@@ -429,6 +429,23 @@ public:
                                  const AttributeList &attrs) const;
 
     /**
+     * @brief Update a new WideString and caret for preedit.
+     *
+     * @param ic The handle of the client Input Context to receive the WideString.
+     *        -1 means the currently focused Input Context.
+     * @param ic_uuid The UUID of the IMEngine used by the Input Context.
+     *        Empty means don't match.
+     * @param wstr The WideString to be updated.
+     * @param attrs The attribute list for preedit string.
+     * @param caret The caret position in preedit string.
+     */
+    void update_preedit_string  (int                 ic,
+                                 const String       &ic_uuid,
+                                 const WideString   &wstr,
+                                 const AttributeList &attrs,
+                                 int                 caret) const;
+
+    /**
      * @brief Update a new string for aux.
      *
      * @param str The string to be updated.

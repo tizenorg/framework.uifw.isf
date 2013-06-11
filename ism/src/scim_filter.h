@@ -371,7 +371,8 @@ protected:
     virtual void filter_hide_lookup_table ();
     virtual void filter_update_preedit_caret (int caret);
     virtual void filter_update_preedit_string (const WideString    &str,
-                                               const AttributeList &attrs = AttributeList ());
+                                               const AttributeList &attrs = AttributeList (),
+                                               int            caret = -1);
     virtual void filter_update_aux_string (const WideString    &str,
                                            const AttributeList &attrs = AttributeList ());
     virtual void filter_update_lookup_table (const LookupTable &table);

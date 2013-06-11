@@ -126,6 +126,9 @@ typedef Signal2<void, int, const PropertyList &>
 typedef Signal2<void, int, const HelperInfo &>
         PanelAgentSignalIntHelperInfo;
 
+typedef Signal3<void, const String &, const AttributeList &, int>
+        PanelAgentSignalAttributeStringInt;
+
 typedef Signal2<void, const String &, const AttributeList &>
         PanelAgentSignalAttributeString;
 
@@ -313,7 +316,7 @@ class PanelAgent::PanelAgentImpl
     PanelAgentSignalVoid                m_signal_hide_aux_string;
     PanelAgentSignalVoid                m_signal_hide_lookup_table;
     PanelAgentSignalVoid                m_signal_hide_associate_table;
-    PanelAgentSignalAttributeString     m_signal_update_preedit_string;
+    PanelAgentSignalAttributeStringInt  m_signal_update_preedit_string;
     PanelAgentSignalInt                 m_signal_update_preedit_caret;
     PanelAgentSignalAttributeString     m_signal_update_aux_string;
     PanelAgentSignalLookupTable         m_signal_update_lookup_table;
@@ -2696,7 +2699,7 @@ public:
         return m_signal_hide_associate_table.connect (slot);
     }
 
-    Connection signal_connect_update_preedit_string      (PanelAgentSlotAttributeString     *slot)
+    Connection signal_connect_update_preedit_string      (PanelAgentSlotAttributeStringInt  *slot)
     {
         return m_signal_update_preedit_string.connect (slot);
     }
@@ -3813,8 +3816,9 @@ private:
 
         String str;
         AttributeList attrs;
-        if (m_recv_trans.get_data (str) && m_recv_trans.get_data (attrs))
-            m_signal_update_preedit_string (str, attrs);
+        uint32 caret;
+        if (m_recv_trans.get_data (str) && m_recv_trans.get_data (attrs) && m_recv_trans.get_data (caret))
+            m_signal_update_preedit_string (str, attrs, (int) caret);
     }
 
     void socket_update_preedit_caret            (void)
@@ -4532,11 +4536,13 @@ private:
         String target_uuid;
         WideString wstr;
         AttributeList attrs;
+        uint32 caret;
 
         if (m_recv_trans.get_data (target_ic)    &&
             m_recv_trans.get_data (target_uuid)  &&
             m_recv_trans.get_data (wstr) &&
-            m_recv_trans.get_data (attrs)) {
+            m_recv_trans.get_data (attrs) &&
+            m_recv_trans.get_data (caret)) {
 
             int     target_client;
             uint32  target_context;
@@ -4570,6 +4576,7 @@ private:
                     m_send_trans.put_command (SCIM_TRANS_CMD_UPDATE_PREEDIT_STRING);
                     m_send_trans.put_data (wstr);
                     m_send_trans.put_data (attrs);
+                    m_send_trans.put_data (caret);
                     m_send_trans.write_to_socket (socket_client);
                     unlock ();
                 }
@@ -5821,7 +5828,7 @@ PanelAgent::signal_connect_hide_associate_table       (PanelAgentSlotVoid       
 }
 
 Connection
-PanelAgent::signal_connect_update_preedit_string      (PanelAgentSlotAttributeString     *slot)
+PanelAgent::signal_connect_update_preedit_string      (PanelAgentSlotAttributeStringInt  *slot)
 {
     return m_impl->signal_connect_update_preedit_string (slot);
 }

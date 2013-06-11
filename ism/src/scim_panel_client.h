@@ -80,8 +80,8 @@ typedef Slot4<void, int, const String &, const String &, const Transaction &>
 typedef Slot2<void, int, const KeyEvent &>
         PanelClientSlotKeyEvent;
 
-typedef Slot3<void, int, const WideString &, const AttributeList &>
-        PanelClientSlotStringAttrs;
+typedef Slot4<void, int, const WideString &, const AttributeList &, int>
+        PanelClientSlotStringAttrsInt;
 
 typedef Slot2<void, int, const std::vector<uint32> &>
         PanelClientSlotUintVector;
@@ -201,7 +201,7 @@ public:
     void hide_preedit_string    (int icid);
     void hide_aux_string        (int icid);
     void hide_lookup_table      (int icid);
-    void update_preedit_string  (int icid, const WideString &str, const AttributeList &attrs);
+    void update_preedit_string  (int icid, const WideString &str, const AttributeList &attrs, int caret);
     void update_preedit_caret   (int icid, int caret);
     void update_aux_string      (int icid, const WideString &str, const AttributeList &attrs);
     void update_lookup_table    (int icid, const LookupTable &table);
@@ -399,9 +399,9 @@ public:
     /**
      * @brief Signal: update preedit string
      *
-     * slot prototype: void update_preedit_string (int context, const WideString &str, const AttributeList &attrs);
+     * slot prototype: void update_preedit_string (int context, const WideString &str, const AttributeList &attrs, int caret);
      */
-    Connection signal_connect_update_preedit_string         (PanelClientSlotStringAttrs             *slot);
+    Connection signal_connect_update_preedit_string         (PanelClientSlotStringAttrsInt          *slot);
 
     /**
      * @brief Signal: request to get surrounding text

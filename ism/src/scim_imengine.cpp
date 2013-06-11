@@ -76,6 +76,9 @@ typedef Signal2<void, IMEngineInstanceBase*,const LookupTable&>
 typedef Signal3<void, IMEngineInstanceBase*,const String&,const Transaction&>
         IMEngineSignalStringTransaction;
 
+typedef Signal4<void, IMEngineInstanceBase*,const WideString&,const AttributeList&,int>
+        IMEngineSignalWideStringAttributeListInt;
+
 typedef Signal3<void, IMEngineInstanceBase*,const WideString&,const AttributeList&>
         IMEngineSignalWideStringAttributeList;
 
@@ -111,7 +114,7 @@ public:
     IMEngineSignalVoid                    m_signal_hide_lookup_table;
 
     IMEngineSignalInt                     m_signal_update_preedit_caret;
-    IMEngineSignalWideStringAttributeList m_signal_update_preedit_string;
+    IMEngineSignalWideStringAttributeListInt m_signal_update_preedit_string;
     IMEngineSignalWideStringAttributeList m_signal_update_aux_string;
     IMEngineSignalWideString              m_signal_commit_string;
     IMEngineSignalLookupTable             m_signal_update_lookup_table;
@@ -504,7 +507,7 @@ IMEngineInstanceBase::signal_connect_update_preedit_caret (IMEngineSlotInt *slot
 }
 
 Connection
-IMEngineInstanceBase::signal_connect_update_preedit_string (IMEngineSlotWideStringAttributeList *slot)
+IMEngineInstanceBase::signal_connect_update_preedit_string (IMEngineSlotWideStringAttributeListInt *slot)
 {
     return m_impl->m_signal_update_preedit_string.connect (slot);
 }
@@ -645,7 +648,15 @@ void
 IMEngineInstanceBase::update_preedit_string (const WideString    &str,
                                              const AttributeList &attrs)
 {
-    m_impl->m_signal_update_preedit_string (this, str, attrs);
+    m_impl->m_signal_update_preedit_string (this, str, attrs, -1);
+}
+
+void
+IMEngineInstanceBase::update_preedit_string (const WideString    &str,
+                                             const AttributeList &attrs,
+                                             int            caret)
+{
+    m_impl->m_signal_update_preedit_string (this, str, attrs, caret);
 }
 
 void

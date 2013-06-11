@@ -1054,9 +1054,10 @@ SocketInstance::do_transaction (Transaction &trans, bool &ret)
                 {
                     WideString str;
                     AttributeList attrs;
-                    if (trans.get_data (str) && trans.get_data (attrs)) {
+                    uint32 caret;
+                    if (trans.get_data (str) && trans.get_data (attrs) && trans.get_data (caret)) {
                         SCIM_DEBUG_IMENGINE(3) << "  update_preedit_string ()\n";
-                        update_preedit_string (str, attrs);
+                        update_preedit_string (str, attrs, caret);
                     }
                     break;
                 }

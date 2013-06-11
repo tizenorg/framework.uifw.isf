@@ -137,6 +137,9 @@ typedef Slot2<void, int, const HelperInfo &>
 typedef Slot2<void, const String &, const AttributeList &>
         PanelAgentSlotAttributeString;
 
+typedef Slot3<void, const String &, const AttributeList &, int>
+        PanelAgentSlotAttributeStringInt;
+
 typedef Slot1<void, std::vector<String> &>
         PanelAgentSlotStringVector;
 
@@ -872,11 +875,11 @@ public:
     /**
      * @brief Signal: Update preedit string.
      *
-     * slot prototype: void update_preedit_string (const String &str, const AttributeList &attrs);
+     * slot prototype: void update_preedit_string (const String &str, const AttributeList &attrs, int caret);
      * - str   -- The UTF-8 encoded string to be displayed in preedit area.
      * - attrs -- The attributes of the string.
      */
-    Connection signal_connect_update_preedit_string      (PanelAgentSlotAttributeString     *slot);
+    Connection signal_connect_update_preedit_string      (PanelAgentSlotAttributeStringInt  *slot);
 
     /**
      * @brief Signal: Update preedit caret.

@@ -142,6 +142,9 @@ typedef Slot2<void, IMEngineInstanceBase*,const PropertyList&>
 typedef Slot3<void, IMEngineInstanceBase*,const String&,const Transaction&>
         IMEngineSlotStringTransaction;
 
+typedef Slot4<void, IMEngineInstanceBase*,const WideString&,const AttributeList&,int>
+        IMEngineSlotWideStringAttributeListInt;
+
 typedef Slot3<void, IMEngineInstanceBase*,const WideString&,const AttributeList&>
         IMEngineSlotWideStringAttributeList;
 
@@ -489,7 +492,7 @@ public:
     Connection signal_connect_hide_aux_string         (IMEngineSlotVoid *slot);
     Connection signal_connect_hide_lookup_table       (IMEngineSlotVoid *slot);
     Connection signal_connect_update_preedit_caret    (IMEngineSlotInt *slot);
-    Connection signal_connect_update_preedit_string   (IMEngineSlotWideStringAttributeList *slot);
+    Connection signal_connect_update_preedit_string   (IMEngineSlotWideStringAttributeListInt *slot);
     Connection signal_connect_update_aux_string       (IMEngineSlotWideStringAttributeList *slot);
     Connection signal_connect_update_lookup_table     (IMEngineSlotLookupTable *slot);
     Connection signal_connect_commit_string           (IMEngineSlotWideString *slot);
@@ -785,6 +788,17 @@ protected:
      */
     void update_preedit_string (const WideString    &str,
                                 const AttributeList &attrs = AttributeList ());
+
+    /**
+     * @brief Update the content of the preedit string,
+     *
+     * @param str - the string content
+     * @param attrs - the string attributes
+     * @param caret - the caret position
+     */
+    void update_preedit_string (const WideString    &str,
+                                const AttributeList &attrs,
+                                int                  caret);
 
     /**
      * @brief Update the content of the aux string,

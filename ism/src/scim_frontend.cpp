@@ -99,8 +99,8 @@ public:
         m_frontend->update_preedit_caret (si->get_id (), caret);
     }
 
-    void slot_update_preedit_string (IMEngineInstanceBase * si, const WideString & str, const AttributeList & attrs) {
-        m_frontend->update_preedit_string (si->get_id (), str, attrs);
+    void slot_update_preedit_string (IMEngineInstanceBase * si, const WideString & str, const AttributeList & attrs, int caret) {
+        m_frontend->update_preedit_string (si->get_id (), str, attrs, caret);
     }
 
     void slot_update_aux_string     (IMEngineInstanceBase * si, const WideString & str, const AttributeList & attrs) {
@@ -805,7 +805,7 @@ FrontEndBase::update_preedit_caret  (int id, int caret)
 {
 }
 void
-FrontEndBase::update_preedit_string (int id, const WideString & str, const AttributeList & attrs)
+FrontEndBase::update_preedit_string (int id, const WideString & str, const AttributeList & attrs, int caret)
 {
 }
 void

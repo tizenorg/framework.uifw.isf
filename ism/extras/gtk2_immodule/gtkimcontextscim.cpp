@@ -212,7 +212,8 @@ static void     panel_slot_show_preedit_string          (int                    
 static void     panel_slot_hide_preedit_string          (int                     context);
 static void     panel_slot_update_preedit_string        (int                     context,
                                                          const WideString       &str,
-                                                         const AttributeList    &attrs);
+                                                         const AttributeList    &attrs,
+                                                         int   caret);
 
 static void     panel_req_focus_in                      (GtkIMContextSCIM       *ic);
 static void     panel_req_update_screen                 (GtkIMContextSCIM       *ic);
@@ -266,7 +267,8 @@ static void     slot_update_preedit_caret               (IMEngineInstanceBase   
                                                          int                     caret);
 static void     slot_update_preedit_string              (IMEngineInstanceBase   *si,
                                                          const WideString       &str,
-                                                         const AttributeList    &attrs);
+                                                         const AttributeList    &attrs
+                                                         int               caret);
 static void     slot_update_aux_string                  (IMEngineInstanceBase   *si,
                                                          const WideString       &str,
                                                          const AttributeList    &attrs);
@@ -1613,7 +1615,8 @@ panel_slot_hide_preedit_string (int context)
 static void
 panel_slot_update_preedit_string (int context,
                                   const WideString    &str,
-                                  const AttributeList &attrs)
+                                  const AttributeList &attrs,
+                                  int caret)
 {
     GtkIMContextSCIM *ic = find_ic (context);
     SCIM_DEBUG_FRONTEND(1) << "panel_slot_update_preedit_string context=" << context << "\n";
@@ -1633,7 +1636,10 @@ panel_slot_update_preedit_string (int context,
                     ic->impl->preedit_started = true;
                     ic->impl->need_commit_preedit = true;
                 }
-                ic->impl->preedit_caret    = str.length ();
+                if(caret >= 0 && caret <= str.length ())
+                    ic->impl->preedit_caret = caret;
+                else
+                    ic->impl->preedit_caret = str.length ();
                 ic->impl->preedit_updating = true;
                 g_signal_emit_by_name(ic, "preedit-changed");
                 ic->impl->preedit_updating = false;
@@ -2621,7 +2627,8 @@ slot_update_preedit_caret (IMEngineInstanceBase *si, int caret)
 static void
 slot_update_preedit_string (IMEngineInstanceBase *si,
                             const WideString & str,
-                            const AttributeList & attrs)
+                            const AttributeList & attrs,
+                            int caret)
 {
     SCIM_DEBUG_FRONTEND(1) << "slot_update_preedit_string...\n";
 
@@ -2635,12 +2642,15 @@ slot_update_preedit_string (IMEngineInstanceBase *si,
                 g_signal_emit_by_name(_focused_ic, "preedit-start");
                 ic->impl->preedit_started = true;
             }
-            ic->impl->preedit_caret    = str.length ();
+            if(caret >= 0 && caret <= str.length ())
+                ic->impl->preedit_caret = caret;
+            else
+                ic->impl->preedit_caret = str.length ();
             ic->impl->preedit_updating = true;
             g_signal_emit_by_name(ic, "preedit-changed");
             ic->impl->preedit_updating = false;
         } else {
-            _panel_client.update_preedit_string (ic->id, str, attrs);
+            _panel_client.update_preedit_string (ic->id, str, attrs, caret);
         }
     }
 }

@@ -76,8 +76,8 @@ typedef Signal4<void, int, const String &, const String &, const Transaction &>
 typedef Signal2<void, int, const KeyEvent &>
         PanelClientSignalKeyEvent;
 
-typedef Signal3<void, int, const WideString &, const AttributeList &>
-        PanelClientSignalStringAttrs;
+typedef Signal4<void, int, const WideString &, const AttributeList &, int>
+        PanelClientSignalStringAttrsInt;
 
 typedef Signal2<void, int, const std::vector<uint32> &>
         PanelClientSignalUintVector;
@@ -114,7 +114,7 @@ class PanelClient::PanelClientImpl
     PanelClientSignalVoid                       m_signal_update_keyboard_ise;
     PanelClientSignalVoid                       m_signal_show_preedit_string;
     PanelClientSignalVoid                       m_signal_hide_preedit_string;
-    PanelClientSignalStringAttrs                m_signal_update_preedit_string;
+    PanelClientSignalStringAttrsInt             m_signal_update_preedit_string;
     PanelClientSignalIntInt                     m_signal_get_surrounding_text;
     PanelClientSignalIntInt                     m_signal_delete_surrounding_text;
     PanelClientSignalInt                        m_signal_update_displayed_candidate_number;
@@ -367,8 +367,10 @@ public:
                     {
                         WideString wstr;
                         AttributeList attrs;
-                        if (recv.get_data (wstr) && recv.get_data (attrs))
-                            m_signal_update_preedit_string ((int) context, wstr, attrs);
+                        uint32 caret;
+                        if (recv.get_data (wstr) && recv.get_data (attrs)
+                            && recv.get_data (caret))
+                            m_signal_update_preedit_string ((int) context, wstr, attrs, (int)caret);
                     }
                     break;
                 case SCIM_TRANS_CMD_UPDATE_PREEDIT_CARET:
@@ -607,12 +609,13 @@ public:
         if (m_send_refcount > 0 && m_current_icid == icid)
             m_send_trans.put_command (SCIM_TRANS_CMD_HIDE_LOOKUP_TABLE);
     }
-    void update_preedit_string  (int icid, const WideString &str, const AttributeList &attrs)
+    void update_preedit_string  (int icid, const WideString &str, const AttributeList &attrs, int caret)
     {
         if (m_send_refcount > 0 && m_current_icid == icid) {
             m_send_trans.put_command (SCIM_TRANS_CMD_UPDATE_PREEDIT_STRING);
             m_send_trans.put_data (utf8_wcstombs (str));
             m_send_trans.put_data (attrs);
+            m_send_trans.put_data ((uint32) caret);
         }
     }
     void update_preedit_caret   (int icid, int caret)
@@ -847,7 +850,7 @@ public:
         return m_signal_hide_preedit_string.connect (slot);
     }
 
-    Connection signal_connect_update_preedit_string         (PanelClientSlotStringAttrs             *slot)
+    Connection signal_connect_update_preedit_string         (PanelClientSlotStringAttrsInt             *slot)
     {
         return m_signal_update_preedit_string.connect (slot);
     }
@@ -1038,9 +1041,9 @@ PanelClient::hide_lookup_table      (int icid)
     m_impl->hide_lookup_table (icid);
 }
 void
-PanelClient::update_preedit_string  (int icid, const WideString &str, const AttributeList &attrs)
+PanelClient::update_preedit_string  (int icid, const WideString &str, const AttributeList &attrs, int caret)
 {
-    m_impl->update_preedit_string (icid, str, attrs);
+    m_impl->update_preedit_string (icid, str, attrs, caret);
 }
 void
 PanelClient::update_preedit_caret   (int icid, int caret)
@@ -1250,7 +1253,7 @@ PanelClient::signal_connect_hide_preedit_string           (PanelClientSlotVoid  
 }
 
 Connection
-PanelClient::signal_connect_update_preedit_string         (PanelClientSlotStringAttrs             *slot)
+PanelClient::signal_connect_update_preedit_string         (PanelClientSlotStringAttrsInt          *slot)
 {
     return m_impl->signal_connect_update_preedit_string (slot);
 }

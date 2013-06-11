@@ -151,7 +151,7 @@ static void       slot_show_candidate_table            (void);
 static void       slot_hide_preedit_string             (void);
 static void       slot_hide_aux_string                 (void);
 static void       slot_hide_candidate_table            (void);
-static void       slot_update_preedit_string           (const String &str, const AttributeList &attrs);
+static void       slot_update_preedit_string           (const String &str, const AttributeList &attrs, int caret);
 static void       slot_update_preedit_caret            (int caret);
 static void       slot_update_aux_string               (const String &str, const AttributeList &attrs);
 static void       slot_update_candidate_table          (const LookupTable &table);
@@ -2575,7 +2575,7 @@ static void slot_hide_candidate_table (void)
  * @param str The new preedit string.
  * @param attrs The attribute list of new preedit string.
  */
-static void slot_update_preedit_string (const String &str, const AttributeList &attrs)
+static void slot_update_preedit_string (const String &str, const AttributeList &attrs, int caret)
 {
     SCIM_DEBUG_MAIN (3) << __FUNCTION__ << " string=" << str << "\n";
 

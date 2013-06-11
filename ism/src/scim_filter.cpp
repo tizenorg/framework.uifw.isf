@@ -266,8 +266,8 @@ private:
         m_parent->filter_update_preedit_caret (caret);
     }
 
-    void slot_update_preedit_string (IMEngineInstanceBase * si, const WideString & str, const AttributeList & attrs) {
-        m_parent->filter_update_preedit_string (str, attrs);
+    void slot_update_preedit_string (IMEngineInstanceBase * si, const WideString & str, const AttributeList & attrs, int caret) {
+        m_parent->filter_update_preedit_string (str, attrs, caret);
     }
 
     void slot_update_aux_string     (IMEngineInstanceBase * si, const WideString & str, const AttributeList & attrs) {
@@ -453,9 +453,10 @@ FilterInstanceBase::filter_update_preedit_caret (int caret)
 
 void
 FilterInstanceBase::filter_update_preedit_string (const WideString    &str,
-                                                          const AttributeList &attrs)
+                                                          const AttributeList &attrs,
+                                                          int caret)
 {
-    update_preedit_string (str, attrs);
+    update_preedit_string (str, attrs, caret);
 }
 
 void
