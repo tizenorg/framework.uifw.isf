@@ -443,7 +443,6 @@ static void set_keyboard_geometry_atom_info (Ecore_X_Window window, VIRTUAL_KEYB
         SCIM_DEBUG_MAIN (3) << "    KEYBOARD_STATE_OFF x=" << info.pos_x << " y=" << info.pos_y << "\n";
         LOGD ("KEYBOARD_GEOMETRY_SET : %d %d %d %d\n", info.pos_x, info.pos_y, 0, 0);
     }
-    _panel_agent->update_input_panel_event (ECORE_IMF_INPUT_PANEL_GEOMETRY_EVENT, 0);
 }
 
 /**
@@ -2181,8 +2180,10 @@ static void slot_update_ise_geometry (int x, int y, int width, int height)
         }
     }
 
-    if (old_height != height && _ise_show)
+    if (old_height != height && _ise_show) {
         set_keyboard_geometry_atom_info (_app_window, KEYBOARD_STATE_ON);
+        _panel_agent->update_input_panel_event (ECORE_IMF_INPUT_PANEL_GEOMETRY_EVENT, 0);
+    }
 }
 
 /**
@@ -3430,6 +3431,7 @@ static Eina_Bool x_event_window_property_cb (void *data, int ev_type, void *even
         LOGD("keyboard connected");
         check_hardware_keyboard ();
         set_keyboard_geometry_atom_info (_app_window, KEYBOARD_STATE_OFF);
+        _panel_agent->update_input_panel_event (ECORE_IMF_INPUT_PANEL_GEOMETRY_EVENT, 0);
     } else if (ev->atom == ECORE_X_ATOM_E_VIRTUAL_KEYBOARD_STATE) {
         if (ev->win == _control_window) {
             /* WMSYNC, #6 The keyboard window is displayed fully so set the conformant geometry */
@@ -3453,6 +3455,7 @@ static Eina_Bool x_event_window_property_cb (void *data, int ev_type, void *even
                 }
 
                 set_keyboard_geometry_atom_info (_app_window, KEYBOARD_STATE_ON);
+                _panel_agent->update_input_panel_event (ECORE_IMF_INPUT_PANEL_GEOMETRY_EVENT, 0);
                 _panel_agent->update_input_panel_event(
                         ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_SHOW);
 
@@ -3505,6 +3508,7 @@ static Eina_Bool x_event_client_message_cb (void *data, int type, void *event)
             LOGD ("_ECORE_X_ATOM_E_VIRTUAL_KEYBOARD_OFF_PREPARE_REQUEST\n");
             // Clear conformant geometry information first
             set_keyboard_geometry_atom_info (_app_window, KEYBOARD_STATE_OFF);
+            _panel_agent->update_input_panel_event (ECORE_IMF_INPUT_PANEL_GEOMETRY_EVENT, 0);
             _panel_agent->update_input_panel_event (
                     ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_HIDE);
             // For now don't send WILL_HIDE signal here
@@ -3524,6 +3528,7 @@ static Eina_Bool x_event_client_message_cb (void *data, int type, void *event)
             }
             if (_ise_show) {
                 set_keyboard_geometry_atom_info (_app_window, KEYBOARD_STATE_ON);
+                _panel_agent->update_input_panel_event (ECORE_IMF_INPUT_PANEL_GEOMETRY_EVENT, 0);
             }
             ui_settle_candidate_window ();
             Ecore_X_Window root_window = ecore_x_window_root_get (_control_window);
@@ -3537,6 +3542,7 @@ static Eina_Bool x_event_client_message_cb (void *data, int type, void *event)
                 _candidate_angle = ise_angle;
                 if (_ise_show) {
                     set_keyboard_geometry_atom_info (_app_window, KEYBOARD_STATE_ON);
+                    _panel_agent->update_input_panel_event (ECORE_IMF_INPUT_PANEL_GEOMETRY_EVENT, 0);
                 }
             }
         }
