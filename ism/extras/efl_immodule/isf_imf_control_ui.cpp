@@ -326,7 +326,7 @@ static void _input_panel_hide (Ecore_IMF_Context *ctx, Eina_Bool instant)
     will_hide = EINA_TRUE;
     hide_req_ic = ctx;
 
-    if (instant) {
+    if (instant || (hide_timer && ecore_timer_pending_get (hide_timer) <= 0.0)) {
         _clear_hide_timer ();
         _save_hide_context_info (ctx);
         _send_input_panel_hide_request ();
@@ -411,6 +411,12 @@ void isf_imf_input_panel_init (void)
 
 void isf_imf_input_panel_shutdown (void)
 {
+    if (hide_timer) {
+        if (input_panel_state != ECORE_IMF_INPUT_PANEL_STATE_HIDE) {
+            _send_input_panel_hide_request ();
+        }
+    }
+
     if (_prop_change_handler) {
         ecore_event_handler_del (_prop_change_handler);
         _prop_change_handler = NULL;
@@ -419,13 +425,6 @@ void isf_imf_input_panel_shutdown (void)
     _win_focus_out_handler_del ();
 
     _clear_will_show_timer ();
-
-    if (hide_timer) {
-        if (input_panel_state != ECORE_IMF_INPUT_PANEL_STATE_HIDE) {
-            _send_input_panel_hide_request ();
-        }
-    }
-
     _clear_hide_timer ();
 
     _isf_imf_control_finalize ();
@@ -891,6 +890,7 @@ void isf_imf_context_input_panel_send_will_hide_ack ()
 
     if (_conformant_get ()) {
         if (conformant_reset_done && received_will_hide_event) {
+            LOGD ("Send will hide ack\n");
             _isf_imf_context_input_panel_send_will_hide_ack ();
             conformant_reset_done = EINA_FALSE;
             received_will_hide_event = EINA_FALSE;
