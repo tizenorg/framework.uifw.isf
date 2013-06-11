@@ -111,7 +111,6 @@ static void result_cb (ui_gadget_h ug, service_h s, void *priv)
 {
     char *name = NULL;
     service_get_extra_data (s, "name", &name);
-    printf ("get key [ %s ]\n", name);
 
     if (name) {
         free (name);
