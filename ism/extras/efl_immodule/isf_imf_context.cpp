@@ -2377,7 +2377,7 @@ panel_slot_update_preedit_string (int context,
                     ic->impl->preedit_started = true;
                     ic->impl->need_commit_preedit = true;
                 }
-                if(caret >= 0 && caret <= str.length ())
+                if (caret >= 0 && caret <= (int)str.length ())
                     ic->impl->preedit_caret    = caret;
                 else
                     ic->impl->preedit_caret    = str.length ();
@@ -3590,7 +3590,7 @@ slot_update_preedit_string (IMEngineInstanceBase *si,
                 ecore_imf_context_event_callback_call (_focused_ic->ctx, ECORE_IMF_CALLBACK_PREEDIT_START, NULL);
                 ic->impl->preedit_started = true;
             }
-            if(caret >= 0 && caret <= str.length ())
+            if (caret >= 0 && caret <= (int)str.length ())
                 ic->impl->preedit_caret = caret;
             else
                 ic->impl->preedit_caret = str.length ();
