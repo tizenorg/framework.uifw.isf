@@ -299,6 +299,7 @@ static Ecore_Timer       *_check_size_timer                 = NULL;
 static Ecore_Timer       *_longpress_timer                  = NULL;
 static Ecore_Timer       *_destroy_timer                    = NULL;
 static Ecore_Timer       *_system_ready_timer               = NULL;
+static Ecore_Timer       *_off_prepare_done_timer           = NULL;
 
 static Ecore_X_Window     _ise_window                       = 0;
 static Ecore_X_Window     _app_window                       = 0;
@@ -1100,6 +1101,29 @@ static Eina_Bool ui_candidate_destroy_timeout (void *data)
 
     ui_candidate_delete_destroy_timer ();
     ui_destroy_candidate_window ();
+    return ECORE_CALLBACK_CANCEL;
+}
+
+/**
+ * @brief Callback function for off_prepare_done.
+ *
+ * @param data Data to pass when it is called.
+ *
+ * @return ECORE_CALLBACK_CANCEL
+ */
+static Eina_Bool off_prepare_done_timeout (void *data)
+{
+    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
+
+    /* WMSYNC, #8 Let the Window Manager to actually hide keyboard window */
+    // WILL_HIDE_REQUEST_DONE Ack to WM
+    Ecore_X_Window root_window = ecore_x_window_root_get (_control_window);
+    ecore_x_e_virtual_keyboard_off_prepare_done_send (root_window, _control_window);
+    LOGD ("_ecore_x_e_virtual_keyboard_off_prepare_done_send(%x, %x)\n",
+        root_window, _control_window);
+
+    _off_prepare_done_timer = NULL;
+
     return ECORE_CALLBACK_CANCEL;
 }
 
@@ -3716,6 +3740,11 @@ static void check_hardware_keyboard (void)
 {
     SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
 
+    if (_off_prepare_done_timer) {
+        ecore_timer_del(_off_prepare_done_timer);
+        _off_prepare_done_timer = NULL;
+    }
+
     unsigned int val = 0;
 
     _config->write (ISF_CONFIG_HARDWARE_KEYBOARD_DETECT, 0);
@@ -3861,6 +3890,13 @@ static Eina_Bool x_event_client_message_cb (void *data, int type, void *event)
             /* WMSYNC, #7 Send WILL_HIDE event when the keyboard window is about to hidden */
             LOGD ("_ECORE_X_ATOM_E_VIRTUAL_KEYBOARD_OFF_PREPARE_REQUEST\n");
             // Clear conformant geometry information first
+
+            if (_off_prepare_done_timer) {
+                ecore_timer_del(_off_prepare_done_timer);
+                _off_prepare_done_timer = NULL;
+            }
+            _off_prepare_done_timer = ecore_timer_add (1.0, off_prepare_done_timeout, NULL);
+
             set_keyboard_geometry_atom_info (_app_window, KEYBOARD_STATE_OFF);
             _panel_agent->update_input_panel_event (ECORE_IMF_INPUT_PANEL_GEOMETRY_EVENT, 0);
             _panel_agent->update_input_panel_event (
