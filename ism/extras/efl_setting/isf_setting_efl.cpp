@@ -681,6 +681,11 @@ static void _gl_del (void *data, Evas_Object *obj)
 {
 }
 
+static void _gl_sw_ise_del (void *data, Evas_Object *obj)
+{
+    _sw_radio_grp = NULL;
+}
+
 static void _gl_sw_ise_sel (void *data, Evas_Object *obj, void *event_info)
 {
     Elm_Object_Item *item = (Elm_Object_Item *)event_info;
@@ -914,7 +919,7 @@ static void create_sw_keyboard_selection_view (ug_data *ugd)
     itc4.func.text_get    = _gl_exp_sw_label_get;
     itc4.func.content_get = _gl_exp_sw_icon_get;
     itc4.func.state_get   = _gl_state_get;
-    itc4.func.del         = _gl_del;
+    itc4.func.del         = _gl_sw_ise_del;
     for (i = 0; i < _sw_ise_list.size (); i++) {
         elm_genlist_item_append (genlist, &itc4, (void *)(i), NULL, ELM_GENLIST_ITEM_NONE, _gl_sw_ise_sel, (void *)(i));
     }
