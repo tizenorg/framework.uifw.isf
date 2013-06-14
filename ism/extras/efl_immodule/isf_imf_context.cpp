@@ -1233,8 +1233,8 @@ isf_imf_context_focus_in (Ecore_IMF_Context *ctx)
 //            _panel_client.hide_aux_string (context_scim->id);
 //            _panel_client.hide_lookup_table (context_scim->id);
             context_scim->impl->si->focus_in ();
-            imengine_layout_set (ctx, ecore_imf_context_input_panel_layout_get (ctx));
-            set_prediction_allow (ctx, context_scim->impl->prediction_allow);
+            context_scim->impl->si->set_layout (ecore_imf_context_input_panel_layout_get (ctx));
+            context_scim->impl->si->set_prediction_allow (context_scim->impl->prediction_allow);
             if (context_scim->impl->imdata)
                 context_scim->impl->si->set_imdata ((const char *)context_scim->impl->imdata, context_scim->impl->imdata_size);
         } else {
@@ -2645,7 +2645,7 @@ turn_on_ic (EcoreIMFContextISF *ic)
 //            _panel_client.hide_lookup_table (ic->id);
             ic->impl->si->focus_in ();
             ic->impl->si->set_layout (ecore_imf_context_input_panel_layout_get (ic->ctx));
-            set_prediction_allow (ic->ctx, ic->impl->prediction_allow);
+            ic->impl->si->set_prediction_allow (ic->impl->prediction_allow);
         }
 
         //Record the IC on/off status
