@@ -2075,6 +2075,9 @@ panel_slot_process_key_event (int context, const KeyEvent &key)
     if (!(ic && ic->impl))
         return;
 
+    if ((_focused_ic != NULL) && (_focused_ic != ic))
+        return;
+
     KeyEvent _key = key;
     if (key.is_key_press () &&
         ecore_imf_context_input_panel_layout_get (ic->ctx) == ECORE_IMF_INPUT_PANEL_LAYOUT_NORMAL) {
@@ -2141,6 +2144,9 @@ panel_slot_forward_key_event (int context, const KeyEvent &key)
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << " context=" << context << " key=" << key.get_key_string () << " ic=" << ic << "\n";
 
     if (!(ic && ic->impl))
+        return;
+
+    if ((_focused_ic != NULL) && (_focused_ic != ic))
         return;
 
     if (strlen (key.get_key_string ().c_str ()) >= 116)
