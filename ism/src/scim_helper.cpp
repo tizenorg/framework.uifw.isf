@@ -399,6 +399,12 @@ HelperAgent::filter_event ()
     while (m_impl->recv.get_command (cmd)) {
         switch (cmd) {
             case SCIM_TRANS_CMD_EXIT:
+                {
+                    char buf[256] = {0};
+                    snprintf (buf, sizeof (buf), "time:%ld  pid:%d  %s  %s  Helper ISE received SCIM_TRANS_CMD_EXIT message\n",
+                        time (0), getpid (), __FILE__, __func__);
+                    isf_save_log (buf);
+                }
                 m_impl->signal_exit (this, ic, ic_uuid);
                 break;
             case SCIM_TRANS_CMD_RELOAD_CONFIG:
@@ -467,6 +473,13 @@ HelperAgent::filter_event ()
             }
             case ISM_TRANS_CMD_SHOW_ISE_PANEL:
             {
+                {
+                    char buf[256] = {0};
+                    snprintf (buf, sizeof (buf), "time:%ld  pid:%d  %s  %s  Helper ISE received ISM_TRANS_CMD_SHOW_ISE_PANEL message\n",
+                        time (0), getpid (), __FILE__, __func__);
+                    isf_save_log (buf);
+                }
+
                 char   *data = NULL;
                 size_t  len;
                 if (m_impl->recv.get_data (&data, len))
@@ -477,6 +490,13 @@ HelperAgent::filter_event ()
             }
             case ISM_TRANS_CMD_HIDE_ISE_PANEL:
             {
+                {
+                    char buf[256] = {0};
+                    snprintf (buf, sizeof (buf), "time:%ld  pid:%d  %s  %s  Helper ISE received ISM_TRANS_CMD_HIDE_ISE_PANEL message\n",
+                        time (0), getpid (), __FILE__, __func__);
+                    isf_save_log (buf);
+                }
+
                 m_impl->signal_ise_hide (this, ic, ic_uuid);
                 break;
             }

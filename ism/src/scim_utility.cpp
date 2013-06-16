@@ -48,6 +48,7 @@
 #include <errno.h>
 #include <sys/time.h>
 #include <sys/times.h>
+#include <dlog.h>
 
 #include "scim_private.h"
 #include "scim.h"
@@ -1302,12 +1303,16 @@ EAPI void scim_daemon ()
 #endif
 }
 
-void isf_save_log (const char *str)
+#define LOG_TAG     "ISF_UTILITY"
+
+EAPI void isf_save_log (const char *str)
 {
     String strLogFile = scim_get_user_data_dir () + String (SCIM_PATH_DELIM_STRING) + String ("isf.log");
     std::ofstream isf_log_file (strLogFile.c_str (), std::ios::app);
     isf_log_file << str;
     isf_log_file.flush ();
+
+    LOGD ("%s", str);
 }
 
 static struct timeval _t0 = {0, 0};

@@ -149,6 +149,10 @@ int main (int argc, char *argv [])
     }
 
     SCIM_DEBUG_MAIN(1) << "scim-helper-launcher: " << config << " " << display << " " << helper << " " << uuid << "\n";
+    char buf[256] = {0};
+    snprintf (buf, sizeof (buf), "time:%ld  pid:%d  %s  %s  Helper ISE (%s) is launching...\n",
+        time (0), getpid (), __FILE__, __func__, uuid.c_str ());
+    isf_save_log (buf);
 
     if (!helper.length () || !uuid.length ()) {
         std::cerr << "Module name or Helper UUID is missing.\n";
@@ -158,6 +162,10 @@ int main (int argc, char *argv [])
     HelperModule helper_module (helper);
 
     if (!helper_module.valid () || helper_module.number_of_helpers () == 0) {
+        snprintf (buf, sizeof (buf), "time:%ld  pid:%d  %s  %s  Unable to load helper module(%s)\n",
+            time (0), getpid (), __FILE__, __func__, helper.c_str ());
+        isf_save_log (buf);
+
         std::cerr << "Unable to load helper module(" << helper << ")\n";
         return -1;
     }
@@ -182,6 +190,10 @@ int main (int argc, char *argv [])
 
     if (!config_pointer.null ())
         config_pointer.reset ();
+
+    snprintf (buf, sizeof (buf), "time:%ld  pid:%d  %s  %s  Helper ISE (%s) is destroyed!!!\n",
+        time (0), getpid (), __FILE__, __func__, uuid.c_str ());
+    isf_save_log (buf);
 }
 
 /*

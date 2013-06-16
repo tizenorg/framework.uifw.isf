@@ -255,6 +255,10 @@ void SocketFrontEnd::run_helper (const Socket &client)
         m_send_trans.put_command (SCIM_TRANS_CMD_FAIL);
         return;
     }
+    char buf[256] = {0};
+    snprintf (buf, sizeof (buf), "time:%ld  pid:%d  %s  %s  uuid(%s)\n",
+        time (0), getpid (), __FILE__, __func__, uuid.c_str ());
+    isf_save_log (buf);
 
     for (size_t i = 0; i < __helpers.size (); ++i) {
         if (__helpers [i].first.uuid == uuid && __helpers [i].second.length ()) {
@@ -280,6 +284,10 @@ void SocketFrontEnd::run_helper (const Socket &client)
                                    0};
 
                 SCIM_DEBUG_MAIN(2) << " Call scim-helper-launcher.\n";
+                char buf[256] = {0};
+                snprintf (buf, sizeof (buf), "time:%ld  pid:%d  %s  %s  Exec scim_helper_launcher(%s)\n",
+                    time (0), getpid (), __FILE__, __func__, __helpers [i].second.c_str ());
+                isf_save_log (buf);
 
                 execv (SCIM_HELPER_LAUNCHER_PROGRAM, (char **)argv);
                 exit (-1);

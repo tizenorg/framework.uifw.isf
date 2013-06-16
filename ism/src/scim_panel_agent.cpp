@@ -1222,6 +1222,11 @@ public:
     bool start_helper (const String  &uuid, int client, uint32 context)
     {
         SCIM_DEBUG_MAIN(1) << "PanelAgent::start_helper (" << uuid << ")\n";
+        char buf[256] = {0};
+        snprintf (buf, sizeof (buf), "time:%ld  pid:%d  %s  %s  start ISE(%s)\n",
+            time (0), getpid (), __FILE__, __func__, uuid.c_str ());
+        isf_save_log (buf);
+
         if (uuid.length () <= 0)
             return false;
 
@@ -1240,6 +1245,11 @@ public:
 
     bool stop_helper (const String &helper_uuid, int client, uint32 context)
     {
+        char buf[256] = {0};
+        snprintf (buf, sizeof (buf), "time:%ld  pid:%d  %s  %s  prepare to stop ISE(%s)\n",
+            time (0), getpid (), __FILE__, __func__, helper_uuid.c_str ());
+        isf_save_log (buf);
+
         String uuid = helper_uuid;
         SCIM_DEBUG_MAIN(1) << "PanelAgent::stop_helper (" << uuid << ")\n";
         if (uuid.length () <= 0)
@@ -1261,6 +1271,9 @@ public:
             m_send_trans.put_command (SCIM_TRANS_CMD_EXIT);
             m_send_trans.write_to_socket (client_socket);
             SCIM_DEBUG_MAIN(1) << "Stop helper\n";
+            snprintf (buf, sizeof (buf), "time:%ld  pid:%d  %s  %s  send SCIM_TRANS_CMD_EXIT message\n",
+                time (0), getpid (), __FILE__, __func__);
+            isf_save_log (buf);
         }
 
         unlock ();
@@ -1318,6 +1331,12 @@ public:
             m_send_trans.put_command (ISM_TRANS_CMD_SHOW_ISE_PANEL);
             m_send_trans.put_data (data, len);
             m_send_trans.write_to_socket (client_socket);
+
+            char buf[256] = {0};
+            snprintf (buf, sizeof (buf), "time:%ld  pid:%d  %s  %s  Send ISM_TRANS_CMD_SHOW_ISE_PANEL message\n",
+                time (0), getpid (), __FILE__, __func__);
+            isf_save_log (buf);
+
             return true;
         }
         return false;
@@ -1345,6 +1364,11 @@ public:
             m_send_trans.put_data (uuid);
             m_send_trans.put_command (ISM_TRANS_CMD_HIDE_ISE_PANEL);
             m_send_trans.write_to_socket (client_socket);
+
+            char buf[256] = {0};
+            snprintf (buf, sizeof (buf), "time:%ld  pid:%d  %s  %s  Send ISM_TRANS_CMD_HIDE_ISE_PANEL message\n",
+                time (0), getpid (), __FILE__, __func__);
+            isf_save_log (buf);
         }
     }
 
@@ -1620,6 +1644,11 @@ public:
     void show_ise_panel (int client_id)
     {
         SCIM_DEBUG_MAIN(4) << "PanelAgent::show_ise_panel ()\n";
+        char buf[256] = {0};
+        snprintf (buf, sizeof (buf), "time:%ld  pid:%d  %s  %s  prepare to show ISE\n",
+            time (0), getpid (), __FILE__, __func__);
+        isf_save_log (buf);
+
         char   *data = NULL;
         size_t  len;
         bool ret = false;
@@ -1652,6 +1681,11 @@ public:
     void hide_ise_panel (int client_id)
     {
         SCIM_DEBUG_MAIN(4) << "PanelAgent::hide_ise_panel ()\n";
+        char buf[256] = {0};
+        snprintf (buf, sizeof (buf), "time:%ld  pid:%d  %s  %s  prepare to hide ISE\n",
+            time (0), getpid (), __FILE__, __func__);
+        isf_save_log (buf);
+
         TOOLBAR_MODE_T mode;
 
         mode = m_current_toolbar_mode;

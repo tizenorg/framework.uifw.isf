@@ -653,6 +653,10 @@ static bool set_helper_ise (const String &uuid, const String &module_name)
             return false;
         _panel_agent->hide_helper (pre_uuid);
         _panel_agent->stop_helper (pre_uuid);
+        char buf[256] = {0};
+        snprintf (buf, sizeof (buf), "time:%ld  pid:%d  %s  %s  stop helper(%s)\n",
+            time (0), getpid (), __FILE__, __func__, pre_uuid.c_str ());
+        isf_save_log (buf);
     }
 
     /* Set ComposeKey as keyboard ISE */
@@ -667,6 +671,10 @@ static bool set_helper_ise (const String &uuid, const String &module_name)
         _config->write (String (SCIM_CONFIG_DEFAULT_IMENGINE_FACTORY) + String ("/") + language, kbd_uuid);
         delete_keyboard_ise_em ();
     }
+    char buf[256] = {0};
+    snprintf (buf, sizeof (buf), "time:%ld  pid:%d  %s  %s  Start helper(%s)\n",
+        time (0), getpid (), __FILE__, __func__, uuid.c_str ());
+    isf_save_log (buf);
 
     _panel_agent->start_helper (uuid);
     _config->write (String (SCIM_CONFIG_DEFAULT_HELPER_ISE), uuid);
@@ -691,6 +699,10 @@ static bool set_helper_ise (const String &uuid, const String &module_name)
 static bool set_active_ise (const String &uuid)
 {
     SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
+    char buf[256] = {0};
+    snprintf (buf, sizeof (buf), "time:%ld  pid:%d  %s  %s  set ISE(%s)\n",
+        time (0), getpid (), __FILE__, __func__, uuid.c_str ());
+    isf_save_log (buf);
 
     if (uuid.length () <= 0)
         return false;
@@ -3741,7 +3753,7 @@ static void check_hardware_keyboard (void)
     SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
 
     if (_off_prepare_done_timer) {
-        ecore_timer_del(_off_prepare_done_timer);
+        ecore_timer_del (_off_prepare_done_timer);
         _off_prepare_done_timer = NULL;
     }
 
@@ -3892,7 +3904,7 @@ static Eina_Bool x_event_client_message_cb (void *data, int type, void *event)
             // Clear conformant geometry information first
 
             if (_off_prepare_done_timer) {
-                ecore_timer_del(_off_prepare_done_timer);
+                ecore_timer_del (_off_prepare_done_timer);
                 _off_prepare_done_timer = NULL;
             }
             _off_prepare_done_timer = ecore_timer_add (1.0, off_prepare_done_timeout, NULL);

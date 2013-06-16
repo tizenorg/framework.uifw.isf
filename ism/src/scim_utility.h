@@ -453,7 +453,7 @@ EAPI void scim_daemon ();
  *
  * @param str The string to be saved.
  */
-void isf_save_log (const char *str);
+EAPI void isf_save_log (const char *str);
 
 
 #ifdef ISF_PROF
