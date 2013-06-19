@@ -1,3 +1,16 @@
+ISF 2.4.6619 :
+ 1. [immodule] fix issue IME is hidden late in application does heavy job
+ 2. [panel] Separated GEOMETRY_EVENT from set_keyboard_geometry_atom_info()
+ 3. [immodule] fix prevent issue
+ 4. [immodule] Added log for checking the render_flush time
+ 5. [immodule] fix BS issue when S/W keyboard selection is selected
+ 6. [immodule] fix bug focus-in message couldn't be transferred
+ 7. [immodule] remove unnecessary prepare and send
+ 8. [panel] Add screen reader feature
+ 9. [immodule] change DLOG tagname of immodule
+10. [SMACK] Move smack rule into separate rule file
+
+
 ISF 2.4.6610 :
  1. Revert "move hide timer from immodule to panel"
  2. Revert "Discard input keys that does not match with current ic value"
