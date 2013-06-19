@@ -1,17 +1,6 @@
 <manifest>
 	<define>
 		<domain name="isf"/>
-		<request>
-			<smack request="system::vconf" type="arwxt"/>
-			<smack request="system::homedir" type="arwxt"/>
-			<smack request="xorg" type="rw"/>
-			<smack request="system::use_internet" type="r"/>
-			<smack request="e17" type="r"/>
-			<smack request="device::app_logging" type="w"/>
-			<smack request="svi-data" type="rx"/>
-			<smack request="sound_server" type="rw"/>
-			<smack request="sys-assert::core" type="arwxt"/>
-		</request>
 	</define>
 	<assign>
 		<filesystem path="/usr/lib/ecore/immodules/libisf-imf-module.so" label="_"/>

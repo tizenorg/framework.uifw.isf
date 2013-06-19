@@ -1,0 +1,12 @@
+isf system::vconf arwxt
+isf system::homedir arwxt
+isf xorg rw
+isf system::use_internet r
+isf e17 r
+isf device::app_logging w
+isf svi-data rx
+isf sound_server rw
+isf sys-assert::core arwxt
+isf _ w
+isf mobileprint x
+isf tts-server rx

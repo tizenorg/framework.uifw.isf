@@ -25,7 +25,7 @@ BuildRequires:  pkgconfig(x11)
 BuildRequires:  pkgconfig(notification)
 BuildRequires:  pkgconfig(dlog)
 BuildRequires:  pkgconfig(tts)
-Requires(post): /sbin/ldconfig /usr/bin/vconftool e17 net-config libmm-sound
+Requires(post): /sbin/ldconfig /usr/bin/vconftool e17 net-config libmm-sound sys-assert
 Requires(postun): /sbin/ldconfig
 
 %description
@@ -88,6 +88,7 @@ mkdir -p /opt/apps/scim/lib/scim-1.0/1.4.0/IMEngine
 
 %files
 %manifest %{name}.manifest
+/etc/smack/accesses.d/%{name}.rule
 %defattr(-,root,root,-)
 %{_libdir}/systemd/user/core-efl.target.wants/scim.service
 %{_libdir}/systemd/user/scim.service
@@ -125,7 +126,7 @@ ln -sf /usr/bin/ug-client /opt/ug/bin/isfsetting-efl
 
 %files -n ug-isfsetting-efl
 %manifest ug-isfsetting-efl.manifest
-/etc/smack/accesses2.d/ug.isfsetting-efl.include
+/etc/smack/accesses.d/ug.isfsetting-efl.include
 /usr/share/packages/ug-isfsetting-efl.xml
 %{_ugdir}/lib/libug-isfsetting-efl.so
 %{_ugdir}/res/locale/*/LC_MESSAGES/isfsetting-efl.*

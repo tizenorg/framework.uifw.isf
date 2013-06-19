@@ -56,10 +56,13 @@ endif
 pkgconfig_DATA          = isf.pc scim.pc \
 			  $(GTK_UTILS_PKGCONFIG)
 
+smackdir = /etc/smack/accesses.d/
+smack_DATA = isf.rule
+
 ugxmldir = /usr/share/packages/
 ugxml_DATA = ug-isfsetting-efl.xml
 
-ugsmackdir = /etc/smack/accesses2.d/
+ugsmackdir = /etc/smack/accesses.d/
 ugsmack_DATA = ug.isfsetting-efl.include
 
 ACLOCAL_AMFLAGS = -I ism/m4
