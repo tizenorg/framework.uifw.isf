@@ -218,20 +218,8 @@ static Evas_Object *create_fullview (Evas_Object *parent, struct ug_data *ugd)
     elm_layout_theme_set (layout_main, "layout", "application", "default");
     elm_object_style_set (bg, "group_list");
     elm_object_part_content_set (layout_main, "elm.swallow.bg", bg);
+    evas_object_size_hint_weight_set (layout_main, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
 
-    return layout_main;
-}
-
-static Evas_Object *create_frameview (Evas_Object *parent, struct ug_data *ugd)
-{
-    Evas_Object *bg = create_bg (parent);
-    Evas_Object *layout_main = elm_layout_add (parent);
-    if (layout_main == NULL)
-        return NULL;
-
-    elm_layout_theme_set (layout_main, "layout", "application", "default");
-    elm_object_style_set (bg, "group_list");
-    elm_object_part_content_set (layout_main, "elm.swallow.bg", bg);
     return layout_main;
 }
 
@@ -1628,24 +1616,14 @@ static void *on_create (ui_gadget_h ug, enum ug_mode mode, service_h s, void *pr
 
     //-------------------------- ise infomation ----------------------------
 
-    Evas_Object *parent_win = (Evas_Object *)ug_get_window ();
-    Evas_Object *conform = elm_conformant_add (parent_win);
-
     // Create keyboard setting UI
-    if (mode == UG_MODE_FULLVIEW)
-        ugd->layout_main = create_fullview (conform, ugd);
-    else
-        ugd->layout_main = create_frameview (conform, ugd);
+    ugd->layout_main = create_fullview (parent, ugd);
 
     if (ugd->layout_main != NULL) {
         content = create_setting_main_view (ugd);
-        elm_object_part_content_set (ugd->layout_main, "elm.swallow.content", content);
-
-        evas_object_size_hint_weight_set (conform, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
-        evas_object_size_hint_align_set (conform, EVAS_HINT_FILL, EVAS_HINT_FILL);
-        elm_win_resize_object_add (parent_win, conform);
-        elm_object_content_set (conform, ugd->layout_main);
-        evas_object_show (conform);
+        evas_object_data_set (content, "ugd", ugd);
+        evas_object_show (content);
+        evas_object_show (ugd->layout_main);
     }
     return (void *)ugd->layout_main;
 }
