@@ -43,11 +43,15 @@ isf_demo_efl_SOURCES  = isf_demo_efl.cpp \
 isf_demo_efl_CXXFLAGS = @EFL_CFLAGS@ \
                         @APPCORE_EFL_CFLAGS@ \
                         @UIGADGET_CFLAGS@ \
-                        @VCONF_CFLAGS@ @PRIVILEGE_CONTROL_CFLAGS@
+                        @VCONF_CFLAGS@ \
+                        @PRIVILEGE_CONTROL_CFLAGS@ \
+                        @EFL_ASSIST_CFLAGS@
 
 isf_demo_efl_LDFLAGS  = @EFL_LIBS@ @LTLIBINTL@ -rpath $(libdir) \
                         @VCONF_LIBS@ \
                         @APPCORE_EFL_LIBS@ \
-                        @UIGADGET_LIBS@ @PRIVILEGE_CONTROL_LIBS@
+                        @UIGADGET_LIBS@ \
+                        @PRIVILEGE_CONTROL_LIBS@ \
+                        @EFL_ASSIST_LIBS@
 
 isf_demo_efl_LDADD    = $(top_builddir)/ism/src/libscim@SCIM_EPOCH@.la

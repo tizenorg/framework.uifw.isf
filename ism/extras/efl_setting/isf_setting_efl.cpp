@@ -44,13 +44,14 @@
 #include <vconf.h>
 #include <ui-gadget-module.h>
 #include <ui-gadget.h>
+#include <pkgmgr-info.h>
+#include <efl_assist.h>
 #include "scim.h"
 #include "scim_stl_map.h"
 #include "isf_setting_efl.h"
 #include "../efl_panel/isf_panel_utility.h"
 #include "scim_setup_module_efl.h"
 #include "isf_control.h"
-#include <pkgmgr-info.h>
 
 using namespace scim;
 using namespace std;
@@ -232,6 +233,8 @@ static Evas_Object *create_frameview (Evas_Object *parent, struct ug_data *ugd)
 static Evas_Object *create_naviframe_layout (Evas_Object* parent)
 {
     Evas_Object *naviframe = elm_naviframe_add (parent);
+    elm_naviframe_prev_btn_auto_pushed_set (naviframe, EINA_FALSE);
+    ea_object_event_callback_add (naviframe, EA_CALLBACK_BACK, ea_naviframe_back_cb, NULL);
     elm_object_part_content_set (parent, "elm.swallow.content", naviframe);
     evas_object_show (naviframe);
 
@@ -1308,8 +1311,7 @@ static Evas_Object *create_setting_main_view (ug_data *ugd)
         Evas_Object *back_btn = elm_button_add (ugd->naviframe);
         elm_object_style_set (back_btn, "naviframe/back_btn/default");
         nf_main_it = elm_naviframe_item_push (ugd->naviframe, _T("Keyboard"), back_btn, NULL, genlist, NULL);
-        elm_naviframe_item_pop_cb_set(nf_main_it, back_cb, ugd);
-
+        elm_naviframe_item_pop_cb_set (nf_main_it, back_cb, ugd);
     }
     return ugd->naviframe;
 }

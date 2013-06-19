@@ -27,6 +27,7 @@
 #include <Elementary.h>
 #include <Ecore_X.h>
 #include <privilege-control.h>
+#include <efl_assist.h>
 #include "isf_demo_efl.h"
 #include "isf_imcontrol_efl.h"
 #include "isf_layout_efl.h"
@@ -251,9 +252,23 @@ static Evas_Object* create_layout_main (struct appdata *ad)
     return layout;
 }
 
+static void
+_naviframe_back_cb (void *data, Evas_Object *obj, void *event_info)
+{
+    Elm_Object_Item *top_it = elm_naviframe_top_item_get (obj);
+    Elm_Object_Item *bottom_it = elm_naviframe_bottom_item_get (obj);
+    if (top_it && bottom_it && (elm_object_item_content_get (top_it) == elm_object_item_content_get (bottom_it))) {
+        elm_exit ();
+    } else {
+        elm_naviframe_item_pop (obj);
+    }
+}
+
 static Evas_Object* _create_naviframe_layout (Evas_Object *parent)
 {
     Evas_Object *naviframe = elm_naviframe_add (parent);
+    elm_naviframe_prev_btn_auto_pushed_set (naviframe, EINA_FALSE);
+    ea_object_event_callback_add (naviframe, EA_CALLBACK_BACK, _naviframe_back_cb, NULL);
     elm_object_part_content_set (parent, "elm.swallow.content", naviframe);
 
     evas_object_show (naviframe);
@@ -265,7 +280,6 @@ static Eina_Bool _keydown_event (void *data, int type, void *event)
 {
     Ecore_Event_Key *ev = (Ecore_Event_Key *)event;
     struct appdata *ad = (struct appdata *)data;
-    Elm_Object_Item *top_it, *bottom_it;
     if (ad == NULL || ev == NULL) return ECORE_CALLBACK_RENEW;
 
     printf ("[ecore key down] keyname : '%s', key : '%s', string : '%s', compose : '%s'\n", ev->keyname, ev->key, ev->string, ev->compose);

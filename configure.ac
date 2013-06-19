@@ -230,6 +230,9 @@ if test "$ISF_HAS_EFL" = "yes"; then
   AC_SUBST(EFL_IM_MODULEDIR)
 fi
 
+# Check EFL assist library
+PKG_CHECK_MODULES(EFL_ASSIST, [efl-assist])
+
 # Check x11 library
 PKG_CHECK_MODULES(X11, [x11])
 
