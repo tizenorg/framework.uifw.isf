@@ -29,7 +29,7 @@
 #include <Ecore_IMF.h>
 #include <dlog.h>
 
-#define LOG_TAG "immodule"
+#define LOG_TAG "IMMODULE"
 
 const double DOUBLE_SPACE_INTERVAL = 1.0;
 const double HIDE_TIMER_INTERVAL = 0.05;
