@@ -1,3 +1,18 @@
+ISF 2.4.6620 :
+ 1. [demo] remove code for terminating app when END key is pressed
+ 2. [setting] Change naviframe back key event handling
+ 3. [demo] change code to process back button
+ 4. [immodule] check reverse question mark and exclamation mark to check autoperiod
+ 5. [immodule] fix autoperiod bug
+ 6. [immodule] support japanese auto punctuation
+ 7. [immodule] improve autocapital condition check code
+ 8. [immodule] Remove unnecessary config reload call
+ 9. [panel] Add preedit window
+10. Add interface update_preedit_string_with_caret()
+11. [panel] Added timer for off_prepare_done
+12. Add launch/destroy/show/hide logs for scim-helper-launcher
+
+
 ISF 2.4.6619 :
  1. [immodule] fix issue IME is hidden late in application does heavy job
  2. [panel] Separated GEOMETRY_EVENT from set_keyboard_geometry_atom_info()
