@@ -3,3 +3,4 @@ $1 system::homedir arwxt
 $1 sys-assert::core arwxt
 $1 com.samsung.indicator w
 $1 isf rwx
+$1 tts-server rwx
