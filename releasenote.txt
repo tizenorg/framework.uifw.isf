@@ -1,3 +1,7 @@
+ISF 2.4.6621 :
+ 1. [setting] Add smack rule for supporting screen reader
+
+
 ISF 2.4.6620 :
  1. [demo] remove code for terminating app when END key is pressed
  2. [setting] Change naviframe back key event handling
