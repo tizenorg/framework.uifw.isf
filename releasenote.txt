@@ -1,5 +1,6 @@
 ISF 2.4.6621 :
  1. [setting] Add smack rule for supporting screen reader
+ 2. [immodule] fix bug hide request was discarded
 
 
 ISF 2.4.6620 :
