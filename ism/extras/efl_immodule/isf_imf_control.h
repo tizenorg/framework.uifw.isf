@@ -62,6 +62,8 @@ extern "C"
     int _isf_imf_context_input_panel_send_will_show_ack (void);
     int _isf_imf_context_input_panel_send_will_hide_ack (void);
 
+    int _isf_imf_context_input_panel_send_candidate_will_hide_ack (void);
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */

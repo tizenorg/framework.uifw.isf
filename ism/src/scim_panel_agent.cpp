@@ -358,6 +358,7 @@ class PanelAgent::PanelAgentImpl
 
     PanelAgentSignalVoid                m_signal_will_show_ack;
     PanelAgentSignalVoid                m_signal_will_hide_ack;
+    PanelAgentSignalVoid                m_signal_candidate_will_hide_ack;
 public:
     PanelAgentImpl ()
         : m_should_exit (false),
@@ -2592,6 +2593,13 @@ public:
         m_signal_will_hide_ack ();
     }
 
+    void candidate_will_hide_ack (int client_id)
+    {
+        SCIM_DEBUG_MAIN(4) << "PanelAgent::will_hide_ack ()\n";
+
+        m_signal_candidate_will_hide_ack ();
+    }
+
     void reset_default_ise (int client_id)
     {
         SCIM_DEBUG_MAIN(4) << __func__ << "\n";
@@ -2921,6 +2929,11 @@ public:
     Connection signal_connect_will_hide_ack              (PanelAgentSlotVoid                *slot)
     {
         return m_signal_will_hide_ack.connect (slot);
+    }
+
+    Connection signal_connect_candidate_will_hide_ack    (PanelAgentSlotVoid                *slot)
+    {
+        return m_signal_candidate_will_hide_ack.connect (slot);
     }
 private:
     bool socket_check_client_connection (const Socket &client)
@@ -3370,6 +3383,8 @@ private:
                     will_show_ack (client_id);
                 else if (cmd == ISM_TRANS_CMD_SEND_WILL_HIDE_ACK)
                     will_hide_ack (client_id);
+                else if (cmd == ISM_TRANS_CMD_SEND_CANDIDATE_WILL_HIDE_ACK)
+                    candidate_will_hide_ack (client_id);
                 else if (cmd == ISM_TRANS_CMD_RESET_DEFAULT_ISE)
                     reset_default_ise (client_id);
             }
@@ -6087,6 +6102,12 @@ Connection
 PanelAgent::signal_connect_will_hide_ack              (PanelAgentSlotVoid                *slot)
 {
     return m_impl->signal_connect_will_hide_ack (slot);
+}
+
+Connection
+PanelAgent::signal_connect_candidate_will_hide_ack              (PanelAgentSlotVoid                *slot)
+{
+    return m_impl->signal_connect_candidate_will_hide_ack (slot);
 }
 
 } /* namespace scim */

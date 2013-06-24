@@ -69,6 +69,12 @@ static void _render_post_cb (void *data, Evas *e, void *event_info)
     isf_imf_context_input_panel_send_will_hide_ack ();
 }
 
+static void _candidate_render_post_cb (void *data, Evas *e, void *event_info)
+{
+    evas_event_callback_del_full (e, EVAS_CALLBACK_RENDER_POST, _candidate_render_post_cb, NULL);
+    isf_imf_context_input_panel_send_candidate_will_hide_ack ();
+}
+
 static void _clear_will_show_timer ()
 {
     if (will_show_timer) {
@@ -235,6 +241,13 @@ static void _event_callback_call (Ecore_IMF_Input_Panel_Event type, int value)
     if (type == ECORE_IMF_INPUT_PANEL_STATE_EVENT &&
         value == ECORE_IMF_INPUT_PANEL_STATE_WILL_SHOW) {
         isf_imf_context_input_panel_send_will_show_ack ();
+    }
+
+    if (type == ECORE_IMF_CANDIDATE_PANEL_STATE_EVENT &&
+        value == ECORE_IMF_CANDIDATE_PANEL_HIDE) {
+        if (active_context_canvas) {
+            evas_event_callback_add (active_context_canvas, EVAS_CALLBACK_RENDER_POST, _candidate_render_post_cb, NULL);
+        }
     }
 }
 
@@ -896,6 +909,14 @@ void isf_imf_context_input_panel_send_will_hide_ack ()
     else {
         _isf_imf_context_input_panel_send_will_hide_ack ();
     }
+}
+
+void isf_imf_context_input_panel_send_candidate_will_hide_ack ()
+{
+    if (IfInitContext == false) {
+        _isf_imf_context_init ();
+    }
+    _isf_imf_context_input_panel_send_candidate_will_hide_ack ();
 }
 
 /**

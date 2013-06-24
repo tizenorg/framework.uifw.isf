@@ -625,6 +625,7 @@ const int ISM_TRANS_CMD_GET_ISE_INFORMATION               = 1012;
 const int ISM_TRANS_CMD_SEND_WILL_SHOW_ACK                = 1013;
 const int ISM_TRANS_CMD_SEND_WILL_HIDE_ACK                = 1014;
 const int ISM_TRANS_CMD_RESET_DEFAULT_ISE                 = 1015;
+const int ISM_TRANS_CMD_SEND_CANDIDATE_WILL_HIDE_ACK      = 1016;
 
 
 /* IMControl to ISE */

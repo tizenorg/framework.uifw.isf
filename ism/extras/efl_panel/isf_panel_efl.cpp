@@ -121,7 +121,7 @@ static int        efl_get_angle_for_app_window         (void);
 static int        efl_get_angle_for_ise_window         (void);
 
 static int        ui_candidate_get_valid_height        (void);
-static void       ui_candidate_hide                    (bool bForce, bool bSetVirtualKbd = true);
+static void       ui_candidate_hide                    (bool bForce, bool bSetVirtualKbd = true, bool will_hide = false);
 static void       ui_destroy_candidate_window          (void);
 static void       ui_settle_candidate_window           (void);
 static void       ui_candidate_show                    (bool bSetVirtualKbd = true);
@@ -177,6 +177,7 @@ static void       slot_hide_ise                        (void);
 
 static void       slot_will_show_ack                   (void);
 static void       slot_will_hide_ack                   (void);
+static void       slot_candidate_will_hide_ack                   (void);
 
 static Eina_Bool  panel_agent_handler                  (void *data, Ecore_Fd_Handler *fd_handler);
 
@@ -300,6 +301,7 @@ static Ecore_Timer       *_longpress_timer                  = NULL;
 static Ecore_Timer       *_destroy_timer                    = NULL;
 static Ecore_Timer       *_system_ready_timer               = NULL;
 static Ecore_Timer       *_off_prepare_done_timer           = NULL;
+static Ecore_Timer       *_candidate_hide_timer             = NULL;
 
 static Ecore_X_Window     _ise_window                       = 0;
 static Ecore_X_Window     _app_window                       = 0;
@@ -309,6 +311,8 @@ static Ecore_File_Monitor *_helper_ise_em                   = NULL;
 static Ecore_File_Monitor *_keyboard_ise_em                 = NULL;
 
 static tts_h              _tts                              = NULL;
+
+static bool candidate_will_hide                             = false;
 
 /////////////////////////////////////////////////////////////////////////////
 // Implementation of internal functions.
@@ -420,9 +424,11 @@ static void set_keyboard_geometry_atom_info (Ecore_X_Window window, VIRTUAL_KEYB
     get_ise_geometry (info, kbd_state);
     if (_ise_width == 0 && _ise_height == 0) {
         info.pos_x = 0;
-        if (_candidate_window && evas_object_visible_get (_candidate_window)) {
-            info.width  = _candidate_width;
-            info.height = _candidate_height;
+        if (!candidate_will_hide) {
+            if (_candidate_window && evas_object_visible_get (_candidate_window)) {
+                info.width  = _candidate_width;
+                info.height = _candidate_height;
+            }
         }
         int angle = efl_get_angle_for_app_window ();
         if (angle == 90 || angle == 270)
@@ -431,15 +437,17 @@ static void set_keyboard_geometry_atom_info (Ecore_X_Window window, VIRTUAL_KEYB
             info.pos_y = _screen_height - info.height;
     } else {
         if (_candidate_mode == FIXED_CANDIDATE_WINDOW) {
-            if (_candidate_window && evas_object_visible_get (_candidate_window)) {
-                _candidate_valid_height = ui_candidate_get_valid_height ();
-                if ((_candidate_height - _candidate_valid_height) > _ise_height) {
-                    _candidate_valid_height = _candidate_height;
-                    info.pos_y  = info.pos_y + info.height - _candidate_height;
-                    info.height = _candidate_height;
-                } else {
-                    info.pos_y  -= _candidate_valid_height;
-                    info.height += _candidate_valid_height;
+            if (!candidate_will_hide) {
+                if (_candidate_window && evas_object_visible_get (_candidate_window)) {
+                    _candidate_valid_height = ui_candidate_get_valid_height ();
+                    if ((_candidate_height - _candidate_valid_height) > _ise_height) {
+                        _candidate_valid_height = _candidate_height;
+                        info.pos_y  = info.pos_y + info.height - _candidate_height;
+                        info.height = _candidate_height;
+                    } else {
+                        info.pos_y  -= _candidate_valid_height;
+                        info.height += _candidate_valid_height;
+                    }
                 }
             }
         }
@@ -1140,6 +1148,37 @@ static Eina_Bool off_prepare_done_timeout (void *data)
 }
 
 /**
+ * @brief Delete candidate hide timer.
+ *
+ * @return void
+ */
+static void delete_candidate_hide_timer (void)
+{
+    if (_candidate_hide_timer) {
+        ecore_timer_del (_candidate_hide_timer);
+        _candidate_hide_timer = NULL;
+    }
+}
+
+/**
+ * @brief Callback function for candidate hide timer
+ *
+ * @param data Data to pass when it is called.
+ *
+ * @return ECORE_CALLBACK_CANCEL
+ */
+static Eina_Bool candidate_hide_timer (void *data)
+{
+    delete_candidate_hide_timer();
+
+    _candidate_window_show = false;
+    evas_object_hide (_candidate_window);
+    candidate_will_hide = false;
+
+    return ECORE_CALLBACK_CANCEL;
+}
+
+/**
  * @brief Show candidate window.
  *
  * @param bSetVirtualKbd The flag for set_keyboard_geometry_atom_info () calling.
@@ -1195,7 +1234,7 @@ static void ui_candidate_show (bool bSetVirtualKbd)
  * @param bForce The flag to hide candidate window by force.
  * @param bSetVirtualKbd The flag for set_keyboard_geometry_atom_info () calling.
  */
-static void ui_candidate_hide (bool bForce, bool bSetVirtualKbd)
+static void ui_candidate_hide (bool bForce, bool bSetVirtualKbd, bool will_hide)
 {
     SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
     _candidate_window_pending = false;
@@ -1214,7 +1253,11 @@ static void ui_candidate_hide (bool bForce, bool bSetVirtualKbd)
 
     if (bForce || ui_candidate_can_be_hide ()) {
         if (evas_object_visible_get (_candidate_window)) {
-            evas_object_hide (_candidate_window);
+            if (will_hide)
+                candidate_will_hide = true;
+            else
+                evas_object_hide (_candidate_window);
+
             _panel_agent->update_candidate_panel_event ((uint32)ECORE_IMF_CANDIDATE_PANEL_STATE_EVENT, (uint32)ECORE_IMF_CANDIDATE_PANEL_HIDE);
 
             if (_candidate_mode == FIXED_CANDIDATE_WINDOW) {
@@ -1230,9 +1273,13 @@ static void ui_candidate_hide (bool bForce, bool bSetVirtualKbd)
         }
 
         SCIM_DEBUG_MAIN (3) << "    Hide candidate window\n";
-        _candidate_window_show = false;
-        evas_object_hide (_candidate_window);
-        evas_object_hide (_preedit_window);
+        if (will_hide) {
+            _candidate_hide_timer = ecore_timer_add (1.0, candidate_hide_timer, NULL);
+        } else {
+            _candidate_window_show = false;
+            evas_object_hide (_candidate_window);
+            evas_object_hide (_preedit_window);
+        }
     }
 }
 
@@ -2296,6 +2343,8 @@ static bool initialize_panel_agent (const String &config, const String &display,
     _panel_agent->signal_connect_will_show_ack              (slot (slot_will_show_ack));
     _panel_agent->signal_connect_will_hide_ack              (slot (slot_will_hide_ack));
 
+    _panel_agent->signal_connect_candidate_will_hide_ack    (slot (slot_candidate_will_hide_ack));
+
     std::vector<String> load_ise_list;
     _panel_agent->get_active_ise_list (load_ise_list);
 
@@ -2600,7 +2649,7 @@ static void slot_hide_candidate_table (void)
         }
         ui_candidate_window_adjust ();
 
-        ui_candidate_hide (false);
+        ui_candidate_hide (false, true, true);
         ui_settle_candidate_window ();
     }
 }
@@ -3102,17 +3151,19 @@ static void slot_get_candidate_geometry (struct rectinfo &info)
     int y      = 0;
     int width  = 0;
     int height = 0;
-    if (_candidate_window && evas_object_visible_get (_candidate_window)) {
-        /* Get candidate window position */
-        /*ecore_evas_geometry_get (ecore_evas_ecore_evas_get (evas_object_evas_get (_candidate_window)), &x, &y, &width, &height);*/
-        /* Get exact candidate window size */
-        /*int x2, y2;
-        evas_object_geometry_get (_candidate_window, &x2, &y2, &width, &height);*/
+    if (!candidate_will_hide) {
+        if (_candidate_window && evas_object_visible_get (_candidate_window)) {
+            /* Get candidate window position */
+            /*ecore_evas_geometry_get (ecore_evas_ecore_evas_get (evas_object_evas_get (_candidate_window)), &x, &y, &width, &height);*/
+            /* Get exact candidate window size */
+            /*int x2, y2;
+              evas_object_geometry_get (_candidate_window, &x2, &y2, &width, &height);*/
 
-        x      = _candidate_x;
-        y      = _candidate_y;
-        width  = _candidate_width;
-        height = _candidate_height;
+            x      = _candidate_x;
+            y      = _candidate_y;
+            width  = _candidate_width;
+            height = _candidate_height;
+        }
     }
     info.pos_x  = x;
     info.pos_y  = y;
@@ -3137,9 +3188,11 @@ static void slot_get_input_panel_geometry (struct rectinfo &info)
         info.pos_x = 0;
         info.width = 0;
         info.height = 0;
-        if (_candidate_window && evas_object_visible_get (_candidate_window)) {
-            info.width  = _candidate_width;
-            info.height = _candidate_height;
+        if (!candidate_will_hide) {
+            if (_candidate_window && evas_object_visible_get (_candidate_window)) {
+                info.width  = _candidate_width;
+                info.height = _candidate_height;
+            }
         }
         int angle = efl_get_angle_for_app_window ();
         if (angle == 90 || angle == 270)
@@ -3153,14 +3206,16 @@ static void slot_get_input_panel_geometry (struct rectinfo &info)
             info.height = 0;
         } else {
             if (_candidate_mode == FIXED_CANDIDATE_WINDOW) {
-                if (_candidate_window && evas_object_visible_get (_candidate_window)) {
-                    int height = ui_candidate_get_valid_height ();
-                    if ((_candidate_height - height) > _ise_height) {
-                        info.pos_y  = info.pos_y + info.height - _candidate_height;
-                        info.height = _candidate_height;
-                    } else {
-                        info.pos_y  -= height;
-                        info.height += height;
+                if (!candidate_will_hide) {
+                    if (_candidate_window && evas_object_visible_get (_candidate_window)) {
+                        int height = ui_candidate_get_valid_height ();
+                        if ((_candidate_height - height) > _ise_height) {
+                            info.pos_y  = info.pos_y + info.height - _candidate_height;
+                            info.height = _candidate_height;
+                        } else {
+                            info.pos_y  -= height;
+                            info.height += height;
+                        }
                     }
                 }
             }
@@ -3515,6 +3570,16 @@ static void slot_will_hide_ack (void)
     LOGD ("_ecore_x_e_virtual_keyboard_off_prepare_done_send(%x, %x)\n",
             root_window, _control_window);
     ui_candidate_hide (true, false);
+}
+
+static void slot_candidate_will_hide_ack (void)
+{
+    LOGD ("candidate_will_hide_ack");
+    if (candidate_will_hide) {
+        _candidate_window_show = false;
+        evas_object_hide (_candidate_window);
+        candidate_will_hide = false;
+    }
 }
 
 //////////////////////////////////////////////////////////////////////

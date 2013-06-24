@@ -487,6 +487,10 @@ public:
     void set_active_ise_to_default (void) {
         m_trans.put_command (ISM_TRANS_CMD_RESET_DEFAULT_ISE);
     }
+
+    void send_candidate_will_hide_ack (void) {
+        m_trans.put_command (ISM_TRANS_CMD_SEND_CANDIDATE_WILL_HIDE_ACK);
+    }
 };
 
 IMControlClient::IMControlClient ()
@@ -671,6 +675,11 @@ void IMControlClient::send_will_hide_ack (void)
 void IMControlClient::set_active_ise_to_default (void)
 {
     m_impl->set_active_ise_to_default ();
+}
+
+void IMControlClient::send_candidate_will_hide_ack (void)
+{
+    m_impl->send_candidate_will_hide_ack ();
 }
 
 };

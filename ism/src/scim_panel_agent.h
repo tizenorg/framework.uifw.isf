@@ -1157,6 +1157,13 @@ public:
      * slot prototype: void will_hide_ack (void);
      */
     Connection signal_connect_will_hide_ack              (PanelAgentSlotVoid                *slot);
+
+    /**
+     * @brief Signal: Notifies the client finished handling WILL_HIDE event for candidate
+     *
+     * slot prototype: void candidate_will_hide_ack (void);
+     */
+    Connection signal_connect_candidate_will_hide_ack    (PanelAgentSlotVoid                *slot);
 };
 
 /**  @} */
