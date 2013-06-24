@@ -1,3 +1,7 @@
+ISF 2.4.6624 :
+ 1. [setting,demo] support back key
+
+
 ISF 2.4.6621 :
  1. [setting] Add smack rule for supporting screen reader
  2. [immodule] fix bug hide request was discarded
