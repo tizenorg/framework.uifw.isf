@@ -37,7 +37,7 @@ msgstr "自動大文字変換"
 
 #: ism/extras/efl_setting/isf_setting_efl.cpp:866
 msgid "Automatically capitalize first letter of sentence"
-msgstr "文頭を大文字に自動変換します。"
+msgstr "文頭文字を大文字に自動変換"
 
 #: ism/extras/efl_setting/isf_setting_efl.cpp:899
 msgid "Automatic full stop"
@@ -45,7 +45,7 @@ msgstr "自動ピリオド"
 
 #: ism/extras/efl_setting/isf_setting_efl.cpp:916
 msgid "Automatically insert a full stop by tapping the space bar twice"
-msgstr "スペースバーを2回タップして、句点を自動入力"
+msgstr "スペースバーのダブルタップでピリオドを自動入力"
 
 #: ism/extras/efl_setting/isf_setting_efl.cpp:934
 msgid "Software keyboard"

@@ -197,9 +197,8 @@ msgid "Hungarian"
 msgstr "ハンガリー語"
 
 #: ism/src/scim_utility.cpp:744
-#, fuzzy
 msgid "Armenian"
-msgstr "ルーマニア語"
+msgstr "アルメニア語"
 
 #: ism/src/scim_utility.cpp:745
 msgid "Interlingua"
@@ -225,9 +224,8 @@ msgid "Japanese"
 msgstr "日本語"
 
 #: ism/src/scim_utility.cpp:751 ism/src/scim_utility.cpp:918
-#, fuzzy
 msgid "Georgian"
-msgstr "ドイツ語"
+msgstr "グルジア語"
 
 #: ism/src/scim_utility.cpp:752 ism/src/scim_utility.cpp:876
 msgid "Kazakh"
@@ -436,14 +434,12 @@ msgid "Dutch (Belgian)"
 msgstr "ベルギー"
 
 #: ism/src/scim_utility.cpp:807
-#, fuzzy
 msgid "English (United States)"
-msgstr "英語(US)"
+msgstr "英語(アメリカ)"
 
 #: ism/src/scim_utility.cpp:808
-#, fuzzy
 msgid "English (United Kingdom)"
-msgstr "英語(カナダ)"
+msgstr "英語(イギリス)"
 
 #: ism/src/scim_utility.cpp:811
 #, fuzzy
@@ -647,9 +643,8 @@ msgid "Norwegian"
 msgstr "ノルウェー語"
 
 #: ism/src/scim_utility.cpp:868
-#, fuzzy
 msgid "Serbian (Latin)"
-msgstr "セルビア語"
+msgstr "セルビア語(ラテン)"
 
 #: ism/src/scim_utility.cpp:879
 msgid "Serbian (Cyrillic)"
