@@ -1,3 +1,8 @@
+ISF 2.4.6628 :
+ 1. [immodule] fix bug back key isn't propagated in H/W keyboard mode
+ 2. Change word to newly translated word
+
+
 ISF 2.4.6624 :
  1. [setting,demo] support back key
 
