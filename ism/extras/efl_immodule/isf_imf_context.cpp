@@ -460,7 +460,8 @@ _key_down_cb (void *data, int type, void *event)
     Evas_Event_Key_Down *ev = (Evas_Event_Key_Down *)event;
     if (!ev || !_focused_ic || !_focused_ic->ctx) return ECORE_CALLBACK_RENEW;
 
-    if (!strcmp (ev->keyname, KEY_END) &&
+    if ((hw_keyboard_num_get() == 0) &&
+        !strcmp (ev->keyname, KEY_END) &&
         ecore_imf_context_input_panel_state_get (_focused_ic->ctx) != ECORE_IMF_INPUT_PANEL_STATE_HIDE) {
         LOGD ("END key is pressed\n");
         return ECORE_CALLBACK_CANCEL;
@@ -477,7 +478,8 @@ _key_up_cb (void *data, int type, void *event)
     Evas_Event_Key_Down *ev = (Evas_Event_Key_Down *)event;
     if (!ev || !_focused_ic || !_focused_ic->ctx) return ECORE_CALLBACK_RENEW;
 
-    if (!strcmp (ev->keyname, KEY_END) &&
+    if ((hw_keyboard_num_get() == 0) &&
+        !strcmp (ev->keyname, KEY_END) &&
         ecore_imf_context_input_panel_state_get (_focused_ic->ctx) != ECORE_IMF_INPUT_PANEL_STATE_HIDE) {
         LOGD ("END key is released\n");
         isf_imf_context_input_panel_instant_hide (_focused_ic->ctx);
