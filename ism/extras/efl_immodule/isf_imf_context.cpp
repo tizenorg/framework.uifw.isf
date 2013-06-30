@@ -460,7 +460,7 @@ _key_down_cb (void *data, int type, void *event)
     Evas_Event_Key_Down *ev = (Evas_Event_Key_Down *)event;
     if (!ev || !_focused_ic || !_focused_ic->ctx) return ECORE_CALLBACK_RENEW;
 
-    if ((hw_keyboard_num_get() == 0) &&
+    if ((hw_keyboard_num_get () == 0) &&
         !strcmp (ev->keyname, KEY_END) &&
         ecore_imf_context_input_panel_state_get (_focused_ic->ctx) != ECORE_IMF_INPUT_PANEL_STATE_HIDE) {
         LOGD ("END key is pressed\n");
@@ -478,7 +478,7 @@ _key_up_cb (void *data, int type, void *event)
     Evas_Event_Key_Down *ev = (Evas_Event_Key_Down *)event;
     if (!ev || !_focused_ic || !_focused_ic->ctx) return ECORE_CALLBACK_RENEW;
 
-    if ((hw_keyboard_num_get() == 0) &&
+    if ((hw_keyboard_num_get () == 0) &&
         !strcmp (ev->keyname, KEY_END) &&
         ecore_imf_context_input_panel_state_get (_focused_ic->ctx) != ECORE_IMF_INPUT_PANEL_STATE_HIDE) {
         LOGD ("END key is released\n");
@@ -3637,7 +3637,7 @@ slot_commit_string (IMEngineInstanceBase *si,
             if (ecore_imf_context_input_panel_layout_get (ic->ctx) == ECORE_IMF_INPUT_PANEL_LAYOUT_NORMAL &&
                 ic->impl->shift_mode_enabled &&
                 ic->impl->autocapital_type != ECORE_IMF_AUTOCAPITAL_TYPE_NONE &&
-                hw_keyboard_num_get() == 0) {
+                hw_keyboard_num_get () == 0) {
                 char converted[2] = {'\0'};
                 if (utf8_wcstombs (str).length () == 1) {
                     Eina_Bool uppercase;
