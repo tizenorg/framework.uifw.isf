@@ -1,4 +1,11 @@
 isf system::vconf arwxt
+isf system::vconf_inhouse arwxt
+isf system::vconf_misc arwxt
+isf system::vconf_setting r
+isf system::vconf_privacy r
+isf system::vconf_system r
+isf system::vconf_multimedia r
+isf system::vconf_network r
 isf system::homedir arwxt
 isf xorg rw
 isf system::use_internet r
@@ -9,4 +16,7 @@ isf sound_server rw
 isf sys-assert::core arwxt
 isf _ w
 isf mobileprint x
+isf system::media rx
+isf data-provider-master::notification rw
+isf data-provider-master::notification.client w
 isf tts-server rx
