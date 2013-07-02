@@ -1,3 +1,57 @@
+* Tue Jul 02 2013 Jihoon Kim <jihoon48.kim@samsung.com> submit/tizen_2.2/20130628.112408@69fa176
+- Add smack rule
+- [immodule] fix indentation
+- upload isf-2.4.6628
+- Change word to newly translated word
+- fix bug back key isn't propagated in case of H/W keyboard mode
+- Add candidate will hide for candidate hide sync
+- upload isf-2.4.6624
+- Support back key
+- upload isf-2.4.6621-3
+- fix bug hide request was dicarded
+- upload isf-2.4.6621-2
+- fix build warning
+- upload isf-2.4.6621
+- Add smack rule for supporting screen reader
+- upload isf-2.4.6620
+- Add launch/destroy/show/hide logs for scim-helper-launcher
+- Added timer for off_prepare_done
+- Add interface update_preedit_string_with_caret()
+- Add preedit window
+- Remove unnecessary config reload call
+- improve autocapital condition check code
+- support japanese auto punctuation
+- fix autoperiod bug
+- check reverse question mark and exclamation mark to check autoperiod
+- change code to process back button
+- Change naviframe back key event handling
+- remove debug printf
+- remove code for terminating app when END key is pressed
+- upload isf-2.4.6619
+- Move smack rule into separate rule file
+- change DLOG tagname of immodule
+- Add screen reader feature
+- remove unnecessary prepare and send
+- fix bug focus-in message couldn't be transferred
+- add check focus ic
+- fix BS issue when S/W keyboard selection is selected
+- fix prevent issue
+- Merge "Separated GEOMETRY_EVENT from set_keyboard_geometry_atom_info()" into tizen_2.2
+- Separated GEOMETRY_EVENT from set_keyboard_geometry_atom_info()
+- fix issue IME is hidden late in application does heavy job
+- upload isf package
+- upload isf-2.4.6610
+- remove code to check focus ic because of side effect
+- Merge "Revert "move hide timer from immodule to panel"" into tizen_2.2
+- Revert "move hide timer from immodule to panel"
+- upload isf-2.4.6607
+- Merge "move hide timer from immodule to panel" into tizen_2.2
+- move hide timer from immodule to panel
+- Remove keyboard wizard source codes
+- Solve aux/candidate selection event broadcast issue
+- Remove gtk_panel source codes
+- fix back space issue in MBE
+
 * Thu Jan 31 2013 Jihoon Kim <jihoon48.kim@samsung.com> submit/master/20130130.000238@1871df6
 - Remove code to hide IME in case of Search, go return key type
 - Remove debian directory

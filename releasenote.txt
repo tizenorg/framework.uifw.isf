@@ -1,3 +1,7 @@
+ISF 2.4.6702 :
+ 1. Add smack rule
+
+
 ISF 2.4.6628 :
  1. [immodule] fix bug back key isn't propagated in H/W keyboard mode
  2. Change word to newly translated word
