@@ -1,3 +1,8 @@
+* Wed Jul 03 2013 Jihoon Kim <jihoon48.kim@samsung.com> submit/tizen_2.2/20130703.000910@b0ee9f0
+- keyboard setting view should be changed according to H/W keyboard connection
+- check return value of pkgmgr function
+- upload isf-2.4.6702
+
 * Tue Jul 02 2013 Jihoon Kim <jihoon48.kim@samsung.com> submit/tizen_2.2/20130628.112408@69fa176
 - Add smack rule
 - [immodule] fix indentation

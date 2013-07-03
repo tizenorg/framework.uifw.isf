@@ -1,3 +1,8 @@
+ISF 2.4.6703 :
+ 1. keyboard setting view should be changed according to H/W keyboard connection
+ 2. check return value of pkgmgr function
+
+
 ISF 2.4.6702 :
  1. Add smack rule
 
