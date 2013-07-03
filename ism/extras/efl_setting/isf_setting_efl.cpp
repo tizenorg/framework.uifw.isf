@@ -326,7 +326,9 @@ static int pkg_list_cb (pkgmgrinfo_appinfo_h handle, void *user_data)
 {
     char *id = (char *)user_data;
     char *pkgid = NULL;
-    pkgmgrinfo_pkginfo_get_pkgid (handle, &pkgid);
+    if (pkgmgrinfo_pkginfo_get_pkgid (handle, &pkgid) != PMINFO_R_OK)
+        return -1;
+
     if (strcmp (pkgid , id) == 0) {
         _ise_option_module_stat = ISE_OPTION_MODULE_EXIST_XML;
         ISFUG_DEBUG ("pkgid : %s\n", pkgid);
