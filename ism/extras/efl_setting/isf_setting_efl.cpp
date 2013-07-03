@@ -1382,6 +1382,21 @@ static void hw_connection_change_cb (ug_data *ugd)
         }
         isf_control_set_active_ise_by_uuid (uuid.c_str ());
     }
+
+    if (ugd->key_end_cb == hw_keyboard_selection_view_set_cb) {
+        // H/W keyboard selection view
+        if (!_hw_kbd_connected)
+            elm_naviframe_item_pop (ugd->naviframe);
+    }
+    else if (ugd->key_end_cb == sw_keyboard_selection_view_set_cb) {
+        // S/W keyboard selection view
+        if (_hw_kbd_connected)
+            elm_naviframe_item_pop (ugd->naviframe);
+    }
+    else if (ugd->key_end_cb == ise_option_view_set_cb) {
+        // ISE or IMEngine option view
+        elm_naviframe_item_pop (ugd->naviframe);
+    }
 }
 
 static Eina_Bool x_window_property_change_cb (void *data, int ev_type, void *ev)
