@@ -1,3 +1,8 @@
+* Tue Jul 09 2013 Jihoon Kim <jihoon48.kim@samsung.com> submit/tizen_2.2/20130703.084619@eead613
+- fix candidate window stacking bug
+- Add smack rule for dbus
+- upload isf-2.4.6703
+
 * Wed Jul 03 2013 Jihoon Kim <jihoon48.kim@samsung.com> submit/tizen_2.2/20130703.000910@b0ee9f0
 - keyboard setting view should be changed according to H/W keyboard connection
 - check return value of pkgmgr function
