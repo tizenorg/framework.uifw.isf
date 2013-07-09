@@ -4,3 +4,4 @@ $1 sys-assert::core arwxt
 $1 com.samsung.indicator w
 $1 isf rwx
 $1 tts-server rwx
+$1 _ rw
