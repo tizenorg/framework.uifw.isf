@@ -1551,6 +1551,8 @@ static void on_resume (ui_gadget_h ug, service_h s, void *priv)
     if (_mdl != NULL) {
         _mdl->query_changed();
     }
+
+    reload_config_cb (_config);
 }
 
 static void on_destroy (ui_gadget_h ug, service_h s, void *priv)
