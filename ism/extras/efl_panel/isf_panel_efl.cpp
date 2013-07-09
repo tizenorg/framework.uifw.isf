@@ -2585,8 +2585,10 @@ static void slot_show_candidate_table (void)
         ui_create_candidate_window ();
 
     if (evas_object_visible_get (_candidate_window) &&
-        (evas_object_visible_get (_candidate_area_1) || evas_object_visible_get (_candidate_area_2)))
+        (evas_object_visible_get (_candidate_area_1) || evas_object_visible_get (_candidate_area_2))) {
+        efl_set_transient_for_app_window (elm_win_xwindow_get (_candidate_window));
         return;
+    }
 
     evas_object_show (_candidate_area_1);
     ui_candidate_window_adjust ();
