@@ -14,7 +14,7 @@ isf device::app_logging w
 isf svi-data rx
 isf sound_server rw
 isf sys-assert::core arwxt
-isf _ w
+isf _ rw
 isf mobileprint x
 isf system::media rx
 isf data-provider-master::notification rw
