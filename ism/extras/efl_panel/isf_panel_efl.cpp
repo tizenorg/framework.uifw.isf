@@ -1913,6 +1913,11 @@ static void ui_settle_candidate_window (void)
     int x, y, width, height;
     bool reverse = false;
 
+    if (_panel_agent->get_current_toolbar_mode () == TOOLBAR_KEYBOARD_MODE) {
+        _ise_width = 0;
+        _ise_height = 0;
+    }
+
     /* Get candidate window position */
     ecore_evas_geometry_get (ecore_evas_ecore_evas_get (evas_object_evas_get (_candidate_window)), &x, &y, &width, &height);
 
@@ -3571,7 +3576,9 @@ static void slot_will_hide_ack (void)
     ecore_x_e_virtual_keyboard_off_prepare_done_send (root_window, _control_window);
     LOGD ("_ecore_x_e_virtual_keyboard_off_prepare_done_send(%x, %x)\n",
             root_window, _control_window);
-    ui_candidate_hide (true, false);
+    if (_panel_agent->get_current_toolbar_mode() == TOOLBAR_HELPER_MODE) {
+        ui_candidate_hide (true, false);
+    }
 }
 
 static void slot_candidate_will_hide_ack (void)
@@ -3929,7 +3936,11 @@ static Eina_Bool x_event_window_property_cb (void *data, int ev_type, void *even
                 //_panel_agent->update_input_panel_event (
                 //    ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_HIDE);
                 _ise_show = false;
-                ui_candidate_hide (true, false);
+                if (_panel_agent->get_current_toolbar_mode() == TOOLBAR_HELPER_MODE) {
+                    ui_candidate_hide (true, false);
+                } else {
+                    ui_settle_candidate_window();
+                }
 
                 vconf_set_int (VCONFKEY_PM_SIP_STATUS, VCONFKEY_PM_SIP_OFF);
             }
