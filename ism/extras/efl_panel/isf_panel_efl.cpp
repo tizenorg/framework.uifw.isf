@@ -389,15 +389,23 @@ static void get_ise_geometry (RECT_INFO &info, VIRTUAL_KEYBOARD_STATE kbd_state)
             info.height = height;
         }
 
-        LOGD ("Geometry : %d, %d %d %d %d\n", _candidate_angle,
-            info.pos_x, info.pos_y, info.width, info.height);
-
         info.pos_x = (int)info.width > win_w ? 0 : (win_w - info.width) / 2;
-        if (kbd_state == KEYBOARD_STATE_OFF) {
+        if (_panel_agent->get_current_toolbar_mode () == TOOLBAR_KEYBOARD_MODE) {
+            info.pos_x = 0;
             info.pos_y = win_h;
+            info.width = 0;
+            info.height = 0;
         } else {
-            info.pos_y = win_h - info.height;
+            if (kbd_state == KEYBOARD_STATE_OFF) {
+                info.pos_y = win_h;
+            } else {
+                info.pos_y = win_h - info.height;
+            }
         }
+
+        LOGD ("Geometry : %d %d, %d %d %d %d\n", _candidate_angle,
+            _panel_agent->get_current_toolbar_mode (),
+            info.pos_x, info.pos_y, info.width, info.height);
     } else {
         pos_x = 0;
         pos_y = 0;
@@ -1912,11 +1920,6 @@ static void ui_settle_candidate_window (void)
     int spot_x, spot_y;
     int x, y, width, height;
     bool reverse = false;
-
-    if (_panel_agent->get_current_toolbar_mode () == TOOLBAR_KEYBOARD_MODE) {
-        _ise_width = 0;
-        _ise_height = 0;
-    }
 
     /* Get candidate window position */
     ecore_evas_geometry_get (ecore_evas_ecore_evas_get (evas_object_evas_get (_candidate_window)), &x, &y, &width, &height);
