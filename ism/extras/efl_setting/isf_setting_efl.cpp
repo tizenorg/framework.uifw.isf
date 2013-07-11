@@ -492,7 +492,8 @@ static Eina_Bool sw_keyboard_selection_view_set_cb (void *data, Elm_Object_Item 
 
     struct ug_data *ugd = (struct ug_data *)data;
 
-    set_active_sw_ise();
+    if (!_hw_kbd_connected)
+        set_active_sw_ise();
 
     update_setting_main_view (ugd);
 
