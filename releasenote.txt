@@ -1,3 +1,9 @@
+ISF 2.4.6711 :
+ 1. Add dbus smack rule for setting UG
+ 2. [setting] update current keyboard engine on on_resume
+ 3. [setting] check hardware mode before back hw_keyboard_selection_view_set_cb
+
+
 ISF 2.4.6709 :
  1. fix candidate window stacking bug
  2. Add smack rule for dbus
