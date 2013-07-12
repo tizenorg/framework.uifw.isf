@@ -1,3 +1,10 @@
+ISF 2.4.6712 :
+ 1. Fix wrong candidate angle affects the geometry of ISE
+ 2. Refined the routine for updating ISE size information
+ 3. Changed to relocate candidate window instead of hiding it when H/W keyboard attached
+ 4. check hardware keyboard status before set active ise
+
+
 ISF 2.4.6711 :
  1. Add dbus smack rule for setting UG
  2. [setting] update current keyboard engine on on_resume

@@ -1,3 +1,9 @@
+* Fri Jul 12 2013 Jihoon Kim <jihoon48.kim@samsung.com> submit/tizen_2.2/20130711.000228@3df7f2f
+- Fix wrong candidate angle affects the geometry of ISE
+- Refined the routine for updating ISE size information
+- Changed to relocate candidate window instead of hiding it when H/W keyboard attached
+- check hardware keyboard status before set active ise
+
 * Thu Jul 11 2013 Jihoon Kim <jihoon48.kim@samsung.com> submit/tizen_2.2/20130709.065255@552cf9e
 - check hardware mode before back hw_keyboard_selection_view_set_cb
 - Add dbus smack rule for setting UG
