@@ -368,7 +368,10 @@ static void get_ise_geometry (RECT_INFO &info, VIRTUAL_KEYBOARD_STATE kbd_state)
     SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
 
     int win_w = _screen_width, win_h = _screen_height;
-    int angle = _candidate_angle;
+    int angle = efl_get_angle_for_app_window ();
+    if (_candidate_angle != angle)
+        _candidate_angle = angle;
+
     if (angle == 90 || angle == 270) {
         win_w = _screen_height;
         win_h = _screen_width;
