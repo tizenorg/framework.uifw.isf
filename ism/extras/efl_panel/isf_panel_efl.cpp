@@ -1463,26 +1463,26 @@ static bool ui_open_tts (void)
 
     int r = tts_create (&_tts);
     if (TTS_ERROR_NONE != r) {
-        std::cerr << "tts_create FAILED : result(" << r << ")\n";
+        LOGD ("tts_create FAILED : result(%d)\n", r);
         _tts = NULL;
         return false;
     }
 
     r = tts_set_mode (_tts, TTS_MODE_SCREEN_READER);
     if (TTS_ERROR_NONE != r) {
-        std::cerr << "tts_set_mode FAILED : result(" << r << ")\n";
+        LOGD ("tts_set_mode FAILED : result(%d)\n", r);
     }
 
     tts_state_e current_state;
     r = tts_get_state (_tts, &current_state);
     if (TTS_ERROR_NONE != r) {
-        std::cerr << "tts_get_state FAILED : result(" << r << ")\n";
+        LOGD ("tts_get_state FAILED : result(%d)\n", r);
     }
 
     if (TTS_STATE_CREATED == current_state)  {
         r = tts_prepare (_tts);
         if (TTS_ERROR_NONE != r) {
-            std::cerr << "tts_prepare FAILED : ret(" << r << ")\n";
+            LOGD ("tts_prepare FAILED : ret(%d)\n", r);
         }
     }
     return true;
@@ -1498,12 +1498,12 @@ static void ui_close_tts (void)
     if (_tts) {
         int r = tts_unprepare (_tts);
         if (TTS_ERROR_NONE != r) {
-            std::cerr << "tts_unprepare FAILED : result(" << r << ")\n";
+            LOGD ("tts_unprepare FAILED : result(%d)\n", r);
         }
 
         r = tts_destroy (_tts);
         if (TTS_ERROR_NONE != r) {
-            std::cerr << "tts_destroy FAILED : result(" << r << ")\n";
+            LOGD ("tts_destroy FAILED : result(%d)\n", r);
         }
     }
 }
@@ -1529,13 +1529,13 @@ static void ui_play_tts (const char* str)
 
         r = tts_get_state (_tts, &current_state);
         if (TTS_ERROR_NONE != r) {
-            std::cerr << "Fail to get state from TTS : ret(" << r << ")\n";
+            LOGD ("Fail to get state from TTS : ret(%d)\n", r);
         }
 
         if (TTS_STATE_PLAYING == current_state)  {
             r = tts_stop (_tts);
             if (TTS_ERROR_NONE != r) {
-                std::cerr << "Fail to stop TTS : ret(" << r << ")\n";
+                LOGD ("Fail to stop TTS : ret(%d)\n", r);
             }
         }
         /* FIXME: Should support for all languages */
@@ -1543,7 +1543,7 @@ static void ui_play_tts (const char* str)
         if (TTS_ERROR_NONE == r) {
             r = tts_play (_tts);
             if (TTS_ERROR_NONE != r) {
-                std::cerr << "Fail to play TTS : ret(" << r << ")\n";
+                LOGD ("Fail to play TTS : ret(%d)\n", r);
             }
         }
     }
