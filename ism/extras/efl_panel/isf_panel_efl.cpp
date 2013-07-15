@@ -1474,7 +1474,10 @@ static bool ui_open_tts (void)
     }
 
     tts_state_e current_state;
-    tts_get_state (_tts, &current_state);
+    r = tts_get_state (_tts, &current_state);
+    if (TTS_ERROR_NONE != r) {
+        std::cerr << "tts_get_state FAILED : result(" << r << ")\n";
+    }
 
     if (TTS_STATE_CREATED == current_state)  {
         r = tts_prepare (_tts);
