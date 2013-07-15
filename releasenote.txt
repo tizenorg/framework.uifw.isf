@@ -1,3 +1,9 @@
+ISF 2.4.6715 :
+ 1. Use dlog instead of std::cerr
+ 2. [panel] fix unchecked return value
+ 3. [demo] Use ea_editfield
+
+
 ISF 2.4.6712 :
  1. Fix wrong candidate angle affects the geometry of ISE
  2. Refined the routine for updating ISE size information

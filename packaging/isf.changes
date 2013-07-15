@@ -1,3 +1,8 @@
+* Mon Jul 15 2013 Jihoon Kim <jihoon48.kim@samsung.com> submit/tizen_2.2/20130712.045645@dc286d3
+- Use dlog instead of std::cerr
+- [panel] fix unchecked return value
+- [demo] Use ea_editfield
+
 * Fri Jul 12 2013 Jihoon Kim <jihoon48.kim@samsung.com> submit/tizen_2.2/20130711.000228@3df7f2f
 - Fix wrong candidate angle affects the geometry of ISE
 - Refined the routine for updating ISE size information
