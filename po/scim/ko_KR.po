@@ -52,7 +52,7 @@ msgstr "아삼어"
 
 #: ism/src/scim_utility.cpp:708 ism/src/scim_utility.cpp:919
 msgid "Azerbaijani"
-msgstr "아제르바이잔어"
+msgstr "Azərbaycan"
 
 #: ism/src/scim_utility.cpp:709
 msgid "Belarusian"
@@ -60,7 +60,7 @@ msgstr "벨로루시어"
 
 #: ism/src/scim_utility.cpp:710 ism/src/scim_utility.cpp:875
 msgid "Bulgarian"
-msgstr "불가리어"
+msgstr "Български"
 
 #: ism/src/scim_utility.cpp:711 ism/src/scim_utility.cpp:712
 #: ism/src/scim_utility.cpp:914
@@ -81,12 +81,12 @@ msgstr "보스니아어"
 
 #: ism/src/scim_utility.cpp:716 ism/src/scim_utility.cpp:854
 msgid "Catalan"
-msgstr "카탈로니아어"
+msgstr "Català"
 
 #: ism/src/scim_utility.cpp:717 ism/src/scim_utility.cpp:864
 #: ism/src/scim_keyboard_layout_data.h:4596
 msgid "Czech"
-msgstr "체코어"
+msgstr "Čeština"
 
 #: ism/src/scim_utility.cpp:718 ism/src/scim_utility.cpp:924
 msgid "Welsh"
@@ -95,12 +95,12 @@ msgstr "웨일즈어"
 #: ism/src/scim_utility.cpp:719 ism/src/scim_utility.cpp:855
 #: ism/src/scim_keyboard_layout_data.h:4598
 msgid "Danish"
-msgstr "덴마크어"
+msgstr "Dansk"
 
 #: ism/src/scim_utility.cpp:720 ism/src/scim_utility.cpp:825
 #: ism/src/scim_keyboard_layout_data.h:4606
 msgid "German"
-msgstr "독일어"
+msgstr "Deutsch"
 
 #: ism/src/scim_utility.cpp:721
 msgid "Divehi"
@@ -109,11 +109,11 @@ msgstr ""
 #: ism/src/scim_utility.cpp:722 ism/src/scim_utility.cpp:874
 #: ism/src/scim_keyboard_layout_data.h:4609
 msgid "Greek"
-msgstr "그리스어"
+msgstr "Ελληνικά"
 
 #: ism/src/scim_utility.cpp:723
 msgid "English"
-msgstr "영어"
+msgstr "English"
 
 #: ism/src/scim_utility.cpp:724 ism/src/scim_utility.cpp:809
 msgid "English (Australian)"
@@ -138,7 +138,7 @@ msgstr "영어 (미국)"
 #: ism/src/scim_utility.cpp:729 ism/src/scim_utility.cpp:730
 #: ism/src/scim_keyboard_layout_data.h:4622
 msgid "Spanish"
-msgstr "스페인어"
+msgstr "Español"
 
 #: ism/src/scim_utility.cpp:731
 msgid "Spanish (Mexico)"
@@ -147,11 +147,11 @@ msgstr "스페인어 (멕시코)"
 #: ism/src/scim_utility.cpp:732 ism/src/scim_utility.cpp:871
 #: ism/src/scim_keyboard_layout_data.h:4601
 msgid "Estonian"
-msgstr "에스토니아어"
+msgstr "Eesti"
 
 #: ism/src/scim_utility.cpp:733 ism/src/scim_utility.cpp:853
 msgid "Basque"
-msgstr "바스크어"
+msgstr "Euskara"
 
 #: ism/src/scim_utility.cpp:734
 msgid "Persian"
@@ -160,12 +160,12 @@ msgstr "페르시아어"
 #: ism/src/scim_utility.cpp:735 ism/src/scim_utility.cpp:858
 #: ism/src/scim_keyboard_layout_data.h:4602
 msgid "Finnish"
-msgstr "핀란드어"
+msgstr "Suomi"
 
 #: ism/src/scim_utility.cpp:736 ism/src/scim_utility.cpp:819
 #: ism/src/scim_keyboard_layout_data.h:4603
 msgid "French"
-msgstr "프랑스어"
+msgstr "Français"
 
 #: ism/src/scim_utility.cpp:737 ism/src/scim_utility.cpp:922
 msgid "Irish"
@@ -173,7 +173,7 @@ msgstr "아일랜드어"
 
 #: ism/src/scim_utility.cpp:738 ism/src/scim_utility.cpp:920
 msgid "Galician"
-msgstr "갈리시아어"
+msgstr "Galego"
 
 #: ism/src/scim_utility.cpp:739 ism/src/scim_utility.cpp:915
 msgid "Gujarati"
@@ -190,16 +190,16 @@ msgstr "힌두어"
 
 #: ism/src/scim_utility.cpp:742 ism/src/scim_keyboard_layout_data.h:4595
 msgid "Croatian"
-msgstr "크로아티아어"
+msgstr "Hrvatski"
 
 #: ism/src/scim_utility.cpp:743 ism/src/scim_utility.cpp:865
 #: ism/src/scim_keyboard_layout_data.h:4610
 msgid "Hungarian"
-msgstr "헝가리어"
+msgstr "Magyar"
 
 #: ism/src/scim_utility.cpp:744
 msgid "Armenian"
-msgstr "아르메니아어"
+msgstr "Հայերեն"
 
 #: ism/src/scim_utility.cpp:745
 msgid "Interlingua"
@@ -212,12 +212,12 @@ msgstr "인도네시아어"
 #: ism/src/scim_utility.cpp:747 ism/src/scim_utility.cpp:857
 #: ism/src/scim_keyboard_layout_data.h:4628
 msgid "Icelandic"
-msgstr "아이슬란드어"
+msgstr "íslenska"
 
 #: ism/src/scim_utility.cpp:748 ism/src/scim_utility.cpp:830
 #: ism/src/scim_keyboard_layout_data.h:4611
 msgid "Italian"
-msgstr "이탈리아어"
+msgstr "Italiano"
 
 #: ism/src/scim_utility.cpp:750 ism/src/scim_utility.cpp:883
 #: ism/src/scim_keyboard_layout_data.h:4612
@@ -226,11 +226,11 @@ msgstr "일본어"
 
 #: ism/src/scim_utility.cpp:751 ism/src/scim_utility.cpp:918
 msgid "Georgian"
-msgstr "그루지아어"
+msgstr "ქართული"
 
 #: ism/src/scim_utility.cpp:752 ism/src/scim_utility.cpp:876
 msgid "Kazakh"
-msgstr "카자흐어"
+msgstr "Қазақ"
 
 #: ism/src/scim_utility.cpp:753
 msgid "Cambodian"
@@ -251,11 +251,11 @@ msgstr "라오스어"
 #: ism/src/scim_utility.cpp:757 ism/src/scim_utility.cpp:873
 #: ism/src/scim_keyboard_layout_data.h:4629
 msgid "Lithuanian"
-msgstr "리투아니아어"
+msgstr "Lietuvių"
 
 #: ism/src/scim_utility.cpp:758 ism/src/scim_utility.cpp:872
 msgid "Latvian"
-msgstr "라트비아어"
+msgstr "Latviešu"
 
 #: ism/src/scim_utility.cpp:759 ism/src/scim_utility.cpp:877
 msgid "Macedonian"
@@ -288,7 +288,7 @@ msgstr "네팔어"
 #: ism/src/scim_utility.cpp:766 ism/src/scim_utility.cpp:805
 #: ism/src/scim_keyboard_layout_data.h:4599
 msgid "Dutch"
-msgstr "네델란드어"
+msgstr "Nederlands"
 
 #: ism/src/scim_utility.cpp:767
 msgid "Norwegian (Nynorsk)"
@@ -309,25 +309,25 @@ msgstr "펀자브어"
 #: ism/src/scim_utility.cpp:771 ism/src/scim_utility.cpp:866
 #: ism/src/scim_keyboard_layout_data.h:4614
 msgid "Polish"
-msgstr "폴란드어"
+msgstr "Polski"
 
 #: ism/src/scim_utility.cpp:772 ism/src/scim_utility.cpp:774
 #: ism/src/scim_utility.cpp:833 ism/src/scim_keyboard_layout_data.h:4615
 msgid "Portuguese"
-msgstr "포루투갈어"
+msgstr "Português"
 
 #: ism/src/scim_utility.cpp:773 ism/src/scim_keyboard_layout_data.h:4616
 msgid "Portuguese (Brazil)"
-msgstr "포루투갈어 (브라질)"
+msgstr "Português (Brasil)"
 
 #: ism/src/scim_utility.cpp:775 ism/src/scim_utility.cpp:867
 msgid "Romanian"
-msgstr "루마니아어"
+msgstr "Română"
 
 #: ism/src/scim_utility.cpp:776 ism/src/scim_utility.cpp:878
 #: ism/src/scim_keyboard_layout_data.h:4618
 msgid "Russian"
-msgstr "러시아어"
+msgstr "Русский"
 
 #: ism/src/scim_utility.cpp:777 ism/src/scim_utility.cpp:923
 msgid "Sinhala"
@@ -336,12 +336,12 @@ msgstr "싱할라어"
 #: ism/src/scim_utility.cpp:778 ism/src/scim_utility.cpp:869
 #: ism/src/scim_keyboard_layout_data.h:4619
 msgid "Slovak"
-msgstr "슬로바키아어"
+msgstr "Slovenčina"
 
 #: ism/src/scim_utility.cpp:779 ism/src/scim_utility.cpp:870
 #: ism/src/scim_keyboard_layout_data.h:4621
 msgid "Slovenian"
-msgstr "슬로베니아어"
+msgstr "Slovenščina"
 
 #: ism/src/scim_utility.cpp:780
 msgid "Albanian"
@@ -355,7 +355,7 @@ msgstr "세르비아어"
 #: ism/src/scim_utility.cpp:784 ism/src/scim_utility.cpp:786
 #: ism/src/scim_utility.cpp:862 ism/src/scim_keyboard_layout_data.h:4625
 msgid "Swedish"
-msgstr "스웨덴어"
+msgstr "Svenska"
 
 #: ism/src/scim_utility.cpp:785 ism/src/scim_utility.cpp:863
 msgid "Swedish (Finland)"
@@ -376,7 +376,7 @@ msgstr "타이어"
 #: ism/src/scim_utility.cpp:790 ism/src/scim_utility.cpp:881
 #: ism/src/scim_keyboard_layout_data.h:4626
 msgid "Turkish"
-msgstr "터키어"
+msgstr "Türkçe"
 
 #: ism/src/scim_utility.cpp:791
 msgid "Uighur"
@@ -385,7 +385,7 @@ msgstr "위그루어"
 #: ism/src/scim_utility.cpp:792 ism/src/scim_utility.cpp:880
 #: ism/src/scim_keyboard_layout_data.h:4630
 msgid "Ukrainian"
-msgstr "우크라이나어"
+msgstr "Українська"
 
 #: ism/src/scim_utility.cpp:793 ism/src/scim_utility.cpp:908
 msgid "Urdu"
@@ -429,11 +429,11 @@ msgstr "네덜란드어 (벨기에)"
 
 #: ism/src/scim_utility.cpp:807
 msgid "English (United States)"
-msgstr "영어 (미국)"
+msgstr "English (United States)"
 
 #: ism/src/scim_utility.cpp:808
 msgid "English (United Kingdom)"
-msgstr "영어 (캐나다)"
+msgstr "English (United Kingdom)"
 
 #: ism/src/scim_utility.cpp:811
 msgid "English (New Zealand)"
@@ -473,7 +473,7 @@ msgstr "프랑스어 (벨기에)"
 
 #: ism/src/scim_utility.cpp:821 ism/src/scim_keyboard_layout_data.h:4604
 msgid "French (Canadian)"
-msgstr "프랑스어 (캐나다)"
+msgstr "Français (Canadian)"
 
 #: ism/src/scim_utility.cpp:822
 msgid "French (Swiss)"
@@ -605,7 +605,7 @@ msgstr "노르웨이어"
 
 #: ism/src/scim_utility.cpp:868
 msgid "Serbian (Latin)"
-msgstr "세르비아어 (라틴)"
+msgstr "Srpski (Latin)"
 
 #: ism/src/scim_utility.cpp:879
 msgid "Serbian (Cyrillic)"
