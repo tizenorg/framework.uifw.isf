@@ -1,3 +1,7 @@
+* Tue Jul 16 2013 Jihoon Kim <jihoon48.kim@samsung.com> submit/tizen_2.2/20130716.085907@cf7e0ae
+- check ise_height in settle function
+- fix settle height
+
 * Tue Jul 16 2013 Jihoon Kim <jihoon48.kim@samsung.com> submit/tizen_2.2/20130715.051408@17c9863
 - remove _candidate_angle change code in get_ise_geometry
 - change candidate window max value
