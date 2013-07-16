@@ -369,8 +369,6 @@ static void get_ise_geometry (RECT_INFO &info, VIRTUAL_KEYBOARD_STATE kbd_state)
 
     int win_w = _screen_width, win_h = _screen_height;
     int angle = efl_get_angle_for_app_window ();
-    if (_candidate_angle != angle)
-        _candidate_angle = angle;
 
     if (angle == 90 || angle == 270) {
         win_w = _screen_height;
@@ -379,7 +377,7 @@ static void get_ise_geometry (RECT_INFO &info, VIRTUAL_KEYBOARD_STATE kbd_state)
 
     /* READ ISE's SIZE HINT HERE */
     int pos_x, pos_y, width, height;
-    if (ecore_x_e_window_rotation_geometry_get (_ise_window, _candidate_angle,
+    if (ecore_x_e_window_rotation_geometry_get (_ise_window, angle,
             &pos_x, &pos_y, &width, &height)) {
         info.pos_x = pos_x;
         info.pos_y = pos_y;
