@@ -269,6 +269,10 @@ static int                _candidate_angle                  = 0;
 
 static int                _ise_width                        = 0;
 static int                _ise_height                       = 0;
+static int                _ise_land_width                   = 1280;
+static int                _ise_land_height                  = 316;
+static int                _ise_port_width                   = 720;
+static int                _ise_port_height                  = 444;
 static bool               _ise_show                         = false;
 
 static int                _indicator_height                 = 0;//24;
@@ -404,7 +408,7 @@ static void get_ise_geometry (RECT_INFO &info, VIRTUAL_KEYBOARD_STATE kbd_state)
             }
         }
 
-        LOGD ("Geometry : %d %d, %d %d %d %d\n", _candidate_angle,
+        LOGD ("Geometry : %d %d, %d %d %d %d\n", angle,
             _panel_agent->get_current_toolbar_mode (),
             info.pos_x, info.pos_y, info.width, info.height);
     } else {
@@ -415,6 +419,14 @@ static void get_ise_geometry (RECT_INFO &info, VIRTUAL_KEYBOARD_STATE kbd_state)
     }
     _ise_width  = info.width;
     _ise_height = info.height;
+
+    if (angle == 90 || angle == 270) {
+        _ise_land_width = info.width;
+        _ise_land_height = info.height;
+    } else {
+        _ise_port_width = info.width;
+        _ise_port_height = info.height;
+    }
 }
 
 /**
@@ -1697,6 +1709,12 @@ static void ui_create_native_candidate_window (void)
 
     _item_min_height             = 84 * _height_rate - 2;
 
+    _ise_land_width              = 1280 * _width_rate;
+    _ise_land_height             = 316 * _height_rate;
+    _ise_port_width              = 720 * _width_rate;
+    _ise_port_height             = 444 * _height_rate;
+
+
     /* Create candidate window */
     if (_candidate_window == NULL) {
         _candidate_window = efl_create_window ("candidate", "Prediction Window");
@@ -1932,17 +1950,17 @@ static void ui_settle_candidate_window (void)
 
     if (_candidate_mode == FIXED_CANDIDATE_WINDOW) {
         if (_candidate_angle == 90) {
-            spot_x = _screen_width - _ise_height - height2;
+            spot_x = _screen_width - _ise_land_height - height2;
             spot_y = 0;
         } else if (_candidate_angle == 270) {
-            spot_x = _ise_height - (_candidate_height - height2);
+            spot_x = _ise_land_height - (_candidate_height - height2);
             spot_y = 0;
         } else if (_candidate_angle == 180) {
             spot_x = 0;
-            spot_y = _ise_height - (_candidate_height - height2);
+            spot_y = _ise_port_height - (_candidate_height - height2);
         } else {
             spot_x = 0;
-            spot_y = _screen_height - _ise_height - height2;
+            spot_y = _screen_height - _ise_port_height - height2;
         }
     } else {
         spot_x = _spot_location_x;
