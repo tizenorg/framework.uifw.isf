@@ -1,3 +1,8 @@
+ISF 2.4.6716 :
+ 1. [panel] remove _candidate_angle change code in get_ise_geometry
+ 2. [panel] change candidate window max value
+
+
 ISF 2.4.6715 :
  1. Use dlog instead of std::cerr
  2. [panel] fix unchecked return value
