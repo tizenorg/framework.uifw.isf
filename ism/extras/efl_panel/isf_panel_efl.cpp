@@ -1203,6 +1203,7 @@ static void ui_candidate_show (bool bSetVirtualKbd)
         return;
     }
 
+    delete_candidate_hide_timer ();
     ui_candidate_window_rotate (_candidate_angle);
 
     efl_set_transient_for_app_window (elm_win_xwindow_get (_candidate_window));
