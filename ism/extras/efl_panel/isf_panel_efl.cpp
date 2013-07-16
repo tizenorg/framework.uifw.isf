@@ -269,10 +269,6 @@ static int                _candidate_angle                  = 0;
 
 static int                _ise_width                        = 0;
 static int                _ise_height                       = 0;
-static int                _ise_land_width                   = 1280;
-static int                _ise_land_height                  = 316;
-static int                _ise_port_width                   = 720;
-static int                _ise_port_height                  = 444;
 static bool               _ise_show                         = false;
 
 static int                _indicator_height                 = 0;//24;
@@ -419,14 +415,6 @@ static void get_ise_geometry (RECT_INFO &info, VIRTUAL_KEYBOARD_STATE kbd_state)
     }
     _ise_width  = info.width;
     _ise_height = info.height;
-
-    if (angle == 90 || angle == 270) {
-        _ise_land_width = info.width;
-        _ise_land_height = info.height;
-    } else {
-        _ise_port_width = info.width;
-        _ise_port_height = info.height;
-    }
 }
 
 /**
@@ -1709,11 +1697,6 @@ static void ui_create_native_candidate_window (void)
 
     _item_min_height             = 84 * _height_rate - 2;
 
-    _ise_land_width              = 1280 * _width_rate;
-    _ise_land_height             = 316 * _height_rate;
-    _ise_port_width              = 720 * _width_rate;
-    _ise_port_height             = 444 * _height_rate;
-
 
     /* Create candidate window */
     if (_candidate_window == NULL) {
@@ -1941,32 +1924,38 @@ static void ui_settle_candidate_window (void)
 
     int spot_x, spot_y;
     int x, y, width, height;
+    int pos_x, pos_y, ise_width, ise_height;
     bool reverse = false;
 
     /* Get candidate window position */
     ecore_evas_geometry_get (ecore_evas_ecore_evas_get (evas_object_evas_get (_candidate_window)), &x, &y, &width, &height);
 
+    if (_candidate_angle == 90 || _candidate_angle == 270)
+        ecore_x_e_window_rotation_geometry_get (_ise_window, _candidate_angle, &pos_x, &pos_y, &ise_height, &ise_width);
+    else
+        ecore_x_e_window_rotation_geometry_get (_ise_window, _candidate_angle, &pos_x, &pos_y, &ise_width, &ise_height);
+
     int height2 = ui_candidate_get_valid_height ();
 
     if (_candidate_mode == FIXED_CANDIDATE_WINDOW) {
         if (_candidate_angle == 90) {
-            spot_x = _screen_width - _ise_land_height - height2;
+            spot_x = _screen_width - ise_height - height2;
             spot_y = 0;
         } else if (_candidate_angle == 270) {
-            spot_x = _ise_land_height - (_candidate_height - height2);
+            spot_x = ise_height - (_candidate_height - height2);
             spot_y = 0;
         } else if (_candidate_angle == 180) {
             spot_x = 0;
-            spot_y = _ise_port_height - (_candidate_height - height2);
+            spot_y = ise_height - (_candidate_height - height2);
         } else {
             spot_x = 0;
-            spot_y = _screen_height - _ise_port_height - height2;
+            spot_y = _screen_height - ise_height - height2;
         }
     } else {
         spot_x = _spot_location_x;
         spot_y = _spot_location_y;
 
-        rectinfo ise_rect = {0, 0, _ise_width, _ise_height};
+        rectinfo ise_rect = {0, 0, ise_width, ise_height};
         if (_candidate_angle == 90 || _candidate_angle == 270) {
             if (ise_rect.height <= (uint32)0 || ise_rect.height >= (uint32)_screen_width)
                 ise_rect.height = ISE_DEFAULT_HEIGHT_LANDSCAPE * _width_rate;
