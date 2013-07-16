@@ -1667,12 +1667,12 @@ static void ui_create_native_candidate_window (void)
     _candidate_port_width        = _screen_width;
     _candidate_port_height_min   = 84 * _height_rate * _candidate_port_line;
     _candidate_port_height_min_2 = 84 * _height_rate + _candidate_port_height_min;
-    _candidate_port_height_max   = 426 * _height_rate + _candidate_port_height_min;
+    _candidate_port_height_max   = 444 * _height_rate + _candidate_port_height_min;
     _candidate_port_height_max_2 = 84 * _height_rate + _candidate_port_height_max;
     _candidate_land_width        = _screen_height;
     _candidate_land_height_min   = 84 * _width_rate;
     _candidate_land_height_min_2 = 168 * _width_rate;
-    _candidate_land_height_max   = 342 * _width_rate;
+    _candidate_land_height_max   = 316 * _width_rate + _candidate_land_height_min;
     _candidate_land_height_max_2 = 426 * _width_rate;
 
     _candidate_scroll_0_width_min= _screen_width;
