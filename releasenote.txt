@@ -1,5 +1,6 @@
 ISF 2.4.6717 :
- 1. Add window angle for get_ise_geometry
+ 1. [panel] Add window angle for get_ise_geometry
+ 2. [panel] check ise_show status in settle function
 
 
 ISF 2.4.6716 :
