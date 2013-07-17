@@ -266,6 +266,7 @@ static int                _spot_location_x                  = -1;
 static int                _spot_location_y                  = -1;
 static int                _spot_location_top_y              = -1;
 static int                _candidate_angle                  = 0;
+static int                _window_angle                     = -1;
 
 static int                _ise_width                        = 0;
 static int                _ise_height                       = 0;
@@ -368,7 +369,7 @@ static void get_ise_geometry (RECT_INFO &info, VIRTUAL_KEYBOARD_STATE kbd_state)
     SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
 
     int win_w = _screen_width, win_h = _screen_height;
-    int angle = efl_get_angle_for_app_window ();
+    int angle = (_window_angle == -1) ? efl_get_angle_for_app_window () : _window_angle;
 
     if (angle == 90 || angle == 270) {
         win_w = _screen_height;
@@ -1925,16 +1926,22 @@ static void ui_settle_candidate_window (void)
 
     int spot_x, spot_y;
     int x, y, width, height;
-    int pos_x, pos_y, ise_width, ise_height;
+    int pos_x = 0, pos_y = 0, ise_width = 0, ise_height = 0;
+    bool get_geometry_result = false;
     bool reverse = false;
 
     /* Get candidate window position */
     ecore_evas_geometry_get (ecore_evas_ecore_evas_get (evas_object_evas_get (_candidate_window)), &x, &y, &width, &height);
 
     if (_candidate_angle == 90 || _candidate_angle == 270)
-        ecore_x_e_window_rotation_geometry_get (_ise_window, _candidate_angle, &pos_x, &pos_y, &ise_height, &ise_width);
+        get_geometry_result = ecore_x_e_window_rotation_geometry_get (_ise_window, _candidate_angle, &pos_x, &pos_y, &ise_height, &ise_width);
     else
-        ecore_x_e_window_rotation_geometry_get (_ise_window, _candidate_angle, &pos_x, &pos_y, &ise_width, &ise_height);
+        get_geometry_result = ecore_x_e_window_rotation_geometry_get (_ise_window, _candidate_angle, &pos_x, &pos_y, &ise_width, &ise_height);
+
+    if (get_geometry_result == false) {
+        ise_height = 0;
+        ise_width = 0;
+    }
 
     int height2 = ui_candidate_get_valid_height ();
 
@@ -1996,7 +2003,6 @@ static void ui_settle_candidate_window (void)
             }
         }
     }
-
     if (_candidate_angle == 90) {
         spot_y = (_screen_height - _candidate_width) / 2;
         spot_x = spot_x < _indicator_height ? _indicator_height : spot_x;
@@ -3561,8 +3567,10 @@ static void slot_show_ise (void)
         _app_window = current_app_window;
     }
 
-    if (!_candidate_window_show)
+    if (!_candidate_window_show) {
         _candidate_angle = efl_get_angle_for_app_window ();
+        _window_angle = efl_get_angle_for_app_window ();
+    }
 
     efl_set_transient_for_app_window (_ise_window);
 }
@@ -3571,6 +3579,7 @@ static void slot_hide_ise (void)
 {
     // From this point, slot_get_input_panel_geometry should return hidden state geometry
     _ise_show = false;
+    _window_angle = -1;
 }
 
 static void slot_will_show_ack (void)
@@ -4014,6 +4023,7 @@ static Eina_Bool x_event_client_message_cb (void *data, int type, void *event)
             /* WMSYNC, #10 Register size hints for candidate window and set conformant geometry */
             // PRE_ROTATE_DONE Ack to WM
             _candidate_angle = ev->data.l[1];
+            _window_angle = ev->data.l[1];
             LOGD ("ECORE_X_ATOM_E_WINDOW_ROTATION_CHANGE_PREPARE : %d\n", _candidate_angle);
 
             if (_candidate_angle == 90 || _candidate_angle == 270) {
@@ -4026,6 +4036,7 @@ static Eina_Bool x_event_client_message_cb (void *data, int type, void *event)
                 _panel_agent->update_input_panel_event (ECORE_IMF_INPUT_PANEL_GEOMETRY_EVENT, 0);
             }
             ui_settle_candidate_window ();
+            ui_candidate_window_rotate (_candidate_angle);
             Ecore_X_Window root_window = ecore_x_window_root_get (_control_window);
             LOGD ("ecore_x_e_window_rotation_change_prepare_done_send(%d)\n", _candidate_angle);
             ecore_x_e_window_rotation_change_prepare_done_send (root_window,
