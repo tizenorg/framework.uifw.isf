@@ -1,3 +1,7 @@
+* Wed Jul 17 2013 Jihoon Kim <jihoon48.kim@samsung.com> submit/tizen_2.2/20130716.100430@d7c5aec
+- Add window angle for get_ise_geometry
+- Add delete_candidate_hide timer in ui_candidate_show
+
 * Tue Jul 16 2013 Jihoon Kim <jihoon48.kim@samsung.com> submit/tizen_2.2/20130716.085907@cf7e0ae
 - check ise_height in settle function
 - fix settle height

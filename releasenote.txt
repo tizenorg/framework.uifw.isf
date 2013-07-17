@@ -1,3 +1,7 @@
+ISF 2.4.6717 :
+ 1. Add window angle for get_ise_geometry
+
+
 ISF 2.4.6716 :
  1. [panel] remove _candidate_angle change code in get_ise_geometry
  2. [panel] change candidate window max value
