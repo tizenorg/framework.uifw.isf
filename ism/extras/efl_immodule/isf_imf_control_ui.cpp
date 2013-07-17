@@ -834,6 +834,9 @@ void isf_imf_context_input_panel_event_callback_clear (Ecore_IMF_Context *ctx)
 {
     ecore_imf_context_input_panel_event_callback_clear (ctx);
 
+    if (show_req_ic == ctx)
+        show_req_ic = NULL;
+
     if (hide_req_ic == ctx)
         hide_req_ic = NULL;
 }
