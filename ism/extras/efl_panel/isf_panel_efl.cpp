@@ -4011,10 +4011,12 @@ static Eina_Bool x_event_client_message_cb (void *data, int type, void *event)
             }
             _off_prepare_done_timer = ecore_timer_add (1.0, off_prepare_done_timeout, NULL);
 
-            set_keyboard_geometry_atom_info (_app_window, KEYBOARD_STATE_OFF);
-            _panel_agent->update_input_panel_event (ECORE_IMF_INPUT_PANEL_GEOMETRY_EVENT, 0);
-            _panel_agent->update_input_panel_event (
-                    ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_HIDE);
+            if (!_candidate_window || !evas_object_visible_get (_candidate_window)) {
+                set_keyboard_geometry_atom_info (_app_window, KEYBOARD_STATE_OFF);
+                _panel_agent->update_input_panel_event (ECORE_IMF_INPUT_PANEL_GEOMETRY_EVENT, 0);
+                _panel_agent->update_input_panel_event (
+                        ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_HIDE);
+            }
             // For now don't send WILL_HIDE signal here
             //_panel_agent->update_input_panel_event(
             //    ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_WILL_HIDE);
