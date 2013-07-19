@@ -1,5 +1,6 @@
 ISF 2.4.6719 :
  1. [panel] check candidate window status on OFF_PREPARE
+ 2. [setting] fix N_SE-46950: reset _hw_ise_bak when switching software keyboard leads to hardware keyboard engine changed.
 
 
 ISF 2.4.6717 :

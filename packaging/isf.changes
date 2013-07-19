@@ -1,3 +1,6 @@
+* Fri Jul 19 2013 Jihoon Kim <jihoon48.kim@samsung.com> submit/tizen_2.2/20130719.061320@0766f3c
+- fix N_SE-46950: reset _hw_ise_bak when switching software keyboard leads to hardware keyboard engine changed.
+
 * Fri Jul 19 2013 Jihoon Kim <jihoon48.kim@samsung.com> submit/tizen_2.2/20130717.073813@595f2e8
 - check candidate window status on OFF_PREPARE
 
