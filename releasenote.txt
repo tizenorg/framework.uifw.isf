@@ -1,3 +1,7 @@
+ISF 2.4.6719 :
+ 1. [panel] check candidate window status on OFF_PREPARE
+
+
 ISF 2.4.6717 :
  1. [panel] Add window angle for get_ise_geometry
  2. [panel] check ise_show status in settle function

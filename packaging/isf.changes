@@ -1,3 +1,6 @@
+* Fri Jul 19 2013 Jihoon Kim <jihoon48.kim@samsung.com> submit/tizen_2.2/20130717.073813@595f2e8
+- check candidate window status on OFF_PREPARE
+
 * Wed Jul 17 2013 Jihoon Kim <jihoon48.kim@samsung.com> submit/tizen_2.2/20130717.070759@07c7a28
 - check ise_show status in settle function
 
