@@ -1454,6 +1454,7 @@ static void reload_config_cb (const ConfigPointer &config)
     String uuid, name;
     isf_get_keyboard_ise (_config, uuid, name, option);
     snprintf (_hw_ise_name, sizeof (_hw_ise_name), "%s", name.c_str ());
+    snprintf (_hw_ise_bak, sizeof (_hw_ise_bak), "%s", _hw_ise_name);
     update_setting_main_view (_common_ugd);
     //std::cout << "    " << __func__ << " (keyboard ISE : " << name << ")\n";
 }
