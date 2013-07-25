@@ -1,3 +1,7 @@
+* Thu Jul 25 2013 Jihoon Kim <jihoon48.kim@samsung.com> submit/tizen_2.2/20130719.104759@59c7640
+- fix crash because of invalid show request input context
+- fix crash issue on OSP application
+
 * Fri Jul 19 2013 Jihoon Kim <jihoon48.kim@samsung.com> submit/tizen_2.2/20130719.061320@0766f3c
 - fix N_SE-46950: reset _hw_ise_bak when switching software keyboard leads to hardware keyboard engine changed.
 
