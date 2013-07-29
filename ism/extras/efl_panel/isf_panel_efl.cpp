@@ -4399,6 +4399,8 @@ int main (int argc, char *argv [])
     elm_init (argc, argv);
     check_time ("elm_init");
 
+    elm_policy_set (ELM_POLICY_THROTTLE, ELM_POLICY_THROTTLE_NEVER);
+
     if (!efl_create_control_window ()) {
         LOGE ("Failed to create control window\n");
         goto cleanup;
