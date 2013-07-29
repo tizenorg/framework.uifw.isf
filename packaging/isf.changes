@@ -1,3 +1,6 @@
+* Mon Jul 29 2013 Jihoon Kim <jihoon48.kim@samsung.com> submit/tizen_2.2/20130725.015848@e390813
+- Disabled auto_throttle feature
+
 * Thu Jul 25 2013 Jihoon Kim <jihoon48.kim@samsung.com> submit/tizen_2.2/20130719.104759@59c7640
 - fix crash because of invalid show request input context
 - fix crash issue on OSP application
