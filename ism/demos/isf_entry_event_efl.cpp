@@ -48,10 +48,10 @@ static void _evas_key_up_cb (void *data, Evas *e, Evas_Object *obj, void *event_
     Evas_Event_Key_Up *ev = (Evas_Event_Key_Up *) event_info;
 
     if (obj == _entry1) {
-        snprintf (str, sizeof(str),"entry 1  get keyEvent: %s", (char *)(ev->keyname));
+        snprintf (str, sizeof (str), "entry 1  get keyEvent: %s", (char *)(ev->keyname));
         elm_object_text_set (_key_event_label, str);
     } else if (obj == _entry2) {
-        snprintf (str, sizeof(str),"entry 2  get keyEvent: %s", (char *)(ev->keyname));
+        snprintf (str, sizeof (str), "entry 2  get keyEvent: %s", (char *)(ev->keyname));
         elm_object_text_set (_key_event_label, str);
     }
 }
@@ -66,12 +66,12 @@ static Eina_Bool _ecore_imf_event_changed_cb (void *data, int type, void *event)
     if (elm_object_focus_get (_entry1) == EINA_TRUE) {
         imf_context = (Ecore_IMF_Context *)elm_entry_imf_context_get (_entry1);
         ecore_imf_context_preedit_string_get (imf_context, &preedit_string, &len);
-        snprintf (str,sizeof(str), "entry 1 get preedit string: %s", preedit_string);
+        snprintf (str, sizeof (str), "entry 1 get preedit string: %s", preedit_string);
         elm_object_text_set (_preedit_event_label, str);
     } else if (elm_object_focus_get (_entry2) == EINA_TRUE) {
         imf_context = (Ecore_IMF_Context *)elm_entry_imf_context_get (_entry2);
         ecore_imf_context_preedit_string_get (imf_context, &preedit_string, &len);
-        snprintf (str, sizeof(str), "entry 2 get preedit string: %s", preedit_string);
+        snprintf (str, sizeof (str), "entry 2 get preedit string: %s", preedit_string);
         elm_object_text_set (_preedit_event_label, str);
     }
 
@@ -84,10 +84,10 @@ static Eina_Bool _ecore_imf_event_commit_cb (void *data, int type, void *event)
     Ecore_IMF_Event_Commit *ev = (Ecore_IMF_Event_Commit *) event;
 
     if (elm_object_focus_get (_entry1) == EINA_TRUE) {
-        snprintf (str, sizeof(str), "entry 1 get commit string: %s", (char *)(ev->str));
+        snprintf (str, sizeof (str), "entry 1 get commit string: %s", (char *)(ev->str));
         elm_object_text_set (_commit_event_label, str);
     } else if (elm_object_focus_get (_entry2) == EINA_TRUE) {
-        snprintf (str, sizeof(str), "entry 2 get commit string: %s", (char *)(ev->str));
+        snprintf (str, sizeof (str), "entry 2 get commit string: %s", (char *)(ev->str));
         elm_object_text_set (_commit_event_label, str);
     }
     return ECORE_CALLBACK_RENEW;

@@ -159,7 +159,7 @@ static int create_demo_view (struct appdata *ad)
     evas_object_smart_callback_add (ad->li, "selected", _list_click, ad);
 
     while (isf_demo_menu_its[idx].name != NULL) {
-        elm_list_item_append(li, isf_demo_menu_its[idx].name, NULL, NULL, isf_demo_menu_its[idx].func, ad);
+        elm_list_item_append (li, isf_demo_menu_its[idx].name, NULL, NULL, isf_demo_menu_its[idx].func, ad);
         ++idx;
     }
 
@@ -366,7 +366,7 @@ static int app_exit (void *data)
     return 0;
 }
 
-static int app_pause(void *data)
+static int app_pause (void *data)
 {
     return 0;
 }
@@ -422,7 +422,7 @@ Evas_Object *create_ef (Evas_Object *parent, const char *label, const char *guid
     return ef;
 }
 
-static void _back_btn_clicked_cb(void *data, Evas_Object *obj, void *event_info)
+static void _back_btn_clicked_cb (void *data, Evas_Object *obj, void *event_info)
 {
     struct appdata *ad = (struct appdata *)data;
 

@@ -1179,7 +1179,7 @@ static void delete_candidate_hide_timer (void)
  */
 static Eina_Bool candidate_hide_timer (void *data)
 {
-    delete_candidate_hide_timer();
+    delete_candidate_hide_timer ();
 
     _candidate_window_show = false;
     evas_object_hide (_candidate_window);
@@ -3600,7 +3600,7 @@ static void slot_will_hide_ack (void)
     ecore_x_e_virtual_keyboard_off_prepare_done_send (root_window, _control_window);
     LOGD ("_ecore_x_e_virtual_keyboard_off_prepare_done_send(%x, %x)\n",
             root_window, _control_window);
-    if (_panel_agent->get_current_toolbar_mode() == TOOLBAR_HELPER_MODE) {
+    if (_panel_agent->get_current_toolbar_mode () == TOOLBAR_HELPER_MODE) {
         ui_candidate_hide (true, false);
     }
 }

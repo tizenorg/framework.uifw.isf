@@ -26,7 +26,7 @@
 #include "isf_return_key_disable_efl.h"
 
 static void
-_cursor_changed_cb(void *data, Evas_Object *obj, void *event_info)
+_cursor_changed_cb (void *data, Evas_Object *obj, void *event_info)
 {
     Evas_Object *en = obj;
 

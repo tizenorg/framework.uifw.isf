@@ -913,7 +913,7 @@ isf_imf_context_new (void)
     context_scim->id = _context_count++;
 
     if (!_scim_initialized) {
-        ecore_x_init(NULL);
+        ecore_x_init (NULL);
         initialize ();
         _scim_initialized = true;
         isf_imf_input_panel_init ();
@@ -965,7 +965,7 @@ isf_imf_context_shutdown (void)
 
         isf_imf_input_panel_shutdown ();
         finalize ();
-        ecore_x_shutdown();
+        ecore_x_shutdown ();
     }
 }
 
@@ -1593,7 +1593,7 @@ isf_imf_context_preedit_string_with_attributes_get (Ecore_IMF_Context *ctx, char
                         start_index = g_utf8_offset_to_pointer (mbs.c_str (), i->get_start ()) - mbs.c_str ();
                         end_index = g_utf8_offset_to_pointer (mbs.c_str (), i->get_end ()) - mbs.c_str ();
                         if (i->get_type () == SCIM_ATTR_DECORATE) {
-                            attr = (Ecore_IMF_Preedit_Attr *)calloc(1, sizeof (Ecore_IMF_Preedit_Attr));
+                            attr = (Ecore_IMF_Preedit_Attr *)calloc (1, sizeof (Ecore_IMF_Preedit_Attr));
                             if (attr == NULL)
                                 continue;
                             attr->start_index = start_index;
@@ -1623,7 +1623,7 @@ isf_imf_context_preedit_string_with_attributes_get (Ecore_IMF_Context *ctx, char
                             } else {
                                 free (attr);
                             }
-                            switch(i->get_value())
+                            switch (i->get_value ())
                             {
                                 case SCIM_ATTR_DECORATE_UNDERLINE:
                                 case SCIM_ATTR_DECORATE_REVERSE:
@@ -1659,7 +1659,7 @@ isf_imf_context_preedit_string_with_attributes_get (Ecore_IMF_Context *ctx, char
                         attr->preedit_type = ECORE_IMF_PREEDIT_TYPE_SUB2;
                         attr->start_index = begin_pos;
                         attr->end_index = pos;
-                        *attrs = eina_list_append(*attrs, (void *)attr);
+                        *attrs = eina_list_append (*attrs, (void *)attr);
                     }
                 }
                 delete [] attrs_flag;
@@ -3104,7 +3104,7 @@ open_specific_factory (EcoreIMFContextISF *ic,
         }
     } else {
         std::cerr << "open_specific_factory () is failed!!!!!!\n";
-        LOGE ("open_specific_factory () is failed. ic : %x uuid : %s", ic->id, uuid.c_str());
+        LOGE ("open_specific_factory () is failed. ic : %x uuid : %s", ic->id, uuid.c_str ());
 
         // turn_off_ic comment out panel_req_update_factory_info ()
         //turn_off_ic (ic);
@@ -3817,7 +3817,7 @@ slot_get_surrounding_text (IMEngineInstanceBase *si,
             free (surrounding);
             surrounding = NULL;
 
-            if (cursor_index > (int)before.length())
+            if (cursor_index > (int)before.length ())
                 return false;
             WideString after = before;
             before = before.substr (0, cursor_index);

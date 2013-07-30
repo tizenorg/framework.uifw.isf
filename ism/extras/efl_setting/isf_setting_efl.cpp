@@ -266,36 +266,36 @@ static void imeug_destroy_cb (ui_gadget_h ug, void *data)
         ug_destroy (ug);
 }
 
-static void imeug_layout_cb(ui_gadget_h ug, enum ug_mode mode,
+static void imeug_layout_cb (ui_gadget_h ug, enum ug_mode mode,
         void *priv)
 {
     if (!ug) return;
 
     Evas_Object *base;
 
-    base = (Evas_Object *) ug_get_layout(ug);
+    base = (Evas_Object *) ug_get_layout (ug);
     if (!base)
         return;
 
     switch (mode) {
         case UG_MODE_FULLVIEW:
-            evas_object_size_hint_weight_set(base, EVAS_HINT_EXPAND,
+            evas_object_size_hint_weight_set (base, EVAS_HINT_EXPAND,
                     EVAS_HINT_EXPAND);
-            evas_object_show(base);
+            evas_object_show (base);
             break;
         default:
             break;
     }
 }
 
-static void launch_setting_plugin_ug_for_ime_setting(const char *ise_uuid)
+static void launch_setting_plugin_ug_for_ime_setting (const char *ise_uuid)
 {
     String pkgname = String ("");
-    String mdl_name = String("");
+    String mdl_name = String ("");
     for (unsigned int i = 0; i < _uuids.size (); i++) {
         if (_uuids[i] == String (ise_uuid)) {
             mdl_name = _module_names[i];
-            ISFUG_DEBUG ("module name:%s", mdl_name.c_str());
+            ISFUG_DEBUG ("module name:%s", mdl_name.c_str ());
             pkgname = mdl_name.substr (0, mdl_name.find_first_of ('.'));
             break;
         }
@@ -319,7 +319,6 @@ static void launch_setting_plugin_ug_for_ime_setting(const char *ise_uuid)
 
     service_destroy (service);
     service = NULL;
-
 }
 
 static int pkg_list_cb (pkgmgrinfo_appinfo_h handle, void *user_data)
@@ -394,7 +393,7 @@ static ISE_OPTION_MODULE_STATE find_ise_option_module (const char *ise_uuid)
                 goto result;
             }
 
-            pkgmgrinfo_pkginfo_filter_destroy(handle);
+            pkgmgrinfo_pkginfo_filter_destroy (handle);
         }
     }
 
@@ -455,13 +454,13 @@ static void update_setting_main_view (ug_data *ugd)
 {
     _p_items[SW_KEYBOARD_SEL_ITEM]->sub_text = strdup (_sw_ise_name);
     elm_object_item_data_set (ugd->sw_ise_item_tizen, _p_items[SW_KEYBOARD_SEL_ITEM]);
-    if (_hw_kbd_connected || ISE_OPTION_MODULE_NO_EXIST == find_ise_option_module ((const char *)(sw_name_to_uuid (_sw_ise_name).c_str())))
+    if (_hw_kbd_connected || ISE_OPTION_MODULE_NO_EXIST == find_ise_option_module ((const char *)(sw_name_to_uuid (_sw_ise_name).c_str ())))
         elm_object_item_disabled_set (ugd->sw_ise_opt_item_tizen, EINA_TRUE);
     else
         elm_object_item_disabled_set (ugd->sw_ise_opt_item_tizen, EINA_FALSE);
     _p_items[HW_KEYBOARD_SEL_ITEM]->sub_text = strdup (_hw_ise_name);
     elm_object_item_data_set (ugd->hw_ise_item_tizen, _p_items[HW_KEYBOARD_SEL_ITEM]);
-    if (!_hw_kbd_connected ||ISE_OPTION_MODULE_NO_EXIST == find_ise_option_module ((const char *)(hw_name_to_uuid (_hw_ise_name).c_str())))
+    if (!_hw_kbd_connected ||ISE_OPTION_MODULE_NO_EXIST == find_ise_option_module ((const char *)(hw_name_to_uuid (_hw_ise_name).c_str ())))
         elm_object_item_disabled_set (ugd->hw_ise_opt_item_tizen, EINA_TRUE);
     else
         elm_object_item_disabled_set (ugd->hw_ise_opt_item_tizen, EINA_FALSE);
@@ -470,7 +469,7 @@ static void update_setting_main_view (ug_data *ugd)
     elm_genlist_item_update (ugd->hw_ise_item_tizen);
 }
 
-static void set_active_sw_ise()
+static void set_active_sw_ise ()
 {
     if (strcmp (_sw_ise_bak, _sw_ise_name) != 0) {
         // If ISE is changed, active it.
@@ -493,7 +492,7 @@ static Eina_Bool sw_keyboard_selection_view_set_cb (void *data, Elm_Object_Item 
     struct ug_data *ugd = (struct ug_data *)data;
 
     if (!_hw_kbd_connected)
-        set_active_sw_ise();
+        set_active_sw_ise ();
 
     update_setting_main_view (ugd);
 
@@ -504,14 +503,14 @@ static Eina_Bool sw_keyboard_selection_view_set_cb (void *data, Elm_Object_Item 
 
 static void sw_keyboard_radio_cb (void *data, Evas_Object *obj, void *event_info)
 {
-    int index = GPOINTER_TO_INT(data);
+    int index = GPOINTER_TO_INT (data);
     elm_radio_value_set (_sw_radio_grp, index);
     snprintf (_sw_ise_name, sizeof (_sw_ise_name), "%s", _sw_ise_list[index].c_str ());
 }
 
 static void hw_keyboard_radio_cb (void *data, Evas_Object *obj, void *event_info)
 {
-    int index = GPOINTER_TO_INT(data);
+    int index = GPOINTER_TO_INT (data);
     elm_radio_value_set (_hw_radio_grp, index);
     snprintf (_hw_ise_name, sizeof (_hw_ise_name), "%s", _hw_ise_list[index].c_str ());
 }
@@ -524,7 +523,7 @@ static Eina_Bool language_view_back_cb (void *data, Elm_Object_Item *it)
 
 static void show_language_cb (void *data, Evas_Object *obj, void *event_info)
 {
-    int index = GPOINTER_TO_INT(data);
+    int index = GPOINTER_TO_INT (data);
     String langlist_str, normal_langlist_str;
 
     for (unsigned int i = 0; i < _names.size (); i++) {
@@ -1025,21 +1024,21 @@ static Evas_Object *create_setting_main_view (ug_data *ugd)
         elm_object_style_set (genlist, "dialogue");
         evas_object_smart_callback_add (genlist, "realized", _gl_realized, NULL);
         elm_genlist_mode_set (genlist, ELM_LIST_COMPRESS);
-        // Set item class for 1text.1icon(text+radiobutton)
+        // Set item class for 1text.1icon (text+radiobutton)
         itc1.item_style       = "dialogue/1text.1icon";
         itc1.func.text_get    = _gl_label_get;
         itc1.func.content_get = _gl_icon_get;
         itc1.func.state_get   = _gl_state_get;
         itc1.func.del         = _gl_del;
 
-        // Set item class for 2text(text+subtext)
+        // Set item class for 2text (text+subtext)
         itc2.item_style       = "dialogue/2text.3";
         itc2.func.text_get    = _gl_label_get;
         itc2.func.content_get = NULL;
         itc2.func.state_get   = _gl_state_get;
         itc2.func.del         = _gl_del;
 
-        // Set item class for normal text(text)
+        // Set item class for normal text (text)
         itc3.item_style       = "dialogue/1text";
         itc3.func.text_get    = _gl_label_get;
         itc3.func.content_get = NULL;
@@ -1229,7 +1228,7 @@ static Evas_Object *create_setting_main_view (ug_data *ugd)
                     _gl_ise_option_sel,
                     (void *)ugd);
 
-            if (_hw_kbd_connected ||ISE_OPTION_MODULE_NO_EXIST == find_ise_option_module ((const char *)(sw_name_to_uuid (_sw_ise_name).c_str())))
+            if (_hw_kbd_connected ||ISE_OPTION_MODULE_NO_EXIST == find_ise_option_module ((const char *)(sw_name_to_uuid (_sw_ise_name).c_str ())))
                 elm_object_item_disabled_set (ugd->sw_ise_opt_item_tizen, EINA_TRUE);
         }
 
@@ -1304,7 +1303,7 @@ static Evas_Object *create_setting_main_view (ug_data *ugd)
                     _gl_ise_option_sel,
                     (void *)ugd);
 
-            if (!_hw_kbd_connected || ISE_OPTION_MODULE_NO_EXIST == find_ise_option_module ((const char *)(hw_name_to_uuid (_hw_ise_name).c_str())))
+            if (!_hw_kbd_connected || ISE_OPTION_MODULE_NO_EXIST == find_ise_option_module ((const char *)(hw_name_to_uuid (_hw_ise_name).c_str ())))
                 elm_object_item_disabled_set (ugd->hw_ise_opt_item_tizen, EINA_TRUE);
         }
 
@@ -1366,12 +1365,12 @@ static void hw_connection_change_cb (ug_data *ugd)
     elm_object_item_disabled_set (ugd->autocapital_item, !elm_object_item_disabled_get (ugd->autocapital_item));
     elm_object_item_disabled_set (ugd->sw_ise_item_tizen, !elm_object_item_disabled_get (ugd->sw_ise_item_tizen));
     elm_object_item_disabled_set (ugd->hw_ise_item_tizen, !elm_object_item_disabled_get (ugd->hw_ise_item_tizen));
-    if (_hw_kbd_connected || ISE_OPTION_MODULE_NO_EXIST == find_ise_option_module ((const char *)(sw_name_to_uuid (_sw_ise_name).c_str())))
+    if (_hw_kbd_connected || ISE_OPTION_MODULE_NO_EXIST == find_ise_option_module ((const char *)(sw_name_to_uuid (_sw_ise_name).c_str ())))
         elm_object_item_disabled_set (ugd->sw_ise_opt_item_tizen, EINA_TRUE);
     else
         elm_object_item_disabled_set (ugd->sw_ise_opt_item_tizen, EINA_FALSE);
 
-    if (!_hw_kbd_connected || ISE_OPTION_MODULE_NO_EXIST == find_ise_option_module ((const char *)(hw_name_to_uuid (_hw_ise_name).c_str())))
+    if (!_hw_kbd_connected || ISE_OPTION_MODULE_NO_EXIST == find_ise_option_module ((const char *)(hw_name_to_uuid (_hw_ise_name).c_str ())))
         elm_object_item_disabled_set (ugd->hw_ise_opt_item_tizen, EINA_TRUE);
     else
         elm_object_item_disabled_set (ugd->hw_ise_opt_item_tizen, EINA_FALSE);
@@ -1552,7 +1551,7 @@ static void on_resume (ui_gadget_h ug, service_h s, void *priv)
         return;
 
     if (_mdl != NULL) {
-        _mdl->query_changed();
+        _mdl->query_changed ();
     }
 
     reload_config_cb (_config);

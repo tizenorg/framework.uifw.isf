@@ -647,7 +647,7 @@ void isf_imf_context_input_panel_caps_lock_mode_set (Ecore_IMF_Context *ctx, Ein
         _isf_imf_context_init ();
 
     if (context_scim == get_focused_ic ())
-        caps_mode_check(ctx, EINA_TRUE, EINA_TRUE);
+        caps_mode_check (ctx, EINA_TRUE, EINA_TRUE);
 }
 
 /**
