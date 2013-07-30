@@ -2367,7 +2367,6 @@ static bool initialize_panel_agent (const String &config, const String &display,
     _panel_agent->signal_connect_show_ise                   (slot (slot_show_ise));
     _panel_agent->signal_connect_hide_ise                   (slot (slot_hide_ise));
 
-    _panel_agent->signal_connect_will_show_ack              (slot (slot_will_show_ack));
     _panel_agent->signal_connect_will_hide_ack              (slot (slot_will_hide_ack));
 
     _panel_agent->signal_connect_candidate_will_hide_ack    (slot (slot_candidate_will_hide_ack));
@@ -3583,16 +3582,6 @@ static void slot_hide_ise (void)
     _window_angle = -1;
 }
 
-static void slot_will_show_ack (void)
-{
-    /* WMSYNC, #5 Let the Window Manager to actually show keyboard window */
-    // WILL_SHOW_REQUEST_DONE Ack to WM
-    Ecore_X_Window root_window = ecore_x_window_root_get (_control_window);
-    ecore_x_e_virtual_keyboard_on_prepare_done_send (root_window, _control_window);
-    LOGD ("_ecore_x_e_virtual_keyboard_on_prepare_done_send(%x, %x)\n",
-            root_window, _control_window);
-}
-
 static void slot_will_hide_ack (void)
 {
     /* WMSYNC, #8 Let the Window Manager to actually hide keyboard window */
@@ -4000,6 +3989,14 @@ static Eina_Bool x_event_client_message_cb (void *data, int type, void *event)
         if (ev->message_type == ECORE_X_ATOM_E_VIRTUAL_KEYBOARD_ON_PREPARE_REQUEST) {
             /* WMSYNC, #4 Send WILL_SHOW event when the keyboard window is about to displayed */
             LOGD ("_ECORE_X_ATOM_E_VIRTUAL_KEYBOARD_ON_PREPARE_REQUEST\n");
+
+            /* WMSYNC, #5 Let the Window Manager to actually show keyboard window */
+            // WILL_SHOW_REQUEST_DONE Ack to WM
+            Ecore_X_Window root_window = ecore_x_window_root_get (_control_window);
+            ecore_x_e_virtual_keyboard_on_prepare_done_send (root_window, _control_window);
+            LOGD ("_ecore_x_e_virtual_keyboard_on_prepare_done_send(%x, %x)\n",
+                    root_window, _control_window);
+
             _panel_agent->update_input_panel_event (
                     ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_WILL_SHOW);
 
