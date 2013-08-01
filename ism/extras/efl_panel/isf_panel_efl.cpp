@@ -2223,6 +2223,7 @@ static Ecore_X_Window efl_get_app_window (void)
             xAppWindow = *(Window *)data;
             if (data)
                 XFree (data);
+            _app_window = xAppWindow;
         }
     } else {
         std::cerr << "XGetWindowProperty () is failed!!!\n";
