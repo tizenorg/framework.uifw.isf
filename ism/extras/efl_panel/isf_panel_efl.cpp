@@ -3936,8 +3936,10 @@ static Eina_Bool x_event_window_property_cb (void *data, int ev_type, void *even
                 _ise_show = true;
 
                 /* Make sure that we have the same rotation angle with the keyboard window */
-                if (_ise_window)
+                if (_ise_window) {
                     _candidate_angle = efl_get_angle_for_ise_window ();
+                    _window_angle = efl_get_angle_for_ise_window ();
+                }
 
                 if (_candidate_window_pending) {
                     _candidate_window_pending = false;
