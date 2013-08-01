@@ -1,3 +1,10 @@
+* Thu Aug 01 2013 Jihoon Kim <jihoon48.kim@samsung.com> submit/tizen_2.2/20130729.054443@870bbef
+- set _app_window before set_keyboard_geometry_atom_info in slot_show_ise()
+- set keyboard geometry at _ECORE_X_ATOM_E_VIRTUAL_KEYBOARD_OFF_PREPARE_REQUEST status
+- set _app_window value in efl_get_app_window API
+- set window angle value in ECORE_X_VIRTUAL_KEYBOARD_STATE_ON
+- fix indentation
+
 * Mon Jul 29 2013 Jihoon Kim <jihoon48.kim@samsung.com> submit/tizen_2.2/20130725.015848@e390813
 - Disabled auto_throttle feature
 

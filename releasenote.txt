@@ -1,3 +1,10 @@
+ISF 2.4.6801 :
+ 1. [panel] set window angle value in ECORE_X_VIRTUAL_KEYBOARD_STATE_ON
+ 2. [panel] set _app_window value in efl_get_app_window API
+ 3. [panel] set keyboard geometry at _ECORE_X_ATOM_E_VIRTUAL_KEYBOARD_OFF_PREPARE_REQUEST status
+ 4. [panel] set _app_window before set_keyboard_geometry_atom_info in slot_show_ise()
+
+
 ISF 2.4.6729 :
  1. [panel] Disabled auto_throttle feature
 
