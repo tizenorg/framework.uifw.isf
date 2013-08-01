@@ -3563,9 +3563,9 @@ static void slot_show_ise (void)
     // Unset conformant area
     Ecore_X_Window current_app_window = efl_get_app_window ();
     if (_app_window != current_app_window) {
+        _app_window = current_app_window;
         set_keyboard_geometry_atom_info (_app_window, KEYBOARD_STATE_OFF);
         LOGD ("Conformant reset for window %x\n", _app_window);
-        _app_window = current_app_window;
     }
 
     if (!_candidate_window_show) {
