@@ -265,6 +265,9 @@ PKG_CHECK_MODULES(VCONF, [vconf],
                   [ISF_HAS_VCONF=yes],
                   [ISF_HAS_VCONF=no])
 
+# Check feedback library
+PKG_CHECK_MODULES(FEEDBACK, [feedback])
+
 if test "$ISF_HAS_VCONF" = "yes"; then
   AC_DEFINE(HAVE_VCONF,1,[Have VConf functions.])
 fi

@@ -47,6 +47,7 @@
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 #include <malloc.h>
+#include <feedback.h>
 #include "scim_private.h"
 #include "scim.h"
 #include "scim_stl_map.h"
@@ -312,7 +313,8 @@ static Ecore_File_Monitor *_keyboard_ise_em                 = NULL;
 
 static tts_h              _tts                              = NULL;
 
-static bool candidate_will_hide                             = false;
+static bool               candidate_will_hide               = false;
+static bool               feedback_initialized              = false;
 
 /////////////////////////////////////////////////////////////////////////////
 // Implementation of internal functions.
@@ -1377,6 +1379,25 @@ static void ui_mouse_button_pressed_cb (void *data, Evas *e, Evas_Object *button
 
     if (_click_object == ISF_EFL_CANDIDATE_0 || _click_object == ISF_EFL_CANDIDATE_ITEMS) {
         int index = GPOINTER_TO_INT (data) >> 8;
+
+        if (feedback_initialized) {
+            int feedback_result = 0;
+
+            feedback_result = feedback_play_type (FEEDBACK_TYPE_SOUND, FEEDBACK_PATTERN_SIP);
+
+            if (FEEDBACK_ERROR_NONE == feedback_result)
+                LOGD ("Sound play successful");
+            else
+                LOGD ("Cannot play feedback sound : %d", feedback_result);
+
+            feedback_result = feedback_play_type (FEEDBACK_TYPE_VIBRATION, FEEDBACK_PATTERN_SIP);
+
+            if (FEEDBACK_ERROR_NONE == feedback_result)
+                LOGD ("Vibration play successful");
+            else
+                LOGD ("Cannot play feedback vibration : %d", feedback_result);
+        }
+
         ui_candidate_delete_longpress_timer ();
         _longpress_timer = ecore_timer_add (1.0, ui_candidate_longpress_timeout, (void *)index);
     }
@@ -1697,7 +1718,6 @@ static void ui_create_native_candidate_window (void)
     _aux_land_width              = _screen_height;
 
     _item_min_height             = 84 * _height_rate - 2;
-
 
     /* Create candidate window */
     if (_candidate_window == NULL) {
@@ -2606,6 +2626,8 @@ static void slot_show_aux_string (void)
 static void slot_show_candidate_table (void)
 {
     SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
+    int feedback_result = 0;
+
     if (_candidate_window == NULL)
         ui_create_candidate_window ();
 
@@ -2620,6 +2642,16 @@ static void slot_show_candidate_table (void)
 
     ui_candidate_show ();
     ui_settle_candidate_window ();
+
+    feedback_result = feedback_initialize ();
+
+    if (FEEDBACK_ERROR_NONE == feedback_result) {
+        LOGD ("Feedback initialize successful");
+        feedback_initialized = true;
+    } else {
+        LOGD ("Feedback initialize fail : %d",feedback_result);
+        feedback_initialized = false;
+    }
 }
 
 /**
@@ -2660,6 +2692,8 @@ static void slot_hide_candidate_table (void)
 {
     SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
 
+    int feedback_result = 0;
+
     if (!_candidate_area_1)
         return;
 
@@ -2679,6 +2713,15 @@ static void slot_hide_candidate_table (void)
         ui_candidate_hide (false, true, true);
         ui_settle_candidate_window ();
     }
+
+    feedback_result = feedback_deinitialize ();
+
+    if (FEEDBACK_ERROR_NONE == feedback_result)
+        LOGD ("Feedback deinitialize successful");
+    else
+        LOGW ("Feedback deinitialize fail : %d", feedback_result);
+
+    feedback_initialized = false;
 }
 
 /**

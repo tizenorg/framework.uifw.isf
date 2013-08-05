@@ -25,6 +25,7 @@ BuildRequires:  pkgconfig(x11)
 BuildRequires:  pkgconfig(notification)
 BuildRequires:  pkgconfig(dlog)
 BuildRequires:  pkgconfig(tts)
+BuildRequires:  pkgconfig(feedback)
 BuildRequires:  efl-assist-devel
 Requires(post): /sbin/ldconfig /usr/bin/vconftool e17 net-config libmm-sound sys-assert
 Requires(postun): /sbin/ldconfig
