@@ -195,7 +195,8 @@ static void append_separator (Evas_Object *genlist, separator_type style_type)
             ELM_GENLIST_ITEM_NONE,
             NULL,
             NULL);
-    elm_genlist_item_select_mode_set (item, ELM_OBJECT_SELECT_MODE_DISPLAY_ONLY);
+    if (item)
+        elm_genlist_item_select_mode_set (item, ELM_OBJECT_SELECT_MODE_DISPLAY_ONLY);
 }
 
 static Evas_Object *create_bg (Evas_Object *win)
@@ -427,21 +428,40 @@ static void set_auto_full_stop_mode (void)
 
 static void update_setting_main_view (ug_data *ugd)
 {
-    _p_items[SW_KEYBOARD_SEL_ITEM]->sub_text = strdup (_sw_ise_list[_sw_ise_index].c_str());
-    elm_object_item_data_set (ugd->sw_ise_item_tizen, _p_items[SW_KEYBOARD_SEL_ITEM]);
-    if (_hw_kbd_connected || ISE_OPTION_MODULE_NO_EXIST == find_ise_option_module ((const char *)(_sw_uuid_list[_sw_ise_index].c_str ())))
-        elm_object_item_disabled_set (ugd->sw_ise_opt_item_tizen, EINA_TRUE);
-    else
-        elm_object_item_disabled_set (ugd->sw_ise_opt_item_tizen, EINA_FALSE);
-    _p_items[HW_KEYBOARD_SEL_ITEM]->sub_text = strdup (_hw_ise_list[_hw_ise_index].c_str());
-    elm_object_item_data_set (ugd->hw_ise_item_tizen, _p_items[HW_KEYBOARD_SEL_ITEM]);
-    if (!_hw_kbd_connected ||ISE_OPTION_MODULE_NO_EXIST == find_ise_option_module ((const char *)(_hw_uuid_list[_hw_ise_index].c_str ())))
-        elm_object_item_disabled_set (ugd->hw_ise_opt_item_tizen, EINA_TRUE);
-    else
-        elm_object_item_disabled_set (ugd->hw_ise_opt_item_tizen, EINA_FALSE);
+    if (!ugd)
+        return;
 
-    elm_genlist_item_update (ugd->sw_ise_item_tizen);
-    elm_genlist_item_update (ugd->hw_ise_item_tizen);
+    if (_p_items[SW_KEYBOARD_SEL_ITEM])
+        _p_items[SW_KEYBOARD_SEL_ITEM]->sub_text = strdup (_sw_ise_list[_sw_ise_index].c_str());
+
+    if (ugd->sw_ise_item_tizen)
+        elm_object_item_data_set (ugd->sw_ise_item_tizen, _p_items[SW_KEYBOARD_SEL_ITEM]);
+
+    if (ugd->sw_ise_opt_item_tizen) {
+        if (_hw_kbd_connected || ISE_OPTION_MODULE_NO_EXIST == find_ise_option_module ((const char *)(_sw_uuid_list[_sw_ise_index].c_str ())))
+            elm_object_item_disabled_set (ugd->sw_ise_opt_item_tizen, EINA_TRUE);
+        else
+            elm_object_item_disabled_set (ugd->sw_ise_opt_item_tizen, EINA_FALSE);
+    }
+
+    if (_p_items[HW_KEYBOARD_SEL_ITEM])
+        _p_items[HW_KEYBOARD_SEL_ITEM]->sub_text = strdup (_hw_ise_list[_hw_ise_index].c_str());
+
+    if (ugd->hw_ise_item_tizen)
+        elm_object_item_data_set (ugd->hw_ise_item_tizen, _p_items[HW_KEYBOARD_SEL_ITEM]);
+
+    if (ugd->hw_ise_opt_item_tizen) {
+        if (!_hw_kbd_connected ||ISE_OPTION_MODULE_NO_EXIST == find_ise_option_module ((const char *)(_hw_uuid_list[_hw_ise_index].c_str ())))
+            elm_object_item_disabled_set (ugd->hw_ise_opt_item_tizen, EINA_TRUE);
+        else
+            elm_object_item_disabled_set (ugd->hw_ise_opt_item_tizen, EINA_FALSE);
+    }
+
+    if (ugd->sw_ise_item_tizen)
+        elm_genlist_item_update (ugd->sw_ise_item_tizen);
+
+    if (ugd->hw_ise_item_tizen)
+        elm_genlist_item_update (ugd->hw_ise_item_tizen);
 }
 
 static void set_active_sw_ise ()
@@ -485,7 +505,9 @@ static void hw_keyboard_radio_cb (void *data, Evas_Object *obj, void *event_info
 
 static Eina_Bool language_view_back_cb (void *data, Elm_Object_Item *it)
 {
-    _common_ugd->key_end_cb = sw_keyboard_selection_view_set_cb;
+    if (_common_ugd)
+        _common_ugd->key_end_cb = sw_keyboard_selection_view_set_cb;
+
     return EINA_TRUE;
 }
 
@@ -493,6 +515,9 @@ static void show_language_cb (void *data, Evas_Object *obj, void *event_info)
 {
     int index = GPOINTER_TO_INT (data);
     String langlist_str, normal_langlist_str;
+
+    if (!_common_ugd)
+        return;
 
     for (unsigned int i = 0; i < _uuids.size (); i++) {
         if (strcmp (_uuids[i].c_str (), _sw_uuid_list[index].c_str ()) == 0)
@@ -538,7 +563,7 @@ static void helper_ise_reload_config (void)
 
 static Eina_Bool ise_option_view_set_cb (void *data, Elm_Object_Item *it)
 {
-    if (!data)
+    if (!data || !_mdl)
         return EINA_TRUE;
 
     struct ug_data *ugd = (struct ug_data *)data;
@@ -594,6 +619,9 @@ static char *_gl_text_get (void *data, Evas_Object *obj, const char *part)
 static char *_gl_label_get (void *data, Evas_Object *obj, const char *part)
 {
     ItemData *item_data = (ItemData *)data;
+    if (!item_data)
+        return NULL;
+
     if (!strcmp (part, "elm.text")) {
         return strdup (item_data->text);
     }
@@ -622,6 +650,8 @@ static void onoff_check_cb (void *data, Evas_Object *obj, void *event_info)
 static Evas_Object *_gl_icon_get (void *data, Evas_Object *obj, const char *part)
 {
     ItemData *item_data = (ItemData *)data;
+    if (!item_data)
+        return NULL;
 
     if (!strcmp (part, "elm.icon")) {
         Evas_Object *onoff_ck = elm_check_add (obj);
@@ -656,6 +686,9 @@ static void _gl_sw_ise_del (void *data, Evas_Object *obj)
 static void _gl_sw_ise_sel (void *data, Evas_Object *obj, void *event_info)
 {
     Elm_Object_Item *item = (Elm_Object_Item *)event_info;
+    if (!item)
+        return;
+
     elm_genlist_item_selected_set (item, EINA_FALSE);
 
     _sw_ise_index = (int)(data);
@@ -666,6 +699,9 @@ static void _gl_sw_ise_sel (void *data, Evas_Object *obj, void *event_info)
 static void _gl_hw_ise_sel (void *data, Evas_Object *obj, void *event_info)
 {
     Elm_Object_Item *item = (Elm_Object_Item *)event_info;
+    if (!item)
+        return;
+
     elm_genlist_item_selected_set (item, EINA_FALSE);
 
     _hw_ise_index = (int)(data);
@@ -676,6 +712,9 @@ static void _gl_hw_ise_sel (void *data, Evas_Object *obj, void *event_info)
 static void _gl_sel (void *data, Evas_Object *obj, void *event_info)
 {
     Elm_Object_Item *item = (Elm_Object_Item *)event_info;
+    if (!item)
+        return;
+
     elm_genlist_item_selected_set (item, EINA_FALSE);
 
     int id = (int)(data);
@@ -695,6 +734,10 @@ static void _gl_keyboard_sel (void *data, Evas_Object *obj, void *event_info)
 {
     Elm_Object_Item *item = (Elm_Object_Item *)event_info;
     ug_data *ugd = (ug_data *)data;
+
+    if (!item || !ugd)
+        return;
+
     if (item == ugd->sw_ise_item_tizen)
         create_sw_keyboard_selection_view (ugd);
     if (item == ugd->hw_ise_item_tizen)
@@ -706,6 +749,9 @@ static void _gl_ise_option_sel (void *data, Evas_Object *obj, void *event_info)
 {
     Elm_Object_Item *item = (Elm_Object_Item *)event_info;
     ug_data *ugd = (ug_data *)data;
+    if (!item || !ugd)
+        return;
+
     String ise_uuid = String ("");
     if (item == ugd->sw_ise_opt_item_tizen)
         ise_uuid = _sw_uuid_list[_sw_ise_index];
@@ -850,6 +896,9 @@ static void _gl_realized (void *data, Evas_Object *obj, void *event_info)
 
 static void create_sw_keyboard_selection_view (ug_data *ugd)
 {
+    if (!ugd)
+        return;
+
     ugd->key_end_cb = sw_keyboard_selection_view_set_cb;
 
     if (_sw_radio_grp != NULL) {
@@ -911,6 +960,9 @@ static Eina_Bool hw_keyboard_selection_view_set_cb (void *data, Elm_Object_Item 
 
 static void create_hw_keyboard_selection_view (ug_data * ugd)
 {
+    if (!ugd)
+        return;
+
     ugd->key_end_cb = hw_keyboard_selection_view_set_cb;
 
     if (_hw_radio_grp != NULL) {
@@ -950,6 +1002,9 @@ static Evas_Object *create_setting_main_view (ug_data *ugd)
 {
     Elm_Object_Item *item     = NULL;
     Eina_Bool        fullstop = EINA_FALSE;
+
+    if (!ugd)
+        return NULL;
 
     if (ugd->naviframe == NULL) {
         ugd->naviframe  = create_naviframe_layout (ugd->layout_main);
@@ -1319,43 +1374,57 @@ static void load_config_module (void)
 
 static void hw_connection_change_cb (ug_data *ugd)
 {
-    // enable/disable switch
-    elm_object_item_disabled_set (ugd->autocapital_item, !elm_object_item_disabled_get (ugd->autocapital_item));
-    elm_object_item_disabled_set (ugd->sw_ise_item_tizen, !elm_object_item_disabled_get (ugd->sw_ise_item_tizen));
-    elm_object_item_disabled_set (ugd->hw_ise_item_tizen, !elm_object_item_disabled_get (ugd->hw_ise_item_tizen));
-    if (_hw_kbd_connected || ISE_OPTION_MODULE_NO_EXIST == find_ise_option_module ((const char *)(_sw_uuid_list[_sw_ise_index].c_str ())))
-        elm_object_item_disabled_set (ugd->sw_ise_opt_item_tizen, EINA_TRUE);
-    else
-        elm_object_item_disabled_set (ugd->sw_ise_opt_item_tizen, EINA_FALSE);
+    if (!ugd) return;
 
-    if (!_hw_kbd_connected || ISE_OPTION_MODULE_NO_EXIST == find_ise_option_module ((const char *)(_hw_uuid_list[_hw_ise_index].c_str ())))
-        elm_object_item_disabled_set (ugd->hw_ise_opt_item_tizen, EINA_TRUE);
-    else
-        elm_object_item_disabled_set (ugd->hw_ise_opt_item_tizen, EINA_FALSE);
+    // enable/disable switch
+    if (ugd->autocapital_item)
+        elm_object_item_disabled_set (ugd->autocapital_item, !elm_object_item_disabled_get (ugd->autocapital_item));
+
+    if (ugd->sw_ise_item_tizen)
+        elm_object_item_disabled_set (ugd->sw_ise_item_tizen, !elm_object_item_disabled_get (ugd->sw_ise_item_tizen));
+
+    if (ugd->hw_ise_item_tizen)
+        elm_object_item_disabled_set (ugd->hw_ise_item_tizen, !elm_object_item_disabled_get (ugd->hw_ise_item_tizen));
+
+    if (ugd->sw_ise_opt_item_tizen) {
+        if (_hw_kbd_connected || ISE_OPTION_MODULE_NO_EXIST == find_ise_option_module ((const char *)(_sw_uuid_list[_sw_ise_index].c_str ())))
+            elm_object_item_disabled_set (ugd->sw_ise_opt_item_tizen, EINA_TRUE);
+        else
+            elm_object_item_disabled_set (ugd->sw_ise_opt_item_tizen, EINA_FALSE);
+    }
+
+    if (ugd->hw_ise_opt_item_tizen) {
+        if (!_hw_kbd_connected || ISE_OPTION_MODULE_NO_EXIST == find_ise_option_module ((const char *)(_hw_uuid_list[_hw_ise_index].c_str ())))
+            elm_object_item_disabled_set (ugd->hw_ise_opt_item_tizen, EINA_TRUE);
+        else
+            elm_object_item_disabled_set (ugd->hw_ise_opt_item_tizen, EINA_FALSE);
+    }
 
     if (!_hw_kbd_connected) {
         String uuid = _sw_uuid_list[_sw_ise_index];
         isf_control_set_active_ise_by_uuid (uuid.c_str ());
     }
 
-    if (ugd->key_end_cb == hw_keyboard_selection_view_set_cb) {
-        // H/W keyboard selection view
-        if (!_hw_kbd_connected)
-            elm_naviframe_item_pop (ugd->naviframe);
-    }
-    else if (ugd->key_end_cb == sw_keyboard_selection_view_set_cb) {
-        // S/W keyboard selection view
-        if (_hw_kbd_connected)
-            elm_naviframe_item_pop (ugd->naviframe);
-    }
-    else if (ugd->key_end_cb == ise_option_view_set_cb || ugd->key_end_cb == language_view_back_cb) {
-        // ISE or IMEngine option view or language display view
-        Elm_Object_Item *top_it = elm_naviframe_top_item_get (ugd->naviframe);
-        if (top_it != nf_main_it) {
-            elm_naviframe_item_pop_to (nf_main_it);
+    if (ugd->naviframe) {
+        if (ugd->key_end_cb == hw_keyboard_selection_view_set_cb) {
+            // H/W keyboard selection view
+            if (!_hw_kbd_connected)
+                elm_naviframe_item_pop (ugd->naviframe);
         }
+        else if (ugd->key_end_cb == sw_keyboard_selection_view_set_cb) {
+            // S/W keyboard selection view
+            if (_hw_kbd_connected)
+                elm_naviframe_item_pop (ugd->naviframe);
+        }
+        else if (ugd->key_end_cb == ise_option_view_set_cb || ugd->key_end_cb == language_view_back_cb) {
+            // ISE or IMEngine option view or language display view
+            Elm_Object_Item *top_it = elm_naviframe_top_item_get (ugd->naviframe);
+            if (top_it != nf_main_it) {
+                elm_naviframe_item_pop_to (nf_main_it);
+            }
+        }
+        ugd->key_end_cb = back_cb;
     }
-    ugd->key_end_cb = back_cb;
 }
 
 static Eina_Bool x_window_property_change_cb (void *data, int ev_type, void *ev)
@@ -1363,7 +1432,7 @@ static Eina_Bool x_window_property_change_cb (void *data, int ev_type, void *ev)
     Ecore_X_Event_Window_Property *event = (Ecore_X_Event_Window_Property *)ev;
     unsigned int val = 0;
 
-    if (event->win != _root_win || event->atom != _prop_x_ext_keyboard_exist)
+    if (!event || event->win != _root_win || event->atom != _prop_x_ext_keyboard_exist)
         return ECORE_CALLBACK_PASS_ON;
 
     if (!ecore_x_window_prop_card32_get (event->win, _prop_x_ext_keyboard_exist, &val, 1) > 0)
