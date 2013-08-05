@@ -175,7 +175,6 @@ static void       slot_register_helper_properties      (int id, const PropertyLi
 static void       slot_show_ise                        (void);
 static void       slot_hide_ise                        (void);
 
-static void       slot_will_show_ack                   (void);
 static void       slot_will_hide_ack                   (void);
 static void       slot_candidate_will_hide_ack                   (void);
 
