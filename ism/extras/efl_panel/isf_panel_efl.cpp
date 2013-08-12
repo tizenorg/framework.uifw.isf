@@ -4371,8 +4371,6 @@ int main (int argc, char *argv [])
         _config = new DummyConfig ();
     }
 
-    setenv ("ELM_FPS", "6000", 1);
-    setenv ("ELM_ENGINE", "software_x11", 1); /* Avoid the inheritance of ELM_ENGINE */
     set_language_and_locale ();
 
     /* Get current display. */
