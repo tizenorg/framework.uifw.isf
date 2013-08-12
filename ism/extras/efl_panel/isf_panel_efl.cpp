@@ -852,7 +852,7 @@ static void ui_candidate_window_resize (int new_width, int new_height)
 
     int height;
 
-    LOGD ("%s (%d, %d)\n", __func__, new_width, new_height);
+    LOGD ("%s (w: %d, h: %d)\n", __func__, new_width, new_height);
     evas_object_resize (_aux_line, new_width, 2);
     _candidate_width  = new_width;
     _candidate_height = new_height;
@@ -1016,7 +1016,7 @@ static void ui_candidate_window_rotate (int angle)
     }
     flush_memory ();
 
-    LOGD ("elm_win_rotation_with_resize_set (%p, %d)\n", _candidate_window, angle);
+    LOGD ("elm_win_rotation_with_resize_set (window : %p, angle : %d)\n", _candidate_window, angle);
     elm_win_rotation_with_resize_set (_candidate_window, angle);
     if (_preedit_window)
         elm_win_rotation_with_resize_set (_preedit_window, angle);
@@ -1151,7 +1151,7 @@ static Eina_Bool off_prepare_done_timeout (void *data)
     Ecore_X_Window root_window = ecore_x_window_root_get (_control_window);
     ecore_x_e_virtual_keyboard_off_prepare_done_send (root_window, _control_window);
     LOGD ("_ecore_x_e_virtual_keyboard_off_prepare_done_send(%x, %x)\n",
-        root_window, _control_window);
+            root_window, _control_window);
 
     _off_prepare_done_timer = NULL;
 
@@ -1388,14 +1388,14 @@ static void ui_mouse_button_pressed_cb (void *data, Evas *e, Evas_Object *button
             if (FEEDBACK_ERROR_NONE == feedback_result)
                 LOGD ("Sound play successful");
             else
-                LOGD ("Cannot play feedback sound : %d", feedback_result);
+                LOGW ("Cannot play feedback sound : %d", feedback_result);
 
             feedback_result = feedback_play_type (FEEDBACK_TYPE_VIBRATION, FEEDBACK_PATTERN_SIP);
 
             if (FEEDBACK_ERROR_NONE == feedback_result)
                 LOGD ("Vibration play successful");
             else
-                LOGD ("Cannot play feedback vibration : %d", feedback_result);
+                LOGW ("Cannot play feedback vibration : %d", feedback_result);
         }
 
         ui_candidate_delete_longpress_timer ();
@@ -1483,26 +1483,26 @@ static bool ui_open_tts (void)
 
     int r = tts_create (&_tts);
     if (TTS_ERROR_NONE != r) {
-        LOGD ("tts_create FAILED : result(%d)\n", r);
+        LOGW ("tts_create FAILED : result(%d)\n", r);
         _tts = NULL;
         return false;
     }
 
     r = tts_set_mode (_tts, TTS_MODE_SCREEN_READER);
     if (TTS_ERROR_NONE != r) {
-        LOGD ("tts_set_mode FAILED : result(%d)\n", r);
+        LOGW ("tts_set_mode FAILED : result(%d)\n", r);
     }
 
     tts_state_e current_state;
     r = tts_get_state (_tts, &current_state);
     if (TTS_ERROR_NONE != r) {
-        LOGD ("tts_get_state FAILED : result(%d)\n", r);
+        LOGW ("tts_get_state FAILED : result(%d)\n", r);
     }
 
     if (TTS_STATE_CREATED == current_state)  {
         r = tts_prepare (_tts);
         if (TTS_ERROR_NONE != r) {
-            LOGD ("tts_prepare FAILED : ret(%d)\n", r);
+            LOGW ("tts_prepare FAILED : ret(%d)\n", r);
         }
     }
     return true;
@@ -1518,12 +1518,12 @@ static void ui_close_tts (void)
     if (_tts) {
         int r = tts_unprepare (_tts);
         if (TTS_ERROR_NONE != r) {
-            LOGD ("tts_unprepare FAILED : result(%d)\n", r);
+            LOGW ("tts_unprepare FAILED : result(%d)\n", r);
         }
 
         r = tts_destroy (_tts);
         if (TTS_ERROR_NONE != r) {
-            LOGD ("tts_destroy FAILED : result(%d)\n", r);
+            LOGW ("tts_destroy FAILED : result(%d)\n", r);
         }
     }
 }
@@ -1549,13 +1549,13 @@ static void ui_play_tts (const char* str)
 
         r = tts_get_state (_tts, &current_state);
         if (TTS_ERROR_NONE != r) {
-            LOGD ("Fail to get state from TTS : ret(%d)\n", r);
+            LOGW ("Fail to get state from TTS : ret(%d)\n", r);
         }
 
         if (TTS_STATE_PLAYING == current_state)  {
             r = tts_stop (_tts);
             if (TTS_ERROR_NONE != r) {
-                LOGD ("Fail to stop TTS : ret(%d)\n", r);
+                LOGW ("Fail to stop TTS : ret(%d)\n", r);
             }
         }
         /* FIXME: Should support for all languages */
@@ -1563,7 +1563,7 @@ static void ui_play_tts (const char* str)
         if (TTS_ERROR_NONE == r) {
             r = tts_play (_tts);
             if (TTS_ERROR_NONE != r) {
-                LOGD ("Fail to play TTS : ret(%d)\n", r);
+                LOGW ("Fail to play TTS : ret(%d)\n", r);
             }
         }
     }
@@ -2088,7 +2088,7 @@ static void efl_set_transient_for_app_window (Ecore_X_Window window)
     Ecore_X_Window   xAppWindow = efl_get_app_window ();
     ecore_x_icccm_transient_for_set (window, xAppWindow);
 
-    LOGD ("%x %x\n", window, xAppWindow);
+    LOGD ("win : %x, forwin : %x\n", window, xAppWindow);
 }
 
 /**
@@ -2649,7 +2649,7 @@ static void slot_show_candidate_table (void)
         LOGD ("Feedback initialize successful");
         feedback_initialized = true;
     } else {
-        LOGD ("Feedback initialize fail : %d",feedback_result);
+        LOGW ("Feedback initialize fail : %d",feedback_result);
         feedback_initialized = false;
     }
 }
@@ -3858,12 +3858,12 @@ static void start_default_ise (void)
     String default_uuid = scim_global_config_read (String (SCIM_GLOBAL_CONFIG_DEFAULT_ISE_UUID), _initial_ise_uuid);
     if (!set_active_ise (default_uuid)) {
         std::cerr << __FUNCTION__ << " Failed to launch default ISE(" << default_uuid << ")\n";
-        LOGE ("Failed to launch default ISE (%s)\n", default_uuid.c_str ());
+        LOGW ("Failed to launch default ISE (%s)\n", default_uuid.c_str ());
 
         if (default_uuid != _initial_ise_uuid) {
             std::cerr << __FUNCTION__ << " Launch initial ISE(" << _initial_ise_uuid << ")\n";
             if (!set_active_ise (_initial_ise_uuid)) {
-                LOGE ("Failed to launch initial ISE (%s)\n", _initial_ise_uuid.c_str ());
+                LOGW ("Failed to launch initial ISE (%s)\n", _initial_ise_uuid.c_str ());
             } else {
                 LOGD ("Succeed to launch initial ISE (%s)\n", _initial_ise_uuid.c_str ());
             }
@@ -3960,7 +3960,7 @@ static Eina_Bool x_event_window_property_cb (void *data, int ev_type, void *even
     } else if (ev->atom == ECORE_X_ATOM_E_VIRTUAL_KEYBOARD_STATE) {
         if (ev->win == _control_window) {
             /* WMSYNC, #6 The keyboard window is displayed fully so set the conformant geometry */
-            LOGD ("ECORE_X_ATOM_E_VIRTUAL_KEYBOARD_STATE : %p %d\n", ev->win, ev->atom);
+            LOGD ("ECORE_X_ATOM_E_VIRTUAL_KEYBOARD_STATE : win : %p, atom : %d\n", ev->win, ev->atom);
             Ecore_X_Virtual_Keyboard_State state;
             state = ecore_x_e_virtual_keyboard_state_get (ev->win);
             if (state == ECORE_X_VIRTUAL_KEYBOARD_STATE_ON) {
@@ -4437,7 +4437,7 @@ int main (int argc, char *argv [])
 
     if (!check_wm_ready ()) {
         std::cerr << "[ISF-PANEL-EFL] WM ready timeout\n";
-        LOGE ("Window Manager ready timeout\n");
+        LOGW ("Window Manager ready timeout\n");
     } else {
         LOGD ("Window Manager is in ready state\n");
     }
@@ -4448,7 +4448,7 @@ int main (int argc, char *argv [])
     elm_policy_set (ELM_POLICY_THROTTLE, ELM_POLICY_THROTTLE_NEVER);
 
     if (!efl_create_control_window ()) {
-        LOGE ("Failed to create control window\n");
+        LOGW ("Failed to create control window\n");
         goto cleanup;
     }
 
