@@ -483,8 +483,8 @@ _key_up_cb (void *data, int type, void *event)
         !strcmp (ev->keyname, KEY_END) &&
         ecore_imf_context_input_panel_state_get (_focused_ic->ctx) != ECORE_IMF_INPUT_PANEL_STATE_HIDE) {
         LOGD ("END key is released\n");
-        ecore_imf_context_reset (_focused_ic->ctx);
         isf_imf_context_input_panel_instant_hide (_focused_ic->ctx);
+        isf_imf_context_reset (_focused_ic->ctx);
         return ECORE_CALLBACK_CANCEL;
     }
 
