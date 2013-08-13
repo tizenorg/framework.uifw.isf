@@ -1159,8 +1159,6 @@ isf_imf_context_client_canvas_set (Ecore_IMF_Context *ctx, void *canvas)
     if (context_scim && context_scim->impl && context_scim->impl->client_canvas != (Evas*) canvas) {
         context_scim->impl->client_canvas = (Evas*)canvas;
 
-        LOGD ("ctx : %p, canvas : %p\n", ctx, canvas);
-
         evas_event_callback_add (context_scim->impl->client_canvas, EVAS_CALLBACK_CANVAS_FOCUS_OUT, evas_focus_out_cb, ctx);
     }
 }
@@ -1187,8 +1185,6 @@ isf_imf_context_client_window_set (Ecore_IMF_Context *ctx, void *window)
 
     if (context_scim && context_scim->impl && context_scim->impl->client_window != (Ecore_X_Window)((Ecore_Window)window)) {
         context_scim->impl->client_window = (Ecore_X_Window)((Ecore_Window)window);
-
-        LOGD ("ctx : %p, client X win ID : %#x\n", ctx, context_scim->impl->client_window);
 
         if ((context_scim->impl->client_window != 0) &&
                 (context_scim->impl->client_window != _client_window)) {

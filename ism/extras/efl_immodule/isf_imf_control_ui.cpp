@@ -518,37 +518,28 @@ void isf_imf_context_input_panel_show (Ecore_IMF_Context* ctx)
     will_hide = EINA_FALSE;
     show_req_ic = ctx;
 
-    LOGD ("===============================================================\n");
-    LOGD ("[request to show input panel] ctx : %p\n", ctx);
-    LOGD (" - language : %d\n", iseContext.language);
-    LOGD (" - layout : %d\n", iseContext.layout);
-    LOGD (" - layout variation : %d\n", iseContext.layout_variation);
-
     /* set return key type */
     iseContext.return_key_type = ecore_imf_context_input_panel_return_key_type_get (ctx);
-    LOGD (" - return_key_type : %d\n", iseContext.return_key_type);
 
     /* set return key disabled */
     iseContext.return_key_disabled = ecore_imf_context_input_panel_return_key_disabled_get (ctx);
-    LOGD (" - return_key_disabled : %d\n", iseContext.return_key_disabled);
 
     /* set caps mode */
     iseContext.caps_mode = caps_mode_check (ctx, EINA_TRUE, EINA_FALSE);
-    LOGD (" - caps mode : %d\n", iseContext.caps_mode);
 
     /* set X Client window ID */
     iseContext.client_window = _client_window_id_get (ctx);
-    LOGD (" - client_window : %#x\n", iseContext.client_window);
 
     /* set the size of imdata */
     context_scim_imdata_get (ctx, (void *)imdata, &iseContext.imdata_size);
 
-    LOGD (" - password mode : %d\n", iseContext.password_mode);
-    LOGD (" - prediction_allow : %d\n", iseContext.prediction_allow);
-
     /* set the cursor position of the editable widget */
     ecore_imf_context_surrounding_get (ctx, NULL, &iseContext.cursor_pos);
-    LOGD (" - cursor position : %d\n", iseContext.cursor_pos);
+
+    LOGD ("ctx : %p, layout : %d, layout variation : %d\n", ctx, iseContext.layout, iseContext.layout_variation);
+    LOGD ("language : %d, cursor position : %d, caps mode : %d\n", iseContext.language, iseContext.cursor_pos, iseContext.caps_mode);
+    LOGD ("return_key_type : %d, return_key_disabled : %d\n", iseContext.return_key_type, iseContext.return_key_disabled);
+    LOGD ("client_window : %#x, password mode : %d, prediction_allow : %d\n", iseContext.client_window, iseContext.password_mode, iseContext.prediction_allow);
 
     /* calculate packet size */
     length = sizeof (iseContext);
@@ -576,7 +567,6 @@ void isf_imf_context_input_panel_show (Ecore_IMF_Context* ctx)
     free (packet);
 
     caps_mode_check (ctx, EINA_TRUE, EINA_TRUE);
-    LOGD ("===============================================================\n");
 
     if (notified_state == ECORE_IMF_INPUT_PANEL_STATE_HIDE &&
         input_panel_state == ECORE_IMF_INPUT_PANEL_STATE_SHOW)
