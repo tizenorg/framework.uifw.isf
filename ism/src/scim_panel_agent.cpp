@@ -373,7 +373,7 @@ public:
           m_ise_exiting (false), m_is_imengine_aux (false), m_is_imengine_candidate (false),
           m_last_socket_client (-1), m_last_client_context (0)
     {
-        m_current_ise_name = String (_("English/Keyboard"));
+        m_current_ise_name = String (_("English Keyboard"));
         m_imcontrol_repository.clear ();
         m_imcontrol_map.clear ();
         m_socket_server.signal_connect_accept (slot (this, &PanelAgentImpl::socket_accept_callback));
@@ -3922,7 +3922,7 @@ private:
         if (name.length () > 0)
             info = PanelFactoryInfo (uuid, name, String (""), String (""));
         else
-            info = PanelFactoryInfo (String (""), String (_("English/Keyboard")), String ("C"), String (SCIM_KEYBOARD_ICON_FILE));
+            info = PanelFactoryInfo (String (""), String (_("English Keyboard")), String ("C"), String (SCIM_KEYBOARD_ICON_FILE));
         m_signal_update_factory_info (info);
     }
 

@@ -21,7 +21,7 @@ msgstr ""
 #: ism/src/scim_panel_agent.cpp:370 ism/src/scim_panel_agent.cpp:3843
 #: ism/src/scim_utility.cpp:706
 #: ism/extras/gtk2_immodule/gtkimcontextscim.cpp:1715
-msgid "English/Keyboard"
+msgid "English Keyboard"
 msgstr ""
 
 #. return WideString ();

@@ -1955,7 +1955,7 @@ X11FrontEnd::panel_req_update_factory_info (const X11IC *ic)
             String uuid = get_instance_uuid (ic->siid);
             info = PanelFactoryInfo (uuid, utf8_wcstombs (get_factory_name (uuid)), get_factory_language (uuid), get_factory_icon_file (uuid));
         } else {
-            info = PanelFactoryInfo (String (""), String (_("English/Keyboard")), String ("C"), String (SCIM_KEYBOARD_ICON_FILE));
+            info = PanelFactoryInfo (String (""), String (_("English Keyboard")), String ("C"), String (SCIM_KEYBOARD_ICON_FILE));
         }
         m_panel_client.update_factory_info (ic->icid, info);
     }

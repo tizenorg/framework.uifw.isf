@@ -125,7 +125,7 @@ ComposeKeyFactory::~ComposeKeyFactory ()
 WideString
 ComposeKeyFactory::get_name () const
 {
-    return utf8_mbstowcs (_("English/Keyboard"));
+    return utf8_mbstowcs (_("English Keyboard"));
 }
 
 WideString

@@ -23,8 +23,8 @@ msgstr ""
 #: ism/src/scim_panel_agent.cpp:348 ism/src/scim_panel_agent.cpp:4046
 #: ism/src/scim_utility.cpp:702
 #: ism/extras/gtk2_immodule/gtkimcontextscim.cpp:1715
-msgid "English/Keyboard"
-msgstr "Nederlands/toetsenbord"
+msgid "English Keyboard"
+msgstr "Nederlands toetsenbord"
 
 #. return WideString ();
 #: ism/src/scim_compose_key.cpp:145

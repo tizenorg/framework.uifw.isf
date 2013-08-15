@@ -773,7 +773,7 @@ DummyIMEngineFactory::~DummyIMEngineFactory ()
 WideString
 DummyIMEngineFactory::get_name () const
 {
-    return utf8_mbstowcs (_("English/Keyboard"));
+    return utf8_mbstowcs (_("English Keyboard"));
 }
 
 WideString

@@ -2541,7 +2541,7 @@ panel_req_update_factory_info (EcoreIMFContextISF *ic)
             if (sf)
                 info = PanelFactoryInfo (sf->get_uuid (), utf8_wcstombs (sf->get_name ()), sf->get_language (), sf->get_icon_file ());
         } else {
-            info = PanelFactoryInfo (String (""), String (_("English/Keyboard")), String ("C"), String (SCIM_KEYBOARD_ICON_FILE));
+            info = PanelFactoryInfo (String (""), String (_("English Keyboard")), String ("C"), String (SCIM_KEYBOARD_ICON_FILE));
         }
         _panel_client.update_factory_info (ic->id, info);
     }
