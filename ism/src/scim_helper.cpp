@@ -45,6 +45,7 @@
 #define Uses_SCIM_EVENT
 
 #include <string.h>
+#include <unistd.h>
 
 #include "scim_private.h"
 #include "scim.h"

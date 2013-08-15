@@ -1,3 +1,9 @@
+ISF 2.4.6815 :
+ 1. Change "English/Keyboard" to "English Keyboard"
+ 2. [immodule] Fix bug of autocapital analysis
+ 3. Include unistd.h in scim_helper.cpp
+
+
 ISF 2.4.6801 :
  1. [panel] set window angle value in ECORE_X_VIRTUAL_KEYBOARD_STATE_ON
  2. [panel] set _app_window value in efl_get_app_window API
