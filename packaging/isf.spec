@@ -53,8 +53,9 @@ ISF setting UI Gadget
 %setup -q
 
 %build
-CFLAGS+=" -fvisibility=hidden "; export CFLAGS
-CXXFLAGS+=" -fvisibility=hidden -fvisibility-inlines-hidden ";export CXXFLAGS
+export GC_SECTIONS_FLAGS="-fdata-sections -ffunction-sections -Wl,--gc-sections"
+CFLAGS+=" -fvisibility=hidden ${GC_SECTIONS_FLAGS} "; export CFLAGS
+CXXFLAGS+=" -fvisibility=hidden -fvisibility-inlines-hidden ${GC_SECTIONS_FLAGS} ";export CXXFLAGS
 
 %autogen
 %configure --disable-static \
