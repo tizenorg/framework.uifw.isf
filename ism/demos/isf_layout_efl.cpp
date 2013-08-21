@@ -27,6 +27,11 @@
 #include <Ecore_X.h>
 #include <utilX.h>
 
+static void _exit_key_cb (void *data, Evas_Object *obj, void *event_info)
+{
+    elm_exit ();
+}
+
 static void _back_key_cb (void *data, Evas_Object *obj, void *event_info)
 {
     ecore_x_test_fake_key_press (KEY_END);
@@ -277,6 +282,16 @@ static Evas_Object * create_inner_layout (void *data)
     evas_object_size_hint_align_set (rotate_btn, EVAS_HINT_FILL, 0);
     evas_object_show (rotate_btn);
     elm_box_pack_end (bx, rotate_btn);
+
+    /* Click to exit button */
+    Evas_Object *exit_btn = elm_button_add (parent);
+    elm_object_text_set (exit_btn, "Exit");
+    evas_object_smart_callback_add (exit_btn, "clicked", _exit_key_cb, (void *)ad);
+    evas_object_size_hint_weight_set (exit_btn, EVAS_HINT_EXPAND, 0.0);
+    evas_object_size_hint_align_set (exit_btn, EVAS_HINT_FILL, 0);
+    evas_object_show (exit_btn);
+    elm_box_pack_end (bx, exit_btn);
+    elm_object_focus_allow_set (exit_btn, EINA_FALSE);
 
     ecore_event_handler_add (ECORE_X_EVENT_WINDOW_PROPERTY, _prop_change_cb, NULL);
 
