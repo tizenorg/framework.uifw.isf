@@ -455,11 +455,12 @@ _key_down_cb (void *data, int type, void *event)
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
 
     Evas_Event_Key_Down *ev = (Evas_Event_Key_Down *)event;
-    if (!ev || !_focused_ic || !_focused_ic->ctx) return ECORE_CALLBACK_RENEW;
+    Ecore_IMF_Context *active_ctx = get_using_ic (ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_SHOW);
+    if (!ev || !active_ctx) return ECORE_CALLBACK_RENEW;
 
     if ((hw_keyboard_num_get () == 0) &&
         !strcmp (ev->keyname, KEY_END) &&
-        ecore_imf_context_input_panel_state_get (_focused_ic->ctx) != ECORE_IMF_INPUT_PANEL_STATE_HIDE) {
+        ecore_imf_context_input_panel_state_get (active_ctx) != ECORE_IMF_INPUT_PANEL_STATE_HIDE) {
         LOGD ("END key is pressed\n");
         return ECORE_CALLBACK_CANCEL;
     }
@@ -472,15 +473,17 @@ _key_up_cb (void *data, int type, void *event)
 {
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
 
+    Ecore_IMF_Context *active_ctx = get_using_ic (ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_SHOW);
+
     Evas_Event_Key_Down *ev = (Evas_Event_Key_Down *)event;
-    if (!ev || !_focused_ic || !_focused_ic->ctx) return ECORE_CALLBACK_RENEW;
+    if (!ev || !active_ctx) return ECORE_CALLBACK_RENEW;
 
     if ((hw_keyboard_num_get () == 0) &&
         !strcmp (ev->keyname, KEY_END) &&
-        ecore_imf_context_input_panel_state_get (_focused_ic->ctx) != ECORE_IMF_INPUT_PANEL_STATE_HIDE) {
+        ecore_imf_context_input_panel_state_get (active_ctx) != ECORE_IMF_INPUT_PANEL_STATE_HIDE) {
         LOGD ("END key is released\n");
-        isf_imf_context_input_panel_instant_hide (_focused_ic->ctx);
-        isf_imf_context_reset (_focused_ic->ctx);
+        isf_imf_context_input_panel_instant_hide (active_ctx);
+        isf_imf_context_reset (active_ctx);
         return ECORE_CALLBACK_CANCEL;
     }
 

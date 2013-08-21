@@ -34,6 +34,7 @@ extern "C"
     void input_panel_event_callback_call (Ecore_IMF_Input_Panel_Event type, int value);
     int  hw_keyboard_num_get ();
     bool process_update_input_context (int type, int value);
+    Ecore_IMF_Context *get_using_ic (Ecore_IMF_Input_Panel_Event type, int value);
 
     void isf_imf_input_panel_init ();
     void isf_imf_input_panel_shutdown ();

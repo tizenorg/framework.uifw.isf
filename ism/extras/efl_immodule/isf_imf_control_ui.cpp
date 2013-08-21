@@ -62,7 +62,7 @@ static Eina_Bool          will_hide = EINA_FALSE;
 
 static void _send_input_panel_hide_request ();
 
-static Ecore_IMF_Context *_get_using_ic (Ecore_IMF_Input_Panel_Event type, int value) {
+Ecore_IMF_Context *get_using_ic (Ecore_IMF_Input_Panel_Event type, int value) {
     Ecore_IMF_Context *using_ic = NULL;
     if (show_req_ic)
         using_ic = show_req_ic;
@@ -83,14 +83,14 @@ static void _render_post_cb (void *data, Evas *e, void *event_info)
     LOGD ("[_render_post_cb]\n");
     evas_event_callback_del_full (e, EVAS_CALLBACK_RENDER_POST, _render_post_cb, NULL);
     conformant_reset_done = EINA_TRUE;
-    isf_imf_context_input_panel_send_will_hide_ack (_get_using_ic (ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_SHOW));
+    isf_imf_context_input_panel_send_will_hide_ack (get_using_ic (ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_SHOW));
 }
 
 static void _candidate_render_post_cb (void *data, Evas *e, void *event_info)
 {
     LOGD ("[%s]\n", __func__);
     evas_event_callback_del_full (e, EVAS_CALLBACK_RENDER_POST, _candidate_render_post_cb, NULL);
-    isf_imf_context_input_panel_send_candidate_will_hide_ack (_get_using_ic (ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_SHOW));
+    isf_imf_context_input_panel_send_candidate_will_hide_ack (get_using_ic (ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_SHOW));
 }
 
 static void _clear_will_show_timer ()
@@ -198,7 +198,7 @@ static void _save_current_xid (Ecore_IMF_Context *ctx)
 
 static void _event_callback_call (Ecore_IMF_Input_Panel_Event type, int value)
 {
-    Ecore_IMF_Context *using_ic = _get_using_ic (type, value);
+    Ecore_IMF_Context *using_ic = get_using_ic (type, value);
 
     switch (type) {
         case ECORE_IMF_INPUT_PANEL_STATE_EVENT:
@@ -437,7 +437,7 @@ void isf_imf_input_panel_shutdown (void)
             LOGD ("No hide timer\n");
     }
 
-    isf_imf_context_input_panel_send_candidate_will_hide_ack (_get_using_ic (ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_SHOW));
+    isf_imf_context_input_panel_send_candidate_will_hide_ack (get_using_ic (ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_SHOW));
 
     if (_prop_change_handler) {
         ecore_event_handler_del (_prop_change_handler);
@@ -942,7 +942,7 @@ static bool _process_ise_panel_hided (void)
     _event_callback_call (ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_HIDE);
 
     received_will_hide_event = EINA_TRUE;
-    isf_imf_context_input_panel_send_will_hide_ack (_get_using_ic (ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_HIDE));
+    isf_imf_context_input_panel_send_will_hide_ack (get_using_ic (ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_HIDE));
 
     return true;
 }
