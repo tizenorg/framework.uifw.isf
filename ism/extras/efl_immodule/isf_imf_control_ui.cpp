@@ -427,9 +427,13 @@ void isf_imf_input_panel_init (void)
 
 void isf_imf_input_panel_shutdown (void)
 {
-    if (hide_timer) {
-        if (input_panel_state != ECORE_IMF_INPUT_PANEL_STATE_HIDE) {
-            _send_input_panel_hide_request ();
+    if (show_req_ic)
+        isf_imf_context_input_panel_instant_hide (show_req_ic);
+    else {
+        if (hide_timer) {
+            if (input_panel_state != ECORE_IMF_INPUT_PANEL_STATE_HIDE) {
+                _send_input_panel_hide_request ();
+            }
         }
     }
 

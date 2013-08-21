@@ -318,7 +318,7 @@ public:
     }
     ~FinalizeHandler () {
         SCIM_DEBUG_FRONTEND(1) << "FinalizeHandler::~FinalizeHandler ()\n";
-        finalize ();
+        isf_imf_context_shutdown ();
     }
 };
 
