@@ -128,6 +128,7 @@ static void       ui_settle_candidate_window           (void);
 static void       ui_candidate_show                    (bool bSetVirtualKbd = true);
 static void       ui_create_candidate_window           (void);
 static void       update_table                         (int table_type, const LookupTable &table);
+static void       ui_candidate_window_close_button_cb  (void *data, Evas *e, Evas_Object *button, void *event_info);
 
 static bool       check_wm_ready                       (void);
 static bool       check_system_ready                   (void);
@@ -992,6 +993,8 @@ static void ui_candidate_window_rotate (int angle)
     SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
     if (!_candidate_window)
         return;
+
+    ui_candidate_window_close_button_cb (NULL, NULL, NULL, NULL);
 
     if (angle == 90 || angle == 270) {
         _candidate_scroll_width = _candidate_scroll_width_max;
@@ -2545,12 +2548,8 @@ static void slot_update_ise_geometry (int x, int y, int width, int height)
     _ise_width  = width;
     _ise_height = height;
 
-    if (_candidate_window) {
-        int angle = efl_get_angle_for_app_window ();
-        if (_candidate_angle != angle) {
-            _candidate_angle = angle;
-            ui_candidate_window_rotate (angle);
-        } else if (old_height != height) {
+    if (_candidate_window && evas_object_visible_get (_candidate_window)) {
+        if (old_height != height) {
             ui_settle_candidate_window ();
         }
     }
