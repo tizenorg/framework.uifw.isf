@@ -748,6 +748,8 @@ caps_mode_check (Ecore_IMF_Context *ctx, Eina_Bool force, Eina_Bool noti)
     Eina_Bool uppercase;
     EcoreIMFContextISF *context_scim;
 
+    if (hw_keyboard_num_get () > 0) return EINA_FALSE;
+
     if (!ctx) return EINA_FALSE;
     context_scim = (EcoreIMFContextISF *)ecore_imf_context_data_get (ctx);
 
