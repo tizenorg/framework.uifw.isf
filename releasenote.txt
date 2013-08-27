@@ -1,3 +1,10 @@
+ISF 2.4.6827 :
+ 1. [immodule] call prediction_allow_set in IMEngine in case of only having focus
+ 2. [immodule] skip checking autocapital in H/W keyboard mode
+ 3. Reduce binary size gc-sections
+ 4. [setting] fix N_SE-49587 allow duplicated ise name now
+
+
 ISF 2.4.6815 :
  1. Change "English/Keyboard" to "English Keyboard"
  2. [immodule] Fix bug of autocapital analysis
