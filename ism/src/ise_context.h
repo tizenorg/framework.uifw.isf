@@ -40,7 +40,8 @@ typedef struct {
     Eina_Bool password_mode;
     Eina_Bool caps_mode;
     int layout_variation;
-    int reserved[248];
+    Ecore_IMF_Autocapital_Type autocapital_type;
+    int reserved[247];
 } Ise_Context;
 
 #endif  /* __ISE_CONTEXT_H */
