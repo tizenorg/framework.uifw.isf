@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns="http://tizen.org/ns/packages" package="ug-isfsetting-efl" version="0.1" install-location="internal-only">
-        <label>isfsetting-efl</label>
+        <label>Keyboard setting</label>
         <author email="shuo0805.liu@samsung.com" href="www.samsung.com">Shuo Liu</author>
-        <description>isfsetting Application</description>
+        <description>Keyboard setting Application</description>
         <ui-application appid="isfsetting-efl" exec="/opt/ug/bin/isfsetting-efl" nodisplay="true" multiple="true" type="capp" taskmanage="false">
                 <icon>ug-isfsetting-efl.png</icon>
-                <label>isfsetting Appcontrol</label>
-                <label xml:lang="en-us">isfsetting</label>
+                <label>Keyboard setting Appcontrol</label>
+                <label xml:lang="en-us">Keyboard setting</label>
                 <application-service>
                     <operation name="http://tizen.org/appcontrol/operation/setting/ime"/>
                 </application-service>
