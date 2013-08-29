@@ -1,3 +1,10 @@
+ISF 2.4.6829 :
+ 1. Change label of UG
+ 2. Add autocapital type in isecontext
+ 3. Reduce the number of dlog lines in immodule
+ 4. [isfsetting] fix N_SE-50147
+
+
 ISF 2.4.6827 :
  1. [immodule] call prediction_allow_set in IMEngine in case of only having focus
  2. [immodule] skip checking autocapital in H/W keyboard mode

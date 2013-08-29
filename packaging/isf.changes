@@ -1,3 +1,16 @@
+* Thu Aug 29 2013 Jihoon Kim <jihoon48.kim@samsung.com> submit/tizen_2.2/20130827.035107@cff004b
+- Change label of UG
+- Add autocapital type in isecontext
+- Reduce the number of dlog lines in immodule
+- [isfsetting]fix N_SE-50147
+- upload isf-2.4.6827
+- Merge "fix N_SE-49587 allow duplicated ise name now" into tizen_2.2
+- Reduce binary size gc-sections
+- skip checking autocapital in H/W keyboard mode
+- fix N_SE-49587 allow duplicated ise name now
+- call prediction_allow_set in IMEngine in case of only having focus
+- Include unistd.h in scim_helper.cpp
+
 * Thu Aug 15 2013 Li Zhang <li2012.zhang@samsung.com> submit/tizen_2.2/20130815.054758@9d070e0
 - Change "English/Keyboard" to "English Keyboard"
 - Fix bug of autocapital analysis
