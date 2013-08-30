@@ -27,6 +27,7 @@
 #include <Elementary.h>
 #include <Ecore_X.h>
 #include <privilege-control.h>
+#include <vconf.h>
 #include <efl_assist.h>
 #include "isf_demo_efl.h"
 #include "isf_imcontrol_efl.h"
@@ -296,6 +297,26 @@ static Eina_Bool _keyup_event (void *data, int type, void *event)
     return ECORE_CALLBACK_RENEW;
 }
 
+static void input_panel_state_changed_cb (keynode_t *key, void* data)
+{
+    int sip_status = vconf_keynode_get_int (key);
+
+    switch (sip_status) {
+        case VCONFKEY_ISF_INPUT_PANEL_STATE_HIDE:
+            printf ("state : hide\n");
+            break;
+        case VCONFKEY_ISF_INPUT_PANEL_STATE_WILL_HIDE:
+            printf ("state : will_hide\n");
+            break;
+        case VCONFKEY_ISF_INPUT_PANEL_STATE_SHOW:
+            printf ("state : show\n");
+            break;
+        case VCONFKEY_ISF_INPUT_PANEL_STATE_WILL_SHOW:
+            printf ("state : will_show\n");
+            break;
+    }
+}
+
 static int app_create (void *data)
 {
     struct appdata *ad = (struct appdata *)data;
@@ -327,6 +348,8 @@ static int app_create (void *data)
     lang_changed (ad);
 
     evas_object_show (ad->win_main);
+
+    vconf_notify_key_changed (VCONFKEY_ISF_INPUT_PANEL_STATE, input_panel_state_changed_cb, NULL);
 
     /* add system event callback */
     appcore_set_event_callback (APPCORE_EVENT_LANG_CHANGE,

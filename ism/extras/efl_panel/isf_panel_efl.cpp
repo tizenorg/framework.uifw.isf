@@ -3955,7 +3955,7 @@ static Eina_Bool x_event_window_property_cb (void *data, int ev_type, void *even
                 _panel_agent->update_input_panel_event(
                         ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_SHOW);
 
-                vconf_set_int (VCONFKEY_PM_SIP_STATUS, VCONFKEY_PM_SIP_ON);
+                vconf_set_int (VCONFKEY_ISF_INPUT_PANEL_STATE, VCONFKEY_ISF_INPUT_PANEL_STATE_SHOW);
             } else if (state == ECORE_X_VIRTUAL_KEYBOARD_STATE_OFF) {
                 /* WMSYNC, #9 The keyboard window is hidden fully so send HIDE state */
                 LOGD ("ECORE_X_VIRTUAL_KEYBOARD_STATE_OFF\n");
@@ -3969,7 +3969,7 @@ static Eina_Bool x_event_window_property_cb (void *data, int ev_type, void *even
                     ui_settle_candidate_window();
                 }
 
-                vconf_set_int (VCONFKEY_PM_SIP_STATUS, VCONFKEY_PM_SIP_OFF);
+                vconf_set_int (VCONFKEY_ISF_INPUT_PANEL_STATE, VCONFKEY_ISF_INPUT_PANEL_STATE_HIDE);
             }
             ui_settle_candidate_window ();
         }
@@ -4002,6 +4002,8 @@ static Eina_Bool x_event_client_message_cb (void *data, int type, void *event)
             LOGD ("_ECORE_X_ATOM_E_VIRTUAL_KEYBOARD_ON_PREPARE_REQUEST\n");
             _panel_agent->update_input_panel_event (
                     ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_WILL_SHOW);
+
+            vconf_set_int (VCONFKEY_ISF_INPUT_PANEL_STATE, VCONFKEY_ISF_INPUT_PANEL_STATE_WILL_SHOW);
         } else if (ev->message_type == ECORE_X_ATOM_E_VIRTUAL_KEYBOARD_OFF_PREPARE_REQUEST) {
             _ise_show = false;
             /* WMSYNC, #7 Send WILL_HIDE event when the keyboard window is about to hidden */
@@ -4025,6 +4027,7 @@ static Eina_Bool x_event_client_message_cb (void *data, int type, void *event)
             //_panel_agent->update_input_panel_event(
             //    ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_WILL_HIDE);
             // Instead send HIDE signal
+            vconf_set_int (VCONFKEY_ISF_INPUT_PANEL_STATE, VCONFKEY_ISF_INPUT_PANEL_STATE_WILL_HIDE);
         } else if (ev->message_type == ECORE_X_ATOM_E_WINDOW_ROTATION_CHANGE_PREPARE) {
             /* WMSYNC, #10 Register size hints for candidate window and set conformant geometry */
             // PRE_ROTATE_DONE Ack to WM
