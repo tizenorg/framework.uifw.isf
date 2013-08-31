@@ -2709,7 +2709,12 @@ static void slot_hide_candidate_table (void)
         }
         ui_candidate_window_adjust ();
 
-        ui_candidate_hide (false, true, true);
+        if (_panel_agent->get_current_toolbar_mode() == TOOLBAR_HELPER_MODE) {
+            ui_candidate_hide (false, true, true);
+        } else {
+            ui_candidate_hide (false);
+        }
+
         ui_settle_candidate_window ();
     }
 
