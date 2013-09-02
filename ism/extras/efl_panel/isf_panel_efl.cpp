@@ -1214,22 +1214,20 @@ static void ui_candidate_show (bool bSetVirtualKbd)
     candidate_will_hide = false;
 
     efl_set_transient_for_app_window (elm_win_xwindow_get (_candidate_window));
-    if (!evas_object_visible_get (_candidate_window)) {
-        evas_object_show (_candidate_window);
-        _panel_agent->update_candidate_panel_event ((uint32)ECORE_IMF_CANDIDATE_PANEL_STATE_EVENT, (uint32)ECORE_IMF_CANDIDATE_PANEL_SHOW);
+    evas_object_show (_candidate_window);
+    _panel_agent->update_candidate_panel_event ((uint32)ECORE_IMF_CANDIDATE_PANEL_STATE_EVENT, (uint32)ECORE_IMF_CANDIDATE_PANEL_SHOW);
 
-        if (_candidate_mode == FIXED_CANDIDATE_WINDOW) {
-            if (!_ise_show)
-                _panel_agent->update_input_panel_event ((uint32)ECORE_IMF_INPUT_PANEL_STATE_EVENT, (uint32)ECORE_IMF_INPUT_PANEL_STATE_SHOW);
+    if (_candidate_mode == FIXED_CANDIDATE_WINDOW) {
+        if (!_ise_show)
+            _panel_agent->update_input_panel_event ((uint32)ECORE_IMF_INPUT_PANEL_STATE_EVENT, (uint32)ECORE_IMF_INPUT_PANEL_STATE_SHOW);
 
-            if (bSetVirtualKbd)
-                set_keyboard_geometry_atom_info (_app_window, KEYBOARD_STATE_ON);
-            _panel_agent->update_input_panel_event (ECORE_IMF_INPUT_PANEL_GEOMETRY_EVENT, 0);
-        }
-
-        ui_candidate_delete_check_size_timer ();
-        _check_size_timer = ecore_timer_add (0.02, ui_candidate_check_size_timeout, NULL);
+        if (bSetVirtualKbd)
+            set_keyboard_geometry_atom_info (_app_window, KEYBOARD_STATE_ON);
+        _panel_agent->update_input_panel_event (ECORE_IMF_INPUT_PANEL_GEOMETRY_EVENT, 0);
     }
+
+    ui_candidate_delete_check_size_timer ();
+    _check_size_timer = ecore_timer_add (0.02, ui_candidate_check_size_timeout, NULL);
 
     SCIM_DEBUG_MAIN (3) << "    Show candidate window\n";
     _candidate_window_show = true;
