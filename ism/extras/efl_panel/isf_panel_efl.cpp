@@ -4375,8 +4375,6 @@ int main (int argc, char *argv [])
         _config = new DummyConfig ();
     }
 
-    set_language_and_locale ();
-
     /* Get current display. */
     {
         const char *p = getenv ("DISPLAY");
@@ -4477,11 +4475,11 @@ int main (int argc, char *argv [])
     _read_handler_list.push_back (panel_agent_read_handler);
     check_time ("run_panel_agent");
 
+    display_language_changed_cb (NULL, NULL);
+
 #if HAVE_VCONF
     /* Add callback function for input language and display language */
     vconf_notify_key_changed (VCONFKEY_LANGSET, display_language_changed_cb, NULL);
-
-    set_language_and_locale ();
 #endif
 
     try {
