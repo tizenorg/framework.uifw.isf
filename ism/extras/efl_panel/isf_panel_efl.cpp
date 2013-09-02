@@ -1211,6 +1211,8 @@ static void ui_candidate_show (bool bSetVirtualKbd)
     delete_candidate_hide_timer ();
     ui_candidate_window_rotate (_candidate_angle);
 
+    candidate_will_hide = false;
+
     efl_set_transient_for_app_window (elm_win_xwindow_get (_candidate_window));
     if (!evas_object_visible_get (_candidate_window)) {
         evas_object_show (_candidate_window);
