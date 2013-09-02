@@ -407,7 +407,7 @@ static void get_ise_geometry (RECT_INFO &info, VIRTUAL_KEYBOARD_STATE kbd_state)
             }
         }
 
-        LOGD ("Geometry : %d %d, %d %d %d %d\n", angle,
+        LOGD ("Geometry : %d %d %d, %d %d %d %d\n", angle, _window_angle,
             _panel_agent->get_current_toolbar_mode (),
             info.pos_x, info.pos_y, info.width, info.height);
     } else {
@@ -2110,12 +2110,15 @@ static int efl_get_angle_for_app_window ()
     int angle = 0;
     unsigned char *prop_data = NULL;
 
-    ret = ecore_x_window_prop_property_get (efl_get_app_window (),
+    Ecore_X_Window app_window = efl_get_app_window ();
+    ret = ecore_x_window_prop_property_get (app_window,
             ECORE_X_ATOM_E_ILLUME_ROTATE_WINDOW_ANGLE, ECORE_X_ATOM_CARDINAL, 32, &prop_data, &count);
     if (ret && prop_data) {
         memcpy (&angle, prop_data, sizeof (int));
+        LOGD ("WINDOW angle for APP %p is %d", app_window, angle);
     } else {
         std::cerr << "ecore_x_window_prop_property_get () is failed!!!\n";
+        LOGD ("WINDOW angle for APP %p FAILED!", app_window);
     }
     if (prop_data)
         XFree (prop_data);
@@ -2143,9 +2146,10 @@ static int efl_get_angle_for_ise_window ()
             ECORE_X_ATOM_E_ILLUME_ROTATE_WINDOW_ANGLE, ECORE_X_ATOM_CARDINAL, 32, &prop_data, &count);
     if (ret && prop_data) {
         memcpy (&angle, prop_data, sizeof (int));
-        LOGD ("WINDOW angle for %p is %d", _ise_window, angle);
+        LOGD ("WINDOW angle for ISE %p is %d", _ise_window, angle);
     } else {
         std::cerr << "ecore_x_window_prop_property_get () is failed!!!\n";
+        LOGD ("WINDOW angle for ISE %p FAILED!", _ise_window);
     }
     if (prop_data)
         XFree (prop_data);
@@ -4091,12 +4095,11 @@ static Eina_Bool x_event_client_message_cb (void *data, int type, void *event)
         } else if (ev->message_type == ECORE_X_ATOM_E_WINDOW_ROTATION_CHANGE_REQUEST) {
             int ise_angle = (int)ev->data.l[1];
             LOGD("ECORE_X_ATOM_E_WINDOW_ROTATION_CHANGE_REQUEST for ISE WINDOW : %d %d\n", ise_angle, _candidate_angle);
-            if (ise_angle != _candidate_angle) {
-                _candidate_angle = ise_angle;
-                if (_ise_show) {
-                    set_keyboard_geometry_atom_info (_app_window, KEYBOARD_STATE_ON);
-                    _panel_agent->update_input_panel_event (ECORE_IMF_INPUT_PANEL_GEOMETRY_EVENT, 0);
-                }
+            _candidate_angle = ise_angle;
+            _window_angle = ise_angle;
+            if (_ise_show) {
+                set_keyboard_geometry_atom_info (_app_window, KEYBOARD_STATE_ON);
+                _panel_agent->update_input_panel_event (ECORE_IMF_INPUT_PANEL_GEOMETRY_EVENT, 0);
             }
         }
     } else if (ev->win == elm_win_xwindow_get (_candidate_window)) {
