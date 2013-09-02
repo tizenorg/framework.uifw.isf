@@ -41,6 +41,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <privilege-control.h>
+#include <vconf.h>
 #include "isf_query_utility.h"
 
 using namespace scim;
@@ -227,6 +228,16 @@ int main (int argc, char *argv [])
 
         // Create folder for saving engine list
         scim_make_dir (USER_ENGINE_LIST_PATH);
+
+        char *lang_str = vconf_get_str (VCONFKEY_LANGSET);
+        if (lang_str) {
+            setenv ("LANG", lang_str, 1);
+            setlocale (LC_MESSAGES, lang_str);
+            free (lang_str);
+        } else {
+            setenv ("LANG", "en_US.utf8", 1);
+            setlocale (LC_MESSAGES, "en_US.utf8");
+        }
 
         /* create backend */
         backend = new CommonBackEnd (config, engine_list);

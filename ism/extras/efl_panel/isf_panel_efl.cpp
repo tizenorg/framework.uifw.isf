@@ -2314,7 +2314,7 @@ static void efl_get_screen_resolution (int &width, int &height)
     static Evas_Coord scr_w = 0, scr_h = 0;
 
     if (scr_w == 0 || scr_h == 0) {
-        uint w, h;
+        uint w = 0, h = 0;
         if (efl_get_default_zone_geometry_info (ecore_x_window_root_first_get (), NULL, NULL, &w, &h)) {
             scr_w = w;
             scr_h = h;
@@ -4475,7 +4475,7 @@ int main (int argc, char *argv [])
     _read_handler_list.push_back (panel_agent_read_handler);
     check_time ("run_panel_agent");
 
-    display_language_changed_cb (NULL, NULL);
+    set_language_and_locale ();
 
 #if HAVE_VCONF
     /* Add callback function for input language and display language */

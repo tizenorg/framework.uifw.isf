@@ -180,8 +180,8 @@ libexec_PROGRAMS        = scim-launcher scim-helper-launcher
 
 scim_launcher_SOURCES 	= scim_launcher.cpp
 scim_launcher_LDADD	= libscim@SCIM_EPOCH@.la
-scim_launcher_CXXFLAGS  = @PRIVILEGE_CONTROL_CFLAGS@
-scim_launcher_LDFLAGS	= @LTLIBINTL@ @PRIVILEGE_CONTROL_LIBS@
+scim_launcher_CXXFLAGS  = @PRIVILEGE_CONTROL_CFLAGS@ @VCONF_CFLAGS@
+scim_launcher_LDFLAGS	= @LTLIBINTL@ @PRIVILEGE_CONTROL_LIBS@ @VCONF_LIBS@
 
 scim_helper_launcher_SOURCES 	= scim_helper_launcher.cpp
 scim_helper_launcher_CXXFLAGS	= @PRIVILEGE_CONTROL_CFLAGS@
