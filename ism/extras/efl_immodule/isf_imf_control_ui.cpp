@@ -245,11 +245,11 @@ static void _event_callback_call (Ecore_IMF_Input_Panel_Event type, int value)
 
     if (type == ECORE_IMF_CANDIDATE_PANEL_STATE_EVENT &&
         value == ECORE_IMF_CANDIDATE_PANEL_HIDE &&
-        notified_state != ECORE_IMF_INPUT_PANEL_STATE_HIDE &&
-        will_hide != EINA_TRUE) {
-        if (active_context_canvas) {
+        notified_state != ECORE_IMF_INPUT_PANEL_STATE_HIDE) {
+        if (active_context_canvas && _conformant_get ())
             evas_event_callback_add (active_context_canvas, EVAS_CALLBACK_RENDER_POST, _candidate_render_post_cb, NULL);
-        }
+        else
+            isf_imf_context_input_panel_send_candidate_will_hide_ack ();
     }
 }
 
@@ -913,6 +913,8 @@ void isf_imf_context_input_panel_send_candidate_will_hide_ack ()
     if (IfInitContext == false) {
         _isf_imf_context_init ();
     }
+
+    LOGD ("Send candidate will hide ack\n");
     _isf_imf_context_input_panel_send_candidate_will_hide_ack ();
 }
 
