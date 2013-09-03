@@ -42,7 +42,7 @@ namespace scim {
  * @{
  */
 
-#define SCIM_LOOKUP_TABLE_MAX_PAGESIZE  128
+#define SCIM_LOOKUP_TABLE_MAX_PAGESIZE  300
 
 /**
  * @brief The base class of lookup table.
