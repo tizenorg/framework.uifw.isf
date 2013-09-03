@@ -266,7 +266,7 @@ static int                                              _context_count          
 
 static IMEngineFactoryPointer                           _fallback_factory;
 static IMEngineInstancePointer                          _fallback_instance;
-static PanelClient                                      _panel_client;
+PanelClient                                             _panel_client;
 static int                                              _panel_client_id            = 0;
 
 static Ecore_Fd_Handler                                *_panel_iochannel_read_handler = 0;
@@ -306,7 +306,8 @@ static int      __current_numlock_mask = Mod2Mask;
 #define SHIFT_MODE_ENABLE 0x9fe7
 #define SHIFT_MODE_DISABLE 0x9fe8
 
-extern Ecore_IMF_Context *input_panel_ctx;
+extern Ecore_IMF_Input_Panel_State  input_panel_state;
+extern Ecore_IMF_Context           *input_panel_ctx;
 
 // A hack to shutdown the immodule cleanly even if im_module_exit () is not called when exiting.
 class FinalizeHandler
@@ -1092,7 +1093,7 @@ isf_imf_context_del (Ecore_IMF_Context *ctx)
                 input_panel_state == ECORE_IMF_INPUT_PANEL_STATE_SHOW) {
                 ecore_imf_context_input_panel_hide (ctx);
                 input_panel_event_callback_call (ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_HIDE);
-                isf_imf_context_input_panel_send_will_hide_ack ();
+                isf_imf_context_input_panel_send_will_hide_ack (ctx);
             }
         }
 
@@ -1231,7 +1232,6 @@ isf_imf_context_focus_in (Ecore_IMF_Context *ctx)
 
     if (context_scim && context_scim->impl) {
         _focused_ic = context_scim;
-        isf_imf_context_control_focus_in (ctx);
 
         _panel_client.send ();
 
@@ -1872,8 +1872,7 @@ isf_imf_context_filter_event (Ecore_IMF_Context *ctx, Ecore_IMF_Event_Type type,
                         caps_mode_check (ctx, EINA_FALSE, EINA_TRUE);
                         ret = EINA_TRUE;
                     }
-                }
-                else {
+                } else {
                     if (key.code == SCIM_KEY_space ||
                         key.code == SCIM_KEY_KP_Space)
                         autoperiod_insert (ctx);
@@ -2471,11 +2470,19 @@ panel_slot_longpress_candidate (int context, int index)
 }
 
 static void
-panel_slot_update_client_id (int context, int client_id)
+panel_slot_update_ise_input_context (int context, int type, int value)
 {
-    SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << " context=" << context << " client_id=" << client_id << "\n";
+    SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
 
-    _panel_client_id = client_id;
+    process_update_input_context (type, value);
+}
+
+static void
+panel_slot_update_isf_candidate_panel (int context, int type, int value)
+{
+    SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
+
+    process_update_input_context (type, value);
 }
 
 /* Panel Requestion functions. */
@@ -2634,6 +2641,12 @@ panel_initialize (void)
     }
 
     if (_panel_client.open_connection (_config->get_name (), display_name) >= 0) {
+        if (_panel_client.get_client_id (_panel_client_id)) {
+            _panel_client.prepare (0);
+            _panel_client.register_client (_panel_client_id);
+            _panel_client.send ();
+        }
+
         int fd = _panel_client.get_connection_number ();
 
         _panel_iochannel_read_handler = ecore_main_fd_handler_add (fd, ECORE_FD_READ, panel_iochannel_handler, NULL, NULL, NULL);
@@ -2650,9 +2663,16 @@ panel_initialize (void)
         }
 
         if (_focused_ic) {
-            _panel_client.prepare (_focused_ic->id);
-            panel_req_focus_in (_focused_ic);
-            _panel_client.send ();
+            scim_usleep (2000000);  // Wait for ISE ready
+            Ecore_IMF_Context *ctx = _focused_ic->ctx;
+            _focused_ic = 0;
+            if (input_panel_state == ECORE_IMF_INPUT_PANEL_STATE_SHOW) {
+                input_panel_state = ECORE_IMF_INPUT_PANEL_STATE_HIDE;
+                isf_imf_context_focus_in (ctx);
+                ecore_imf_context_input_panel_show (ctx);
+            } else {
+                isf_imf_context_focus_in (ctx);
+            }
         }
 
         return true;
@@ -2820,7 +2840,7 @@ initialize (void)
     bool                    socket = true;
     String                  config_module_name = "simple";
 
-    SCIM_DEBUG_FRONTEND(1) << "Initializing Ecore ISF IMModule...\n";
+    LOGD ("Initializing Ecore ISF IMModule...\n");
 
     // Get system language.
     _language = scim_get_locale_language (scim_get_current_locale ());
@@ -2935,7 +2955,8 @@ initialize (void)
     _panel_client.signal_connect_candidate_more_window_show    (slot (panel_slot_candidate_more_window_show));
     _panel_client.signal_connect_candidate_more_window_hide    (slot (panel_slot_candidate_more_window_hide));
     _panel_client.signal_connect_longpress_candidate           (slot (panel_slot_longpress_candidate));
-    _panel_client.signal_connect_update_client_id              (slot (panel_slot_update_client_id));
+    _panel_client.signal_connect_update_ise_input_context      (slot (panel_slot_update_ise_input_context));
+    _panel_client.signal_connect_update_isf_candidate_panel    (slot (panel_slot_update_isf_candidate_panel));
 
     if (!panel_initialize ()) {
         std::cerr << "Ecore IM Module: Cannot connect to Panel!\n";
@@ -2945,7 +2966,7 @@ initialize (void)
 static void
 finalize (void)
 {
-    SCIM_DEBUG_FRONTEND(1) << "Finalizing Ecore ISF IMModule...\n";
+    LOGD ("Finalizing Ecore ISF IMModule...\n");
 
     // Reset this first so that the shared instance could be released correctly afterwards.
     _default_instance.reset ();
@@ -3659,10 +3680,10 @@ slot_commit_string (IMEngineInstanceBase *si,
                     }
                     converted[0] = utf8_wcstombs (str).at (0);
                     if (uppercase) {
-                        if(converted[0] >= 'a' && converted[0] <= 'z')
+                        if (converted[0] >= 'a' && converted[0] <= 'z')
                             converted[0] -= 32;
                     } else {
-                        if(converted[0] >= 'A' && converted[0] <= 'Z')
+                        if (converted[0] >= 'A' && converted[0] <= 'Z')
                             converted[0] += 32;
                     }
 

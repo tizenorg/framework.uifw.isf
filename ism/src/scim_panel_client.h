@@ -33,15 +33,17 @@
  *
  * Modifications by Samsung Electronics Co., Ltd.
  * 1. Add new signals
- *    a. m_signal_select_aux, m_signal_reset_keyboard_ise and m_signal_update_client_id
+ *    a. m_signal_select_aux, m_signal_reset_keyboard_ise
  *    b. m_signal_update_candidate_item_layout and m_signal_update_displayed_candidate_number
  *    c. m_signal_get_surrounding_text and m_signal_delete_surrounding_text
  *    d. m_signal_show_preedit_string, m_signal_hide_preedit_string, m_signal_update_preedit_string and m_signal_update_preedit_caret
  *    e. m_signal_candidate_more_window_show, m_signal_candidate_more_window_hide, m_signal_longpress_candidate
+ *    f. m_signal_update_ise_input_context, m_signal_update_isf_candidate_panel
  * 2. Add new interface APIs in PanelClient class
  *    a. update_cursor_position () and update_surrounding_text ()
  *    b. expand_candidate (), contract_candidate () and set_candidate_style ()
- *    c. reset_input_context () and turn_on_log
+ *    c. reset_input_context () and turn_on_log ()
+ *    d. get_client_id () and register_client ()
  *
  * $Id: scim_panel_client.h,v 1.4 2005/06/26 16:35:33 suzhe Exp $
  */
@@ -217,6 +219,30 @@ public:
     void expand_candidate       (int icid);
     void contract_candidate     (int icid);
     void set_candidate_style    (int icid, ISF_CANDIDATE_PORTRAIT_LINE_T portrait_line, ISF_CANDIDATE_MODE_T mode);
+    void show_ise               (int client_id, int icid, void *data, int length, int *input_panel_show);
+    void hide_ise               (int client_id, int icid);
+    void show_control_panel     (void);
+    void hide_control_panel     (void);
+    void set_imdata             (const char* data, int len);
+    void get_imdata             (char* data, int* len);
+    void get_ise_window_geometry (int* x, int* y, int* width, int* height);
+    void get_candidate_window_geometry (int* x, int* y, int* width, int* height);
+    void get_ise_language_locale (char **locale);
+    void set_return_key_type    (int type);
+    void get_return_key_type    (int &type);
+    void set_return_key_disable (int disabled);
+    void get_return_key_disable (int &disabled);
+    void set_layout             (int layout);
+    void get_layout             (int* layout);
+    void set_ise_language       (int language);
+    void set_caps_mode          (int mode);
+    void send_will_show_ack     (void);
+    void send_will_hide_ack     (void);
+    void set_hardware_keyboard_mode (void);
+    void send_candidate_will_hide_ack (void);
+    bool get_client_id          (int &client_id);
+    void register_client        (int client_id);
+
     /** @} */
 
 public:
@@ -453,11 +479,18 @@ public:
     Connection signal_connect_longpress_candidate           (PanelClientSlotInt                     *slot);
 
     /**
-     * @brief Signal: update client ID
+     * @brief Signal: update ise input context
      *
-     * slot prototype: void update_client_id (int context, int client_id);
+     * slot prototype: void update_ise_input_context (int context, int type, int value);
      */
-    Connection signal_connect_update_client_id              (PanelClientSlotInt                     *slot);
+    Connection signal_connect_update_ise_input_context      (PanelClientSlotIntInt                  *slot);
+
+    /**
+     * @brief Signal: update isf candidate panel
+     *
+     * slot prototype: void update_isf_candidate_panel (int context, int type, int value);
+     */
+    Connection signal_connect_update_isf_candidate_panel    (PanelClientSlotIntInt                  *slot);
 
     /** @} */
 };

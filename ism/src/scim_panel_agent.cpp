@@ -156,6 +156,7 @@ typedef Signal5<bool, String, String &, String &, int &, int &>
 enum ClientType {
     UNKNOWN_CLIENT,
     FRONTEND_CLIENT,
+    FRONTEND_ACT_CLIENT,
     HELPER_CLIENT,
     HELPER_ACT_CLIENT,
     IMCONTROL_ACT_CLIENT,
@@ -250,9 +251,10 @@ class PanelAgent::PanelAgentImpl
     String                              m_last_helper_uuid;
     String                              m_current_ise_name;
     uint32                              m_current_ise_style;
-    int                                 m_current_active_imcontrol_id;
     int                                 m_pending_active_imcontrol_id;
-    int                                 m_show_request_imcontrol_id;
+    int                                 m_show_request_client_id;
+    int                                 m_active_client_id;
+    IntIntRepository                    m_panel_client_map;
     IntIntRepository                    m_imcontrol_map;
     bool                                m_should_shared_ise;
     bool                                m_ise_exiting;
@@ -339,7 +341,6 @@ class PanelAgent::PanelAgentImpl
     PanelAgentSignalStringVector        m_signal_get_language_list;
     PanelAgentSignalStringVector        m_signal_get_all_language;
     PanelAgentSignalStrStringVector     m_signal_get_ise_language;
-    PanelAgentSignalString              m_signal_set_isf_language;
     PanelAgentSignalStringISEINFO       m_signal_get_ise_info_by_uuid;
     PanelAgentSignalKeyEvent            m_signal_send_key_event;
 
@@ -358,6 +359,9 @@ class PanelAgent::PanelAgentImpl
 
     PanelAgentSignalVoid                m_signal_will_show_ack;
     PanelAgentSignalVoid                m_signal_will_hide_ack;
+
+    PanelAgentSignalVoid                m_signal_set_hardware_keyboard_mode;
+
     PanelAgentSignalVoid                m_signal_candidate_will_hide_ack;
 public:
     PanelAgentImpl ()
@@ -368,7 +372,8 @@ public:
           m_current_socket_client (-1), m_current_client_context (0),
           m_current_toolbar_mode (TOOLBAR_KEYBOARD_MODE),
           m_current_ise_style (0),
-          m_current_active_imcontrol_id (-1), m_pending_active_imcontrol_id (-1),
+          m_pending_active_imcontrol_id (-1),
+          m_active_client_id (-1),
           m_should_shared_ise (false),
           m_ise_exiting (false), m_is_imengine_aux (false), m_is_imengine_candidate (false),
           m_last_socket_client (-1), m_last_client_context (0)
@@ -376,6 +381,7 @@ public:
         m_current_ise_name = String (_("English Keyboard"));
         m_imcontrol_repository.clear ();
         m_imcontrol_map.clear ();
+        m_panel_client_map.clear ();
         m_socket_server.signal_connect_accept (slot (this, &PanelAgentImpl::socket_accept_callback));
         m_socket_server.signal_connect_receive (slot (this, &PanelAgentImpl::socket_receive_callback));
         m_socket_server.signal_connect_exception (slot (this, &PanelAgentImpl::socket_exception_callback));
@@ -505,65 +511,30 @@ public:
         m_current_toolbar_mode = mode;
     }
 
-    void update_ise_name (String &name)
-    {
-        ClientRepository::iterator iter = m_client_repository.begin ();
-
-        for (; iter != m_client_repository.end (); iter++) {
-            if (IMCONTROL_CLIENT == iter->second.type && iter->first == m_imcontrol_map[m_current_active_imcontrol_id]) {
-                Socket client_socket (iter->first);
-                Transaction trans;
-
-                trans.clear ();
-                trans.put_command (SCIM_TRANS_CMD_REQUEST);
-                trans.put_command (ISM_TRANS_CMD_ISE_CHANGED);
-                trans.put_data (name);
-
-                trans.write_to_socket (client_socket);
-                break;
-            }
-        }
-    }
-
-    void update_ise_style (uint32 &style)
-    {
-        ClientRepository::iterator iter = m_client_repository.begin ();
-
-        for (; iter != m_client_repository.end (); iter++) {
-            if (IMCONTROL_CLIENT == iter->second.type && iter->first == m_imcontrol_map[m_current_active_imcontrol_id]) {
-                Socket client_socket (iter->first);
-                Transaction trans;
-
-                trans.clear ();
-                trans.put_command (SCIM_TRANS_CMD_REQUEST);
-                trans.put_command (ISM_TRANS_CMD_UPDATE_ISE_STYLE);
-                trans.put_data (style);
-
-                trans.write_to_socket (client_socket);
-                break;
-            }
-        }
-    }
-
     void update_panel_event (int cmd, uint32 nType, uint32 nValue)
     {
-        SCIM_DEBUG_MAIN(1) << __func__ << " (" << nType << ", " << nValue << ")\n";
-        ClientRepository::iterator iter = m_client_repository.begin ();
+        int    focused_client;
+        uint32 focused_context;
+        get_focused_context (focused_client, focused_context);
+        if (focused_client == -1 && m_active_client_id != -1) {
+            focused_client  = m_panel_client_map[m_active_client_id];
+            focused_context = 0;
+        }
 
-        for (; iter != m_client_repository.end (); iter++) {
-            if (IMCONTROL_CLIENT == iter->second.type && iter->first == m_imcontrol_map[m_current_active_imcontrol_id]) {
-                Socket client_socket (iter->first);
-                Transaction trans;
+        SCIM_DEBUG_MAIN(1) << __func__ << " (" << nType << ", " << nValue << "), client=" << focused_client << "\n";
 
-                trans.clear ();
-                trans.put_command (SCIM_TRANS_CMD_REQUEST);
-                trans.put_command (cmd);
-                trans.put_data (nType);
-                trans.put_data (nValue);
-
-                trans.write_to_socket (client_socket);
-                break;
-            }
+        ClientInfo client_info = socket_get_client_info (focused_client);
+        if (client_info.type == FRONTEND_CLIENT) {
+            Socket client_socket (focused_client);
+            m_send_trans.clear ();
+            m_send_trans.put_command (SCIM_TRANS_CMD_REPLY);
+            m_send_trans.put_data (focused_context);
+            m_send_trans.put_command (cmd);
+            m_send_trans.put_data (nType);
+            m_send_trans.put_data (nValue);
+            m_send_trans.write_to_socket (client_socket);
+        } else {
+            std::cerr << __func__ << " client is not existed!!!" << "\n";
         }
     }
 
@@ -692,24 +663,6 @@ public:
         unlock ();
 
         return client >= 0;
-    }
-
-    bool update_client_id (int client_id)
-    {
-        SCIM_DEBUG_MAIN(1) << __func__ << " (" << client_id << ")\n";
-
-        if (client_id >= 0) {
-            uint32 context = 0;
-            Socket client_socket (client_id);
-            m_send_trans.clear ();
-            m_send_trans.put_command (SCIM_TRANS_CMD_REPLY);
-            m_send_trans.put_data (context);
-            m_send_trans.put_command (ISM_TRANS_CMD_PANEL_UPDATE_CLIENT_ID);
-            m_send_trans.put_data ((uint32)client_id);
-            m_send_trans.write_to_socket (client_socket);
-        }
-
-        return client_id >= 0;
     }
 
     bool change_factory (const String  &uuid)
@@ -1627,18 +1580,12 @@ public:
     void show_isf_panel (int client_id)
     {
         SCIM_DEBUG_MAIN(4) << "PanelAgent::show_isf_panel ()\n";
-        Transaction trans;
-        Socket client_socket (client_id);
-
         m_signal_show_panel ();
     }
 
     void hide_isf_panel (int client_id)
     {
         SCIM_DEBUG_MAIN(4) << "PanelAgent::hide_isf_panel ()\n";
-        Transaction trans;
-        Socket client_socket (client_id);
-
         m_signal_hide_panel ();
     }
 
@@ -1655,15 +1602,23 @@ public:
         bool ret = false;
         Transaction trans;
         Socket client_socket (client_id);
-        m_current_active_imcontrol_id = client_id;
-        m_show_request_imcontrol_id = client_id;
+        m_show_request_client_id = client_id;
+        m_active_client_id = client_id;
 
         uint32 client;
         uint32 context;
         if (m_recv_trans.get_data (client) && m_recv_trans.get_data (context) && m_recv_trans.get_data (&data, len)) {
             SCIM_DEBUG_MAIN(4) << __func__ << " (client:" << client << " context:" << context << ")\n";
             if (TOOLBAR_HELPER_MODE == m_current_toolbar_mode) {
-                uint32 ctx = get_helper_ic (client, context);
+                int    focused_client;
+                uint32 focused_context;
+                get_focused_context (focused_client, focused_context);
+                if (focused_client == -1 && m_active_client_id != -1) {
+                    focused_client  = m_panel_client_map[m_active_client_id];
+                    focused_context = 0;
+                }
+
+                uint32 ctx = get_helper_ic (focused_client, focused_context);
                 ret = show_helper (m_current_helper_uuid, data, len, ctx);
             }
         }
@@ -1695,8 +1650,16 @@ public:
         uint32 context;
         if (m_recv_trans.get_data (client) && m_recv_trans.get_data (context)) {
             SCIM_DEBUG_MAIN(4) << __func__ << " (client:" << client << " context:" << context << ")\n";
-            if ((client_id == m_current_active_imcontrol_id || client_id == m_show_request_imcontrol_id) && TOOLBAR_HELPER_MODE == mode) {
-                uint32 ctx = get_helper_ic (client, context);
+            if ((m_panel_client_map[client_id] == m_current_socket_client || client_id == m_show_request_client_id) && TOOLBAR_HELPER_MODE == mode) {
+                int    focused_client;
+                uint32 focused_context;
+                get_focused_context (focused_client, focused_context);
+                if (focused_client == -1 && m_active_client_id != -1) {
+                    focused_client  = m_panel_client_map[m_active_client_id];
+                    focused_context = 0;
+                }
+
+                uint32 ctx = get_helper_ic (focused_client, focused_context);
                 hide_helper (m_current_helper_uuid, ctx);
             }
         }
@@ -1966,21 +1929,6 @@ public:
             if (TOOLBAR_HELPER_MODE == m_current_toolbar_mode)
                 set_helper_language (m_current_helper_uuid, language);
         }
-    }
-
-    void set_isf_language (int client_id)
-    {
-        SCIM_DEBUG_MAIN(4) << "PanelAgent::set_isf_language ()\n";
-        char   *buf = NULL;
-        size_t  len;
-
-        if (m_recv_trans.get_data (&buf, len)) {
-            String lang (buf);
-            m_signal_set_isf_language (lang);
-        }
-
-        if (NULL != buf)
-            delete[] buf;
     }
 
     void set_ise_imdata (int client_id)
@@ -2268,7 +2216,6 @@ public:
         size_t  len;
         Transaction trans;
         Socket client_socket (client_id);
-        m_current_active_imcontrol_id = client_id;
 
         trans.clear ();
         trans.put_command (SCIM_TRANS_CMD_REPLY);
@@ -2337,27 +2284,6 @@ public:
 
         if (NULL != buf)
             delete[] buf;
-    }
-
-    void update_isf_control_status (const bool showed)
-    {
-        for (ClientRepository::iterator iter = m_client_repository.begin ();
-             iter != m_client_repository.end (); ++iter) {
-            if (IMCONTROL_CLIENT == iter->second.type && iter->first == m_imcontrol_map[m_current_active_imcontrol_id]) {
-                Socket client_socket (iter->first);
-                Transaction trans;
-
-                trans.clear ();
-                trans.put_command (SCIM_TRANS_CMD_REQUEST);
-                if (showed)
-                    trans.put_command (ISM_TRANS_CMD_ISF_CONTROL_SHOWED);
-                else
-                    trans.put_command (ISM_TRANS_CMD_ISF_CONTROL_HIDED);
-                trans.write_to_socket (client_socket);
-                break;
-            }
-        }
-        return;
     }
 
     void set_ise_return_key_type (int client_id)
@@ -2513,13 +2439,10 @@ public:
         m_send_trans.put_command (SCIM_TRANS_CMD_RELOAD_CONFIG);
 
         for (ClientRepository::iterator it = m_client_repository.begin (); it != m_client_repository.end (); ++it) {
-            if (it->second.type == IMCONTROL_ACT_CLIENT
-                || it->second.type == IMCONTROL_CLIENT
-                || it->second.type == HELPER_ACT_CLIENT)
-                continue;
-
-            Socket client_socket (it->first);
-            m_send_trans.write_to_socket (client_socket);
+            if (it->second.type == FRONTEND_CLIENT || it->second.type == HELPER_CLIENT) {
+                Socket client_socket (it->first);
+                m_send_trans.write_to_socket (client_socket);
+            }
         }
 
         unlock ();
@@ -2593,13 +2516,6 @@ public:
         m_signal_will_hide_ack ();
     }
 
-    void candidate_will_hide_ack (int client_id)
-    {
-        SCIM_DEBUG_MAIN(4) << "PanelAgent::will_hide_ack ()\n";
-
-        m_signal_candidate_will_hide_ack ();
-    }
-
     void reset_default_ise (int client_id)
     {
         SCIM_DEBUG_MAIN(4) << __func__ << "\n";
@@ -2609,6 +2525,20 @@ public:
             m_signal_set_active_ise_by_uuid (initial_ise.c_str (), 1);
         else
             std::cerr << "Read SCIM_GLOBAL_CONFIG_INITIAL_ISE_UUID is failed!!!\n";
+    }
+
+    void set_hardware_keyboard_mode (int client_id)
+    {
+        SCIM_DEBUG_MAIN(4) << "PanelAgent::set_hardware_keyboard_mode ()\n";
+
+        m_signal_set_hardware_keyboard_mode ();
+    }
+
+    void candidate_will_hide_ack (int client_id)
+    {
+        SCIM_DEBUG_MAIN(4) << "PanelAgent::will_hide_ack ()\n";
+
+        m_signal_candidate_will_hide_ack ();
     }
 
     Connection signal_connect_reload_config              (PanelAgentSlotVoid                *slot)
@@ -2856,11 +2786,6 @@ public:
         return m_signal_get_ise_language.connect (slot);
     }
 
-    Connection signal_connect_set_isf_language           (PanelAgentSlotString                 *slot)
-    {
-        return m_signal_set_isf_language.connect (slot);
-    }
-
     Connection signal_connect_get_ise_info_by_uuid       (PanelAgentSlotStringISEINFO          *slot)
     {
         return m_signal_get_ise_info_by_uuid.connect (slot);
@@ -2931,10 +2856,16 @@ public:
         return m_signal_will_hide_ack.connect (slot);
     }
 
+    Connection signal_connect_set_hardware_keyboard_mode (PanelAgentSlotVoid                *slot)
+    {
+        return m_signal_set_hardware_keyboard_mode.connect (slot);
+    }
+
     Connection signal_connect_candidate_will_hide_ack    (PanelAgentSlotVoid                *slot)
     {
         return m_signal_candidate_will_hide_ack.connect (slot);
     }
+
 private:
     bool socket_check_client_connection (const Socket &client)
     {
@@ -2996,12 +2927,7 @@ private:
 
         /* If it's a new client, then request to open the connection first. */
         if (client_info.type == UNKNOWN_CLIENT) {
-            bool bSuccess = socket_open_connection (server, client);
-            if (bSuccess) {
-                ClientInfo client_info = socket_get_client_info (client_id);
-                if (client_info.type == FRONTEND_CLIENT)
-                    update_client_id (client_id);
-            }
+            socket_open_connection (server, client);
             return;
         }
 
@@ -3014,24 +2940,34 @@ private:
             !m_recv_trans.get_data (key)    || key != (uint32) client_info.key)
             return;
 
-        if (client_info.type == FRONTEND_CLIENT) {
+        if (client_info.type == FRONTEND_ACT_CLIENT) {
             if (m_recv_trans.get_data (context)) {
                 SCIM_DEBUG_MAIN (1) << "PanelAgent::FrontEnd Client, context = " << context << "\n";
                 socket_transaction_start();
                 while (m_recv_trans.get_command (cmd)) {
                     SCIM_DEBUG_MAIN (3) << "PanelAgent::cmd = " << cmd << "\n";
 
+                    if (cmd == ISM_TRANS_CMD_REGISTER_PANEL_CLIENT) {
+                        uint32 id = 0;
+                        if (m_recv_trans.get_data (id)) {
+                            SCIM_DEBUG_MAIN(4) << "    ISM_TRANS_CMD_REGISTER_PANEL_CLIENT (" << client_id << "," << "," << context << "," << id << ")\n";
+                            m_panel_client_map [client_id] = (int)id;
+                        }
+                        continue;
+                    }
+
                     if (cmd == SCIM_TRANS_CMD_PANEL_REGISTER_INPUT_CONTEXT) {
                         if (m_recv_trans.get_data (uuid)) {
                             SCIM_DEBUG_MAIN (2) << "PanelAgent::register_input_context (" << client_id << "," << "," << context << "," << uuid << ")\n";
-                            uint32 ctx = get_helper_ic (client_id, context);
+                            uint32 ctx = get_helper_ic (m_panel_client_map[client_id], context);
                             m_client_context_uuids [ctx] = uuid;
                         }
                         continue;
                     }
 
                     if (cmd == SCIM_TRANS_CMD_PANEL_REMOVE_INPUT_CONTEXT) {
-                        uint32 ctx = get_helper_ic (client_id, context);
+                        SCIM_DEBUG_MAIN(4) << "    SCIM_TRANS_CMD_PANEL_REMOVE_INPUT_CONTEXT (" << "client:" << client_id << " context:" << context << ")\n";
+                        uint32 ctx = get_helper_ic (m_panel_client_map[client_id], context);
                         m_client_context_uuids.erase (ctx);
                         if (ctx == get_helper_ic (m_current_socket_client, m_current_client_context)) {
                             lock ();
@@ -3058,7 +2994,7 @@ private:
                     }
 
                     if (cmd == SCIM_TRANS_CMD_PANEL_RESET_INPUT_CONTEXT) {
-                        socket_reset_input_context (client_id, context);
+                        socket_reset_input_context (m_panel_client_map[client_id], context);
                         continue;
                     }
 
@@ -3066,17 +3002,18 @@ private:
                         SCIM_DEBUG_MAIN(4) << "    SCIM_TRANS_CMD_FOCUS_IN (" << "client:" << client_id << " context:" << context << ")\n";
                         m_signal_focus_in ();
                         if (TOOLBAR_HELPER_MODE == m_current_toolbar_mode)
-                            focus_in_helper (m_current_helper_uuid, client_id, context);
+                            focus_in_helper (m_current_helper_uuid, m_panel_client_map[client_id], context);
 
                         if (m_recv_trans.get_data (uuid)) {
                             SCIM_DEBUG_MAIN (2) << "PanelAgent::focus_in (" << client_id << "," << "," << context << "," << uuid << ")\n";
+                            m_active_client_id = client_id;
                             lock ();
                             if (m_current_socket_client >= 0) {
                                 m_last_socket_client  = m_current_socket_client;
                                 m_last_client_context = m_current_client_context;
                                 m_last_context_uuid   = m_current_context_uuid;
                             }
-                            m_current_socket_client  = client_id;
+                            m_current_socket_client  = m_panel_client_map[client_id];
                             m_current_client_context = context;
                             m_current_context_uuid   = uuid;
                             unlock ();
@@ -3089,20 +3026,85 @@ private:
                         continue;
                     }
 
+                    if (cmd == ISM_TRANS_CMD_SHOW_ISF_CONTROL) {
+                        show_isf_panel (client_id);
+                        continue;
+                    } else if (cmd == ISM_TRANS_CMD_HIDE_ISF_CONTROL) {
+                        hide_isf_panel (client_id);
+                        continue;
+                    } else if (cmd == ISM_TRANS_CMD_SHOW_ISE_PANEL) {
+                        show_ise_panel (client_id);
+                        continue;
+                    } else if (cmd == ISM_TRANS_CMD_HIDE_ISE_PANEL) {
+                        hide_ise_panel (client_id);
+                        continue;
+                    } else if (cmd == ISM_TRANS_CMD_GET_ACTIVE_ISE_GEOMETRY) {
+                        get_input_panel_geometry (client_id);
+                        continue;
+                    } else if (cmd == ISM_TRANS_CMD_GET_CANDIDATE_GEOMETRY) {
+                        get_candidate_window_geometry (client_id);
+                        continue;
+                    } else if (cmd == ISM_TRANS_CMD_GET_ISE_LANGUAGE_LOCALE) {
+                        get_ise_language_locale (client_id);
+                        continue;
+                    } else if (cmd == ISM_TRANS_CMD_SET_ISE_LANGUAGE) {
+                        set_ise_language (client_id);
+                        continue;
+                    } else if (cmd == ISM_TRANS_CMD_SET_ISE_IMDATA) {
+                        set_ise_imdata (client_id);
+                        continue;
+                    } else if (cmd == ISM_TRANS_CMD_GET_ISE_IMDATA) {
+                        get_ise_imdata (client_id);
+                        continue;
+                    } else if (cmd == ISM_TRANS_CMD_SET_RETURN_KEY_TYPE) {
+                        set_ise_return_key_type (client_id);
+                        continue;
+                    } else if (cmd == ISM_TRANS_CMD_GET_RETURN_KEY_TYPE) {
+                        get_ise_return_key_type (client_id);
+                        continue;
+                    } else if (cmd == ISM_TRANS_CMD_SET_RETURN_KEY_DISABLE) {
+                        set_ise_return_key_disable (client_id);
+                        continue;
+                    } else if (cmd == ISM_TRANS_CMD_GET_RETURN_KEY_DISABLE) {
+                        get_ise_return_key_disable (client_id);
+                        continue;
+                    } else if (cmd == ISM_TRANS_CMD_GET_LAYOUT) {
+                        get_ise_layout (client_id);
+                        continue;
+                    } else if (cmd == ISM_TRANS_CMD_SET_LAYOUT) {
+                        set_ise_layout (client_id);
+                        continue;
+                    } else if (cmd == ISM_TRANS_CMD_SET_CAPS_MODE) {
+                        set_ise_caps_mode (client_id);
+                        continue;
+                    } else if (cmd == ISM_TRANS_CMD_SEND_WILL_SHOW_ACK) {
+                        will_show_ack (client_id);
+                        continue;
+                    } else if (cmd == ISM_TRANS_CMD_SEND_WILL_HIDE_ACK) {
+                        will_hide_ack (client_id);
+                        continue;
+                    } else if (cmd == ISM_TRANS_CMD_SET_HARDWARE_KEYBOARD_MODE) {
+                        set_hardware_keyboard_mode (client_id);
+                        continue;
+                    } else if (cmd == ISM_TRANS_CMD_SEND_CANDIDATE_WILL_HIDE_ACK) {
+                        candidate_will_hide_ack (client_id);
+                        continue;
+                    }
+
                     current = last = false;
                     uuid.clear ();
 
                     /* Get the context uuid from the client context registration table. */
                     {
-                        ClientContextUUIDRepository::iterator it = m_client_context_uuids.find (get_helper_ic (client_id, context));
+                        ClientContextUUIDRepository::iterator it = m_client_context_uuids.find (get_helper_ic (m_panel_client_map[client_id], context));
                         if (it != m_client_context_uuids.end ())
                             uuid = it->second;
                     }
 
-                    if (m_current_socket_client == client_id && m_current_client_context == context) {
+                    if (m_current_socket_client == m_panel_client_map[client_id] && m_current_client_context == context) {
                         current = true;
                         if (!uuid.length ()) uuid = m_current_context_uuid;
-                    } else if (m_last_socket_client == client_id && m_last_client_context == context) {
+                    } else if (m_last_socket_client == m_panel_client_map[client_id] && m_last_client_context == context) {
                         last = true;
                         if (!uuid.length ()) uuid = m_last_context_uuid;
                     }
@@ -3116,13 +3118,13 @@ private:
                     }
 
                     if (cmd == SCIM_TRANS_CMD_START_HELPER) {
-                        socket_start_helper (client_id, context, uuid);
+                        socket_start_helper (m_panel_client_map[client_id], context, uuid);
                         continue;
                     } else if (cmd == SCIM_TRANS_CMD_SEND_HELPER_EVENT) {
-                        socket_send_helper_event (client_id, context, uuid);
+                        socket_send_helper_event (m_panel_client_map[client_id], context, uuid);
                         continue;
                     } else if (cmd == SCIM_TRANS_CMD_STOP_HELPER) {
-                        socket_stop_helper (client_id, context, uuid);
+                        socket_stop_helper (m_panel_client_map[client_id], context, uuid);
                         continue;
                     }
 
@@ -3197,7 +3199,7 @@ private:
                         TOOLBAR_MODE_T mode = m_current_toolbar_mode;
 
                         if (TOOLBAR_HELPER_MODE == mode)
-                            focus_out_helper (m_current_helper_uuid, client_id, context);
+                            focus_out_helper (m_current_helper_uuid, m_panel_client_map[client_id], context);
 
                         if (m_current_socket_client >= 0) {
                             m_last_socket_client  = m_current_socket_client;
@@ -3208,6 +3210,27 @@ private:
                         m_current_client_context = 0;
                         m_current_context_uuid   = String ("");
                         unlock ();
+                    }
+                }
+                socket_transaction_end ();
+            }
+        } else if (client_info.type == FRONTEND_CLIENT) {
+            if (m_recv_trans.get_data (context)) {
+                SCIM_DEBUG_MAIN (1) << "client_info.type == FRONTEND_CLIENT\n";
+                socket_transaction_start();
+                while (m_recv_trans.get_command (cmd)) {
+                    SCIM_DEBUG_MAIN (3) << "PanelAgent::cmd = " << cmd << "\n";
+
+                    if (cmd == ISM_TRANS_CMD_GET_PANEL_CLIENT_ID) {
+                        Socket client_socket (client_id);
+
+                        Transaction trans;
+                        trans.clear ();
+                        trans.put_command (SCIM_TRANS_CMD_REPLY);
+                        trans.put_command (SCIM_TRANS_CMD_OK);
+                        trans.put_data (client_id);
+                        trans.write_to_socket (client_socket);
+                        continue;
                     }
                 }
                 socket_transaction_end ();
@@ -3269,10 +3292,6 @@ private:
                 } else if (cmd == SCIM_TRANS_CMD_RELOAD_CONFIG) {
                     reload_config ();
                     m_signal_reload_config ();
-                } else if (cmd == ISM_TRANS_CMD_ISE_PANEL_HIDED) {
-                    socket_helper_update_state_hided (client_id);
-                } else if (cmd == ISM_TRANS_CMD_ISE_PANEL_SHOWED) {
-                    socket_helper_update_state_showed (client_id);
                 } else if (cmd == ISM_TRANS_CMD_UPDATE_ISE_INPUT_CONTEXT) {
                     socket_helper_update_input_context (client_id);
                 } else if (cmd == ISM_TRANS_CMD_GET_KEYBOARD_ISE_LIST) {
@@ -3321,70 +3340,17 @@ private:
             socket_transaction_start ();
 
             while (m_recv_trans.get_command (cmd)) {
-                if (cmd == ISM_TRANS_CMD_SHOW_ISF_CONTROL)
-                    show_isf_panel (client_id);
-                else if (cmd == ISM_TRANS_CMD_HIDE_ISF_CONTROL)
-                    hide_isf_panel (client_id);
-                else if (cmd == ISM_TRANS_CMD_SHOW_ISE_PANEL)
-                    show_ise_panel (client_id);
-                else if (cmd == ISM_TRANS_CMD_HIDE_ISE_PANEL)
-                    hide_ise_panel (client_id);
-                else if (cmd == ISM_TRANS_CMD_GET_ACTIVE_ISE_GEOMETRY)
-                    get_input_panel_geometry (client_id);
-                else if (cmd == ISM_TRANS_CMD_GET_CANDIDATE_GEOMETRY)
-                    get_candidate_window_geometry (client_id);
-                else if (cmd == ISM_TRANS_CMD_GET_ISE_LANGUAGE_LOCALE)
-                    get_ise_language_locale (client_id);
-                else if (cmd == ISM_TRANS_CMD_SET_ISE_MODE)
-                    set_ise_mode (client_id);
-                else if (cmd == ISM_TRANS_CMD_SET_ISE_LANGUAGE)
-                    set_ise_language (client_id);
-                else if (cmd == ISM_TRANS_CMD_SET_ISE_IMDATA)
-                    set_ise_imdata (client_id);
-                else if (cmd == ISM_TRANS_CMD_GET_ISE_IMDATA)
-                    get_ise_imdata (client_id);
-                else if (cmd == ISM_TRANS_CMD_GET_ACTIVE_ISE)
+                if (cmd == ISM_TRANS_CMD_GET_ACTIVE_ISE)
                     get_active_ise (client_id);
-                else if (cmd == ISM_TRANS_CMD_SET_ACTIVE_ISE_BY_UUID)
+                else if (cmd == ISM_TRANS_CMD_SET_ACTIVE_ISE_BY_UUID) {
                     set_active_ise_by_uuid (client_id);
-                else if (cmd == ISM_TRANS_CMD_SET_RETURN_KEY_TYPE)
-                    set_ise_return_key_type (client_id);
-                else if (cmd == ISM_TRANS_CMD_GET_RETURN_KEY_TYPE)
-                    get_ise_return_key_type (client_id);
-                else if (cmd == ISM_TRANS_CMD_SET_RETURN_KEY_DISABLE)
-                    set_ise_return_key_disable (client_id);
-                else if (cmd == ISM_TRANS_CMD_GET_RETURN_KEY_DISABLE)
-                    get_ise_return_key_disable (client_id);
-                else if (cmd == ISM_TRANS_CMD_GET_LAYOUT)
-                    get_ise_layout (client_id);
-                else if (cmd == ISM_TRANS_CMD_SET_LAYOUT)
-                    set_ise_layout (client_id);
-                else if (cmd == ISM_TRANS_CMD_SET_CAPS_MODE)
-                    set_ise_caps_mode (client_id);
+                }
                 else if (cmd == ISM_TRANS_CMD_GET_ISE_LIST)
                     get_ise_list (client_id);
                 else if (cmd == ISM_TRANS_CMD_GET_ISE_INFORMATION)
                     get_ise_information (client_id);
                 else if (cmd == ISM_TRANS_CMD_RESET_ISE_OPTION)
                     reset_ise_option (client_id);
-                else if (cmd == ISM_TRANS_CMD_GET_LANGUAGE_LIST)
-                    get_language_list (client_id);
-                else if (cmd == ISM_TRANS_CMD_GET_ALL_LANGUAGE_LIST)
-                    get_all_language (client_id);
-                else if (cmd == ISM_TRANS_CMD_GET_ISE_LANGUAGE)
-                    get_ise_language (client_id);
-                else if (cmd == ISM_TRANS_CMD_SET_ISF_LANGUAGE)
-                    set_isf_language (client_id);
-                else if (cmd == ISM_TRANS_CMD_RESET_ISE_CONTEXT)
-                    reset_ise_context (client_id);
-                else if (cmd == SCIM_TRANS_CMD_FOCUS_IN)
-                    m_current_active_imcontrol_id = client_id;
-                else if (cmd == ISM_TRANS_CMD_SEND_WILL_SHOW_ACK)
-                    will_show_ack (client_id);
-                else if (cmd == ISM_TRANS_CMD_SEND_WILL_HIDE_ACK)
-                    will_hide_ack (client_id);
-                else if (cmd == ISM_TRANS_CMD_SEND_CANDIDATE_WILL_HIDE_ACK)
-                    candidate_will_hide_ack (client_id);
                 else if (cmd == ISM_TRANS_CMD_RESET_DEFAULT_ISE)
                     reset_default_ise (client_id);
             }
@@ -3409,7 +3375,7 @@ private:
         uint32 key;
         String type = scim_socket_accept_connection (key,
                                                      String ("Panel"),
-                                                     String ("FrontEnd,Helper,Helper_Active,IMControl_Active,IMControl_Passive"),
+                                                     String ("FrontEnd,FrontEnd_Active,Helper,Helper_Active,IMControl_Active,IMControl_Passive"),
                                                      client,
                                                      m_socket_timeout);
 
@@ -3417,9 +3383,10 @@ private:
             ClientInfo info;
             info.key = key;
             info.type = ((type == "FrontEnd") ? FRONTEND_CLIENT :
+                        ((type == "FrontEnd_Active") ? FRONTEND_ACT_CLIENT :
                         ((type == "IMControl_Active") ? IMCONTROL_ACT_CLIENT :
                         ((type == "Helper_Active") ? HELPER_ACT_CLIENT :
-                        ((type == "IMControl_Passive") ? IMCONTROL_CLIENT : HELPER_CLIENT))));
+                        ((type == "IMControl_Passive") ? IMCONTROL_CLIENT : HELPER_CLIENT)))));
 
             SCIM_DEBUG_MAIN (4) << "Add client to repository. Type=" << type << " key=" << key << "\n";
             lock ();
@@ -3472,6 +3439,9 @@ private:
             SCIM_DEBUG_MAIN(4) << "It's a FrontEnd client.\n";
             /* The focused client is closed. */
             if (m_current_socket_client == client.get_id ()) {
+                if (TOOLBAR_HELPER_MODE == m_current_toolbar_mode)
+                    hide_helper (m_current_helper_uuid);
+
                 lock ();
                 m_current_socket_client = -1;
                 m_current_client_context = 0;
@@ -3547,6 +3517,11 @@ private:
                     if (!(iter->second.option & ISM_ISE_HIDE_IN_CONTROL_PANEL))
                         socket_update_control_panel ();
             }
+        } else if (client_info.type == FRONTEND_ACT_CLIENT) {
+            SCIM_DEBUG_MAIN(4) << "It's a FRONTEND_ACT_CLIENT client.\n";
+            IntIntRepository::iterator iter2 = m_panel_client_map.find (client.get_id ());
+            if (iter2 != m_panel_client_map.end ())
+                m_panel_client_map.erase (iter2);
         } else if (client_info.type == HELPER_CLIENT) {
             SCIM_DEBUG_MAIN(4) << "It's a Helper client.\n";
 
@@ -3593,10 +3568,6 @@ private:
         } else if (client_info.type == IMCONTROL_ACT_CLIENT) {
             SCIM_DEBUG_MAIN(4) << "It's a IMCONTROL_ACT_CLIENT client.\n";
             int client_id = client.get_id ();
-
-            if (client_id == m_current_active_imcontrol_id
-                && TOOLBAR_HELPER_MODE == m_current_toolbar_mode)
-                hide_helper (m_current_helper_uuid);
 
             IMControlRepository::iterator iter = m_imcontrol_repository.find (client_id);
             if (iter != m_imcontrol_repository.end ()) {
@@ -4700,11 +4671,6 @@ private:
                         m_send_trans.put_data (icit->second [i].second);
                     }
                     m_start_helper_ic_index.erase (icit);
-                } else {
-                    m_send_trans.put_command (SCIM_TRANS_CMD_HELPER_ATTACH_INPUT_CONTEXT);
-                    uint32 ctx = get_helper_ic (m_current_socket_client, m_current_client_context);
-                    m_send_trans.put_data (ctx);
-                    m_send_trans.put_data (info.uuid);
                 }
 
                 m_send_trans.put_command (SCIM_TRANS_CMD_UPDATE_SCREEN);
@@ -4773,48 +4739,6 @@ private:
         unlock ();
     }
 
-    void socket_helper_update_state_hided          (int client)
-    {
-        SCIM_DEBUG_MAIN(4) << "PanelAgent::socket_helper_update_state_hided (" << client << ")\n";
-
-        ClientRepository::iterator iter = m_client_repository.begin ();
-
-        for (; iter != m_client_repository.end (); iter++) {
-            if (IMCONTROL_CLIENT == iter->second.type && iter->first == m_imcontrol_map[m_current_active_imcontrol_id]) {
-                Socket client_socket (iter->first);
-                Transaction trans;
-
-                trans.clear ();
-                trans.put_command (SCIM_TRANS_CMD_REQUEST);
-                trans.put_command (ISM_TRANS_CMD_ISE_PANEL_HIDED);
-
-                trans.write_to_socket (client_socket);
-                break;
-            }
-        }
-    }
-
-    void socket_helper_update_state_showed          (int client)
-    {
-        SCIM_DEBUG_MAIN(4) << "PanelAgent::socket_helper_update_state_showed (" << client << ")\n";
-
-        ClientRepository::iterator iter = m_client_repository.begin ();
-
-        for (; iter != m_client_repository.end (); iter++) {
-            if (IMCONTROL_CLIENT == iter->second.type && iter->first == m_imcontrol_map[m_current_active_imcontrol_id]) {
-                Socket client_socket (iter->first);
-                Transaction trans;
-
-                trans.clear ();
-                trans.put_command (SCIM_TRANS_CMD_REQUEST);
-                trans.put_command (ISM_TRANS_CMD_ISE_PANEL_SHOWED);
-
-                trans.write_to_socket (client_socket);
-                break;
-            }
-        }
-    }
-
     void socket_helper_update_input_context          (int client)
     {
         SCIM_DEBUG_MAIN(4) << "PanelAgent::socket_helper_update_input_context (" << client << ")\n";
@@ -4824,22 +4748,23 @@ private:
 
         if (m_recv_trans.get_data (type) && m_recv_trans.get_data (value)) {
             m_signal_update_input_context ((int)type, (int)value);
-            ClientRepository::iterator iter = m_client_repository.begin ();
 
-            for (; iter != m_client_repository.end (); iter++) {
-                if (IMCONTROL_CLIENT == iter->second.type && iter->first == m_imcontrol_map[m_current_active_imcontrol_id]) {
-                    Socket client_socket (iter->first);
-                    Transaction trans;
+            int    focused_client;
+            uint32 focused_context;
+            get_focused_context (focused_client, focused_context);
 
-                    trans.clear ();
-                    trans.put_command (SCIM_TRANS_CMD_REQUEST);
-                    trans.put_command (ISM_TRANS_CMD_UPDATE_ISE_INPUT_CONTEXT);
-                    trans.put_data (type);
-                    trans.put_data (value);
-
-                    trans.write_to_socket (client_socket);
-                    break;
-                }
+            ClientInfo client_info = socket_get_client_info (focused_client);
+            if (client_info.type == FRONTEND_CLIENT) {
+                Socket client_socket (focused_client);
+                m_send_trans.clear ();
+                m_send_trans.put_command (SCIM_TRANS_CMD_REPLY);
+                m_send_trans.put_data (focused_context);
+                m_send_trans.put_command (ISM_TRANS_CMD_UPDATE_ISE_INPUT_CONTEXT);
+                m_send_trans.put_data (type);
+                m_send_trans.put_data (value);
+                m_send_trans.write_to_socket (client_socket);
+            } else {
+                std::cerr << "focused client is not existed!!!" << "\n";
             }
         }
     }
@@ -5468,18 +5393,6 @@ PanelAgent::set_current_ise_style (uint32 &style)
 }
 
 void
-PanelAgent::update_ise_name (String &name)
-{
-    m_impl->update_ise_name (name);
-}
-
-void
-PanelAgent::update_ise_style (uint32 &style)
-{
-    m_impl->update_ise_style (style);
-}
-
-void
 PanelAgent::update_candidate_panel_event (uint32 nType, uint32 nValue)
 {
     m_impl->update_panel_event (ISM_TRANS_CMD_UPDATE_ISF_CANDIDATE_PANEL, nType, nValue);
@@ -5670,12 +5583,6 @@ bool
 PanelAgent::filter_helper_manager_event    (void)
 {
     return m_impl->filter_helper_manager_event ();
-}
-
-void
-PanelAgent::update_isf_control_status      (const bool showed)
-{
-   m_impl->update_isf_control_status (showed);
 }
 
 int
@@ -6015,12 +5922,6 @@ PanelAgent::signal_connect_get_ise_language           (PanelAgentSlotStrStringVe
 }
 
 Connection
-PanelAgent::signal_connect_set_isf_language           (PanelAgentSlotString              *slot)
-{
-    return m_impl->signal_connect_set_isf_language (slot);
-}
-
-Connection
 PanelAgent::signal_connect_get_ise_info_by_uuid       (PanelAgentSlotStringISEINFO       *slot)
 {
     return m_impl->signal_connect_get_ise_info_by_uuid (slot);
@@ -6105,7 +6006,13 @@ PanelAgent::signal_connect_will_hide_ack              (PanelAgentSlotVoid       
 }
 
 Connection
-PanelAgent::signal_connect_candidate_will_hide_ack              (PanelAgentSlotVoid                *slot)
+PanelAgent::signal_connect_set_hardware_keyboard_mode (PanelAgentSlotVoid                *slot)
+{
+    return m_impl->signal_connect_set_hardware_keyboard_mode (slot);
+}
+
+Connection
+PanelAgent::signal_connect_candidate_will_hide_ack    (PanelAgentSlotVoid                *slot)
 {
     return m_impl->signal_connect_candidate_will_hide_ack (slot);
 }

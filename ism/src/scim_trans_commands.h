@@ -586,7 +586,6 @@ const int SCIM_TRANS_CMD_PANEL_REQUEST_FACTORY_MENU       = 521;
 const int SCIM_TRANS_CMD_PANEL_CHANGE_FACTORY             = 522;
 const int ISM_TRANS_CMD_PANEL_RESET_KEYBOARD_ISE          = 523;
 const int ISM_TRANS_CMD_PANEL_UPDATE_KEYBOARD_ISE         = 524;
-const int ISM_TRANS_CMD_PANEL_UPDATE_CLIENT_ID            = 525;
 
 // Helper Client To Panel
 const int SCIM_TRANS_CMD_PANEL_REGISTER_HELPER            = 540;
@@ -613,19 +612,18 @@ const int ISM_TRANS_CMD_SHOW_ISE_PANEL                    = 1000;
 const int ISM_TRANS_CMD_HIDE_ISE_PANEL                    = 1001;
 const int ISM_TRANS_CMD_SHOW_ISF_CONTROL                  = 1002;
 const int ISM_TRANS_CMD_HIDE_ISF_CONTROL                  = 1003;
-const int ISM_TRANS_CMD_GET_LANGUAGE_LIST                 = 1004;
-const int ISM_TRANS_CMD_GET_ISE_LANGUAGE                  = 1005;
-const int ISM_TRANS_CMD_SET_ISF_LANGUAGE                  = 1006;
-const int ISM_TRANS_CMD_GET_ALL_LANGUAGE_LIST             = 1007;
-const int ISM_TRANS_CMD_RESET_ISE_OPTION                  = 1008;
-const int ISM_TRANS_CMD_SET_ACTIVE_ISE_BY_UUID            = 1009;
-const int ISM_TRANS_CMD_GET_ACTIVE_ISE                    = 1010;
-const int ISM_TRANS_CMD_GET_ISE_LIST                      = 1011;
-const int ISM_TRANS_CMD_GET_ISE_INFORMATION               = 1012;
-const int ISM_TRANS_CMD_SEND_WILL_SHOW_ACK                = 1013;
-const int ISM_TRANS_CMD_SEND_WILL_HIDE_ACK                = 1014;
-const int ISM_TRANS_CMD_RESET_DEFAULT_ISE                 = 1015;
-const int ISM_TRANS_CMD_SEND_CANDIDATE_WILL_HIDE_ACK      = 1016;
+const int ISM_TRANS_CMD_RESET_ISE_OPTION                  = 1004;
+const int ISM_TRANS_CMD_SET_ACTIVE_ISE_BY_UUID            = 1005;
+const int ISM_TRANS_CMD_GET_ACTIVE_ISE                    = 1006;
+const int ISM_TRANS_CMD_GET_ISE_LIST                      = 1007;
+const int ISM_TRANS_CMD_GET_ISE_INFORMATION               = 1008;
+const int ISM_TRANS_CMD_SEND_WILL_SHOW_ACK                = 1009;
+const int ISM_TRANS_CMD_SEND_WILL_HIDE_ACK                = 1010;
+const int ISM_TRANS_CMD_RESET_DEFAULT_ISE                 = 1011;
+const int ISM_TRANS_CMD_SET_HARDWARE_KEYBOARD_MODE        = 1012;
+const int ISM_TRANS_CMD_SEND_CANDIDATE_WILL_HIDE_ACK      = 1013;
+const int ISM_TRANS_CMD_GET_PANEL_CLIENT_ID               = 1014;
+const int ISM_TRANS_CMD_REGISTER_PANEL_CLIENT             = 1015;
 
 
 /* IMControl to ISE */
@@ -644,18 +642,9 @@ const int ISM_TRANS_CMD_GET_RETURN_KEY_TYPE               = 1119;
 const int ISM_TRANS_CMD_SET_RETURN_KEY_DISABLE            = 1120;
 const int ISM_TRANS_CMD_GET_RETURN_KEY_DISABLE            = 1121;
 
-/* ISE to IMControl */
-const int ISM_TRANS_CMD_UPDATE_ISE_HIDED                  = 1127;
-const int ISM_TRANS_CMD_UPDATE_ISE_INPUT_CONTEXT          = 1128;
-
-/* Panel to IMControl */
-const int ISM_TRANS_CMD_ISE_PANEL_SHOWED                  = 1130;
-const int ISM_TRANS_CMD_ISE_PANEL_HIDED                   = 1131;
-const int ISM_TRANS_CMD_ISF_CONTROL_SHOWED                = 1132;
-const int ISM_TRANS_CMD_ISF_CONTROL_HIDED                 = 1133;
-const int ISM_TRANS_CMD_UPDATE_ISF_CANDIDATE_PANEL        = 1134;
-const int ISM_TRANS_CMD_UPDATE_ISE_STYLE                  = 1135;
-const int ISM_TRANS_CMD_ISE_CHANGED                       = 1136;
+/* ISE/Panel to IMControl */
+const int ISM_TRANS_CMD_UPDATE_ISE_INPUT_CONTEXT          = 1151;
+const int ISM_TRANS_CMD_UPDATE_ISF_CANDIDATE_PANEL        = 1152;
 
 
 /* ISE to Panel */

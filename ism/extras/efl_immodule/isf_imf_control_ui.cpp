@@ -49,7 +49,7 @@ static Ecore_X_Window     _rootwin;
 static unsigned int       hw_kbd_num = 0;
 static Ecore_Timer       *hide_timer = NULL;
 static Ecore_Timer       *will_show_timer = NULL;
-static Ecore_IMF_Input_Panel_State input_panel_state = ECORE_IMF_INPUT_PANEL_STATE_HIDE;
+Ecore_IMF_Input_Panel_State input_panel_state = ECORE_IMF_INPUT_PANEL_STATE_HIDE;
 static Ecore_IMF_Input_Panel_State notified_state = ECORE_IMF_INPUT_PANEL_STATE_HIDE;
 static int                hide_context_id = -1;
 static Evas              *active_context_canvas = NULL;
@@ -62,17 +62,35 @@ static Eina_Bool          will_hide = EINA_FALSE;
 
 static void _send_input_panel_hide_request ();
 
+static Ecore_IMF_Context *_get_using_ic (Ecore_IMF_Input_Panel_Event type, int value) {
+    Ecore_IMF_Context *using_ic = NULL;
+    if (show_req_ic)
+        using_ic = show_req_ic;
+    else if (get_focused_ic ())
+        using_ic = get_focused_ic ()->ctx;
+
+    if (type == ECORE_IMF_INPUT_PANEL_STATE_EVENT &&
+        value == ECORE_IMF_INPUT_PANEL_STATE_HIDE) {
+        if (hide_req_ic) {
+            using_ic = hide_req_ic;
+        }
+    }
+    return using_ic;
+}
+
 static void _render_post_cb (void *data, Evas *e, void *event_info)
 {
+    LOGD ("[_render_post_cb]\n");
     evas_event_callback_del_full (e, EVAS_CALLBACK_RENDER_POST, _render_post_cb, NULL);
     conformant_reset_done = EINA_TRUE;
-    isf_imf_context_input_panel_send_will_hide_ack ();
+    isf_imf_context_input_panel_send_will_hide_ack (_get_using_ic (ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_SHOW));
 }
 
 static void _candidate_render_post_cb (void *data, Evas *e, void *event_info)
 {
+    LOGD ("[%s]\n", __func__);
     evas_event_callback_del_full (e, EVAS_CALLBACK_RENDER_POST, _candidate_render_post_cb, NULL);
-    isf_imf_context_input_panel_send_candidate_will_hide_ack ();
+    isf_imf_context_input_panel_send_candidate_will_hide_ack (_get_using_ic (ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_SHOW));
 }
 
 static void _clear_will_show_timer ()
@@ -122,11 +140,9 @@ static Eina_Bool _prop_change (void *data, int ev_type, void *ev)
             conformant_reset_done = EINA_FALSE;
             LOGD ("[ECORE_X_VIRTUAL_KEYBOARD_STATE_ON] geometry x : %d, y : %d, w : %d, h : %d\n", sx, sy, sw, sh);
         }
-    }
-    else {
+    } else {
         if (event->win != _rootwin) return ECORE_CALLBACK_PASS_ON;
         if (event->atom != prop_x_ext_keyboard_exist) return ECORE_CALLBACK_PASS_ON;
-
         if (!ecore_x_window_prop_card32_get (event->win, prop_x_ext_keyboard_exist, &val, 1) > 0)
             return ECORE_CALLBACK_PASS_ON;
 
@@ -182,19 +198,7 @@ static void _save_current_xid (Ecore_IMF_Context *ctx)
 
 static void _event_callback_call (Ecore_IMF_Input_Panel_Event type, int value)
 {
-    Ecore_IMF_Context *using_ic = NULL;
-
-    if (show_req_ic)
-        using_ic = show_req_ic;
-    else if (get_focused_ic ())
-        using_ic = get_focused_ic ()->ctx;
-
-    if (type == ECORE_IMF_INPUT_PANEL_STATE_EVENT &&
-        value == ECORE_IMF_INPUT_PANEL_STATE_HIDE) {
-        if (hide_req_ic) {
-            using_ic = hide_req_ic;
-        }
-    }
+    Ecore_IMF_Context *using_ic = _get_using_ic (type, value);
 
     switch (type) {
         case ECORE_IMF_INPUT_PANEL_STATE_EVENT:
@@ -240,7 +244,7 @@ static void _event_callback_call (Ecore_IMF_Input_Panel_Event type, int value)
 
     if (type == ECORE_IMF_INPUT_PANEL_STATE_EVENT &&
         value == ECORE_IMF_INPUT_PANEL_STATE_WILL_SHOW) {
-        isf_imf_context_input_panel_send_will_show_ack ();
+        isf_imf_context_input_panel_send_will_show_ack (using_ic);
     }
 
     if (type == ECORE_IMF_CANDIDATE_PANEL_STATE_EVENT &&
@@ -249,7 +253,7 @@ static void _event_callback_call (Ecore_IMF_Input_Panel_Event type, int value)
         if (active_context_canvas && _conformant_get ())
             evas_event_callback_add (active_context_canvas, EVAS_CALLBACK_RENDER_POST, _candidate_render_post_cb, NULL);
         else
-            isf_imf_context_input_panel_send_candidate_will_hide_ack ();
+            isf_imf_context_input_panel_send_candidate_will_hide_ack (using_ic);
     }
 }
 
@@ -390,7 +394,7 @@ void isf_imf_context_control_panel_show (Ecore_IMF_Context *ctx)
     if (IfInitContext == false) {
         _isf_imf_context_init ();
     }
-    _isf_imf_context_control_panel_show ();
+    _isf_imf_context_control_panel_show (_get_context_id (ctx));
 }
 
 void isf_imf_context_control_panel_hide (Ecore_IMF_Context *ctx)
@@ -398,7 +402,7 @@ void isf_imf_context_control_panel_hide (Ecore_IMF_Context *ctx)
     if (IfInitContext == false) {
         _isf_imf_context_init ();
     }
-    _isf_imf_context_control_panel_hide ();
+    _isf_imf_context_control_panel_hide (_get_context_id (ctx));
 }
 
 void isf_imf_input_panel_init (void)
@@ -438,8 +442,6 @@ void isf_imf_input_panel_shutdown (void)
 
     _clear_will_show_timer ();
     _clear_hide_timer ();
-
-    _isf_imf_control_finalize ();
 }
 
 void isf_imf_context_input_panel_show (Ecore_IMF_Context* ctx)
@@ -603,7 +605,7 @@ void isf_imf_context_input_panel_language_set (Ecore_IMF_Context *ctx, Ecore_IMF
 
     if (context_scim == get_focused_ic ()) {
         LOGD ("language mode : %d\n", language);
-        _isf_imf_context_input_panel_language_set (language);
+        _isf_imf_context_input_panel_language_set (_get_context_id (ctx), language);
     }
 }
 
@@ -620,7 +622,7 @@ void isf_imf_context_input_panel_language_locale_get (Ecore_IMF_Context *ctx, ch
         _isf_imf_context_init ();
 
     if (locale)
-        _isf_imf_context_input_panel_language_locale_get (locale);
+        _isf_imf_context_input_panel_language_locale_get (_get_context_id (ctx), locale);
 }
 
 void isf_imf_context_input_panel_caps_mode_set (Ecore_IMF_Context *ctx, unsigned int mode)
@@ -628,7 +630,7 @@ void isf_imf_context_input_panel_caps_mode_set (Ecore_IMF_Context *ctx, unsigned
     if (!IfInitContext)
         _isf_imf_context_init ();
     LOGD ("ctx : %p, mode : %d\n", ctx, mode);
-    _isf_imf_context_input_panel_caps_mode_set (mode);
+    _isf_imf_context_input_panel_caps_mode_set (_get_context_id (ctx), mode);
 }
 
 void isf_imf_context_input_panel_caps_lock_mode_set (Ecore_IMF_Context *ctx, Eina_Bool mode)
@@ -654,7 +656,7 @@ void isf_imf_context_input_panel_imdata_set (Ecore_IMF_Context *ctx, const void*
     EcoreIMFContextISF *context_scim = (EcoreIMFContextISF *)ecore_imf_context_data_get (ctx);
 
     if (context_scim == get_focused_ic ())
-        _isf_imf_context_input_panel_imdata_set (data, length);
+        _isf_imf_context_input_panel_imdata_set (_get_context_id (ctx), data, length);
 }
 
 /**
@@ -668,7 +670,7 @@ void isf_imf_context_input_panel_imdata_get (Ecore_IMF_Context *ctx, void* data,
 {
     if (!IfInitContext)
         _isf_imf_context_init ();
-    _isf_imf_context_input_panel_imdata_get (data, length);
+    _isf_imf_context_input_panel_imdata_get (_get_context_id (ctx), data, length);
 }
 
 /**
@@ -685,7 +687,7 @@ void isf_imf_context_input_panel_geometry_get (Ecore_IMF_Context *ctx, int *x, i
 {
     if (!IfInitContext)
         _isf_imf_context_init ();
-    _isf_imf_context_input_panel_geometry_get (x, y, w, h);
+    _isf_imf_context_input_panel_geometry_get (_get_context_id (ctx), x, y, w, h);
 
     LOGD ("ctx : %p, x : %d, y : %d, w : %d, h : %d\n", ctx, *x, *y, *w, *h);
 }
@@ -705,7 +707,7 @@ void isf_imf_context_input_panel_return_key_type_set (Ecore_IMF_Context *ctx, Ec
 
     if (context_scim == get_focused_ic ()) {
         LOGD ("Return key type : %d\n", type);
-        _isf_imf_context_input_panel_return_key_type_set (type);
+        _isf_imf_context_input_panel_return_key_type_set (_get_context_id (ctx), type);
     }
 }
 
@@ -725,7 +727,7 @@ Ecore_IMF_Input_Panel_Return_Key_Type isf_imf_context_input_panel_return_key_typ
 
     Ecore_IMF_Input_Panel_Return_Key_Type type = ECORE_IMF_INPUT_PANEL_RETURN_KEY_TYPE_DEFAULT;
     if (context_scim == get_focused_ic ())
-        _isf_imf_context_input_panel_return_key_type_get (type);
+        _isf_imf_context_input_panel_return_key_type_get (_get_context_id (ctx), type);
 
     return type;
 }
@@ -745,7 +747,7 @@ void isf_imf_context_input_panel_return_key_disabled_set (Ecore_IMF_Context *ctx
 
     if (context_scim == get_focused_ic ()) {
         LOGD ("Return key disabled : %d\n", disabled);
-        _isf_imf_context_input_panel_return_key_disabled_set (disabled);
+        _isf_imf_context_input_panel_return_key_disabled_set (_get_context_id (ctx), disabled);
     }
 }
 
@@ -765,7 +767,7 @@ Eina_Bool isf_imf_context_input_panel_return_key_disabled_get (Ecore_IMF_Context
 
     Eina_Bool disabled = EINA_FALSE;
     if (context_scim == get_focused_ic ())
-        _isf_imf_context_input_panel_return_key_disabled_get (disabled);
+        _isf_imf_context_input_panel_return_key_disabled_get (_get_context_id (ctx), disabled);
 
     return disabled;
 }
@@ -786,7 +788,7 @@ isf_imf_context_input_panel_layout_set (Ecore_IMF_Context *ctx, Ecore_IMF_Input_
 
     if (context_scim == get_focused_ic ()) {
         LOGD ("layout type : %d\n", layout);
-        _isf_imf_context_input_panel_layout_set (layout);
+        _isf_imf_context_input_panel_layout_set (_get_context_id (ctx), layout);
         imengine_layout_set (ctx, layout);
     }
 }
@@ -803,7 +805,7 @@ Ecore_IMF_Input_Panel_Layout isf_imf_context_input_panel_layout_get (Ecore_IMF_C
     Ecore_IMF_Input_Panel_Layout layout;
     if (!IfInitContext)
         _isf_imf_context_init ();
-    _isf_imf_context_input_panel_layout_get (&layout);
+    _isf_imf_context_input_panel_layout_get (_get_context_id (ctx), &layout);
 
     return layout;
 }
@@ -847,49 +849,21 @@ void isf_imf_context_candidate_window_geometry_get (Ecore_IMF_Context *ctx, int 
 {
     if (!IfInitContext)
         _isf_imf_context_init ();
-    _isf_imf_context_candidate_window_geometry_get (x, y, w, h);
+    _isf_imf_context_candidate_window_geometry_get (_get_context_id (ctx), x, y, w, h);
 
     LOGD ("ctx : %p, x : %d, y : %d, w : %d, h : %d\n", ctx, *x, *y, *w, *h);
 }
 
-/**
- * This method should be called when focus in
- *
- * @param[in] ctx a #Ecore_IMF_Context
- */
-void isf_imf_context_control_focus_in (Ecore_IMF_Context *ctx)
-{
-    if (IfInitContext == false) {
-        _isf_imf_context_init ();
-    }
-    /* Set the current XID of the active window into the root window property */
-    _save_current_xid (ctx);
-    _isf_imf_context_control_focus_in ();
-}
-
-/**
- * This method should be called when focus out
- *
- * @param[in] ctx a #Ecore_IMF_Context
- */
-void isf_imf_context_control_focus_out (Ecore_IMF_Context *ctx)
-{
-    if (IfInitContext == false) {
-        _isf_imf_context_init ();
-    }
-    _isf_imf_context_control_focus_out ();
-}
-
-void isf_imf_context_input_panel_send_will_show_ack ()
+void isf_imf_context_input_panel_send_will_show_ack (Ecore_IMF_Context *ctx)
 {
     if (IfInitContext == false) {
         _isf_imf_context_init ();
     }
 
-    _isf_imf_context_input_panel_send_will_show_ack ();
+    _isf_imf_context_input_panel_send_will_show_ack (_get_context_id (ctx));
 }
 
-void isf_imf_context_input_panel_send_will_hide_ack ()
+void isf_imf_context_input_panel_send_will_hide_ack (Ecore_IMF_Context *ctx)
 {
     if (IfInitContext == false) {
         _isf_imf_context_init ();
@@ -898,28 +872,36 @@ void isf_imf_context_input_panel_send_will_hide_ack ()
     if (_conformant_get ()) {
         if (conformant_reset_done && received_will_hide_event) {
             LOGD ("Send will hide ack\n");
-            _isf_imf_context_input_panel_send_will_hide_ack ();
+            _isf_imf_context_input_panel_send_will_hide_ack (_get_context_id (ctx));
             conformant_reset_done = EINA_FALSE;
             received_will_hide_event = EINA_FALSE;
         }
-    }
-    else {
-        _isf_imf_context_input_panel_send_will_hide_ack ();
+    } else {
+        _isf_imf_context_input_panel_send_will_hide_ack (_get_context_id (ctx));
     }
 }
 
-void isf_imf_context_input_panel_send_candidate_will_hide_ack ()
+void isf_imf_context_set_hardware_keyboard_mode (Ecore_IMF_Context *ctx)
 {
     if (IfInitContext == false) {
         _isf_imf_context_init ();
     }
 
-    LOGD ("Send candidate will hide ack\n");
-    _isf_imf_context_input_panel_send_candidate_will_hide_ack ();
+    hw_kbd_num = 1;
+    SECURE_LOGD ("The number of connected H/W keyboard : %d\n", hw_kbd_num);
+    _isf_imf_context_set_hardware_keyboard_mode (_get_context_id (ctx));
+}
+
+void isf_imf_context_input_panel_send_candidate_will_hide_ack (Ecore_IMF_Context *ctx)
+{
+    if (IfInitContext == false) {
+        _isf_imf_context_init ();
+    }
+    _isf_imf_context_input_panel_send_candidate_will_hide_ack (_get_context_id (ctx));
 }
 
 /**
- * process command message, ISM_TRANS_CMD_ISE_PANEL_SHOWED of ecore_ise_process_event ()
+ * process input panel show message
  */
 static bool _process_ise_panel_showed (void)
 {
@@ -936,7 +918,7 @@ static bool _process_ise_panel_showed (void)
 }
 
 /**
- * process command message, ISM_TRANS_CMD_ISE_PANEL_HIDED of ecore_ise_process_event ()
+ * process input panel hide message
  */
 static bool _process_ise_panel_hided (void)
 {
@@ -950,22 +932,16 @@ static bool _process_ise_panel_hided (void)
     _event_callback_call (ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_HIDE);
 
     received_will_hide_event = EINA_TRUE;
-    isf_imf_context_input_panel_send_will_hide_ack ();
+    isf_imf_context_input_panel_send_will_hide_ack (_get_using_ic (ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_HIDE));
 
     return true;
 }
 
 /**
- * process command message, ISM_TRANS_CMD_UPDATE_ISE_INPUT_CONTEXT of gtk_ise_process_event ()
+ * process input panel related message
  */
-static bool _process_update_input_context (Transaction &trans)
+bool process_update_input_context (int type, int value)
 {
-    uint32 type;
-    uint32 value;
-
-    if (!(trans.get_data (type) && trans.get_data (value)))
-        return false;
-
     if (type == (uint32)ECORE_IMF_INPUT_PANEL_STATE_EVENT) {
         switch (value) {
             case ECORE_IMF_INPUT_PANEL_STATE_HIDE:
@@ -988,41 +964,6 @@ static bool _process_update_input_context (Transaction &trans)
 
     _event_callback_call ((Ecore_IMF_Input_Panel_Event)type, (int)value);
 
-    if (type == ECORE_IMF_INPUT_PANEL_STATE_EVENT &&
-        value == ECORE_IMF_INPUT_PANEL_STATE_WILL_SHOW) {
-        isf_imf_context_input_panel_send_will_show_ack ();
-    }
-
     return true;
-}
-
-/**
- * process ISE data of command message with ISF
- *
- * @param[in] trans packet data to be processed
- * @param[in] cmd command ID that defines with ISF
- */
-void ecore_ise_process_data (Transaction &trans, int cmd)
-{
-    switch (cmd) {
-    case ISM_TRANS_CMD_ISE_PANEL_SHOWED : {
-        _process_ise_panel_showed ();
-        break;
-    }
-    case ISM_TRANS_CMD_ISE_PANEL_HIDED : {
-        _process_ise_panel_hided ();
-        break;
-    }
-    case ISM_TRANS_CMD_UPDATE_ISE_INPUT_CONTEXT : {
-        _process_update_input_context (trans);
-        break;
-    }
-    case ISM_TRANS_CMD_UPDATE_ISF_CANDIDATE_PANEL : {
-        _process_update_input_context (trans);
-        break;
-    }
-    default :
-        break;
-    }
 }
 

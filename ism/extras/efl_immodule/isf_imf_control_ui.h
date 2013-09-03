@@ -32,9 +32,9 @@ extern "C"
 {
 #endif /* __cplusplus */
     void input_panel_event_callback_call (Ecore_IMF_Input_Panel_Event type, int value);
-    int hw_keyboard_num_get ();
+    int  hw_keyboard_num_get ();
+    bool process_update_input_context (int type, int value);
 
-    /* non UI related works */
     void isf_imf_input_panel_init ();
     void isf_imf_input_panel_shutdown ();
     void isf_imf_context_input_panel_show (Ecore_IMF_Context *ctx);
@@ -61,11 +61,11 @@ extern "C"
     void isf_imf_context_input_panel_caps_lock_mode_set (Ecore_IMF_Context *ctx, Eina_Bool mode);
     void isf_imf_context_candidate_window_geometry_get (Ecore_IMF_Context *ctx, int *x, int *y, int *w, int *h);
 
-    void isf_imf_context_control_focus_in (Ecore_IMF_Context *ctx);
-    void isf_imf_context_control_focus_out (Ecore_IMF_Context *ctx);
-    void isf_imf_context_input_panel_send_will_show_ack ();
-    void isf_imf_context_input_panel_send_will_hide_ack ();
-    void isf_imf_context_input_panel_send_candidate_will_hide_ack ();
+    void isf_imf_context_input_panel_send_will_show_ack (Ecore_IMF_Context *ctx);
+    void isf_imf_context_input_panel_send_will_hide_ack (Ecore_IMF_Context *ctx);
+    void isf_imf_context_set_hardware_keyboard_mode (Ecore_IMF_Context *ctx);
+
+    void isf_imf_context_input_panel_send_candidate_will_hide_ack (Ecore_IMF_Context *ctx);
 
 #ifdef __cplusplus
 }

@@ -366,20 +366,6 @@ public:
     void get_current_ise_geometry (rectinfo &rect);
 
     /**
-     * @brief Update ISE name to IM Control.
-     *
-     * @param name The ISE name.
-     */
-    void update_ise_name (String &name);
-
-    /**
-     * @brief Update ISE style to IM Control.
-     *
-     * @param style The ISE style.
-     */
-    void update_ise_style (uint32 &style);
-
-    /**
      * @brief Send candidate panel event to IM Control.
      *
      * @param nType  The candidate panel event type.
@@ -394,13 +380,6 @@ public:
      * @param nValue The input panel event value.
      */
     void update_input_panel_event (uint32 nType, uint32 nValue);
-
-    /**
-     * @brief Update ISE control panel status to IM Control.
-     *
-     * @param showed The control panel status.
-     */
-    void update_isf_control_status (const bool showed);
 
     /**
      * @brief Notice helper ISE to focus out.
@@ -1044,13 +1023,6 @@ public:
     Connection signal_connect_get_ise_language           (PanelAgentSlotStrStringVector     *slot);
 
     /**
-     * @brief Signal: Set the isf language.
-     *
-     * slot prototype: void get_ise_language (char *, std::vector<String> &);
-     */
-    Connection signal_connect_set_isf_language           (PanelAgentSlotString              *slot);
-
-    /**
      * @brief Signal: Get the ise information by uuid.
      *
      * slot prototype: bool get_ise_info_by_uuid (const String &, ISE_INFO &);
@@ -1159,11 +1131,19 @@ public:
     Connection signal_connect_will_hide_ack              (PanelAgentSlotVoid                *slot);
 
     /**
+     * @brief Signal: Set hardware mode
+     *
+     * slot prototype: void set_hardware_keyboard_mode (void);
+     */
+    Connection signal_connect_set_hardware_keyboard_mode (PanelAgentSlotVoid                *slot);
+
+    /**
      * @brief Signal: Notifies the client finished handling WILL_HIDE event for candidate
      *
      * slot prototype: void candidate_will_hide_ack (void);
      */
     Connection signal_connect_candidate_will_hide_ack    (PanelAgentSlotVoid                *slot);
+
 };
 
 /**  @} */

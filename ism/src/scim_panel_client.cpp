@@ -28,15 +28,17 @@
  *
  * Modifications by Samsung Electronics Co., Ltd.
  * 1. Add new signals
- *    a. m_signal_select_aux, m_signal_reset_keyboard_ise and m_signal_update_client_id
+ *    a. m_signal_select_aux, m_signal_reset_keyboard_ise
  *    b. m_signal_update_candidate_item_layout and m_signal_update_displayed_candidate_number
  *    c. m_signal_get_surrounding_text and m_signal_delete_surrounding_text
  *    d. m_signal_show_preedit_string, m_signal_hide_preedit_string, m_signal_update_preedit_string and m_signal_update_preedit_caret
  *    e. m_signal_candidate_more_window_show, m_signal_candidate_more_window_hide, m_signal_longpress_candidate
+ *    f. m_signal_update_ise_input_context, m_signal_update_isf_candidate_panel
  * 2. Add new interface APIs in PanelClient class
  *    a. update_cursor_position () and update_surrounding_text ()
  *    b. expand_candidate (), contract_candidate () and set_candidate_style ()
- *    c. reset_input_context () and turn_on_log
+ *    c. reset_input_context () and turn_on_log ()
+ *    d. get_client_id () and register_client ()
  *
  * $Id: scim_panel_client.cpp,v 1.6 2005/06/26 16:35:33 suzhe Exp $
  *
@@ -52,6 +54,7 @@
 #include "scim.h"
 
 #include <unistd.h>
+#include <string.h>
 
 namespace scim {
 
@@ -85,9 +88,12 @@ typedef Signal2<void, int, const std::vector<uint32> &>
 class PanelClient::PanelClientImpl
 {
     SocketClient                                m_socket;
+    SocketClient                                m_socket_active;
     int                                         m_socket_timeout;
     uint32                                      m_socket_magic_key;
+    uint32                                      m_socket_magic_key_active;
     Transaction                                 m_send_trans;
+    Transaction                                 m_recv_trans;
     int                                         m_current_icid;
     int                                         m_send_refcount;
 
@@ -121,12 +127,13 @@ class PanelClient::PanelClientImpl
     PanelClientSignalVoid                       m_signal_candidate_more_window_show;
     PanelClientSignalVoid                       m_signal_candidate_more_window_hide;
     PanelClientSignalInt                        m_signal_longpress_candidate;
-    PanelClientSignalInt                        m_signal_update_client_id;
+    PanelClientSignalIntInt                     m_signal_update_ise_input_context;
+    PanelClientSignalIntInt                     m_signal_update_isf_candidate_panel;
 
 public:
     PanelClientImpl ()
         : m_socket_timeout (scim_get_default_socket_timeout ()),
-          m_socket_magic_key (0),
+          m_socket_magic_key (0), m_socket_magic_key_active (0),
           m_current_icid (-1),
           m_send_refcount (0)
     {
@@ -166,6 +173,15 @@ public:
 
             if (ret && scim_socket_open_connection (m_socket_magic_key, String ("FrontEnd"), String ("Panel"), m_socket, m_socket_timeout)) {
                 ISF_LOG (" PID=%d connect to PanelAgent (%s), connected:%d.\n", getpid (), panel_address.c_str (), count);
+                if (!m_socket_active.connect (addr))
+                    return -1;
+                if (!scim_socket_open_connection (m_socket_magic_key_active,
+                                                  String ("FrontEnd_Active"), String ("Panel"),
+                                                  m_socket_active, m_socket_timeout)) {
+                    m_socket_active.close ();
+                    m_socket_magic_key_active = 0;
+                    return -1;
+                }
                 break;
             } else {
                 std::cerr << " PID=" << getpid () << " cannot connect to PanelAgent (" << panel_address << "), connected:" << count << ".\n";
@@ -185,7 +201,9 @@ public:
     void close_connection       ()
     {
         m_socket.close ();
-        m_socket_magic_key = 0;
+        m_socket_active.close ();
+        m_socket_magic_key        = 0;
+        m_socket_magic_key_active = 0;
     }
 
     int  get_connection_number  () const
@@ -437,11 +455,18 @@ public:
                             m_signal_longpress_candidate ((int) context, (int)index);
                     }
                     break;
-                case ISM_TRANS_CMD_PANEL_UPDATE_CLIENT_ID:
+                case ISM_TRANS_CMD_UPDATE_ISE_INPUT_CONTEXT:
                     {
-                        uint32 client_id;
-                        if (recv.get_data (client_id))
-                            m_signal_update_client_id ((int) context, (int)client_id);
+                        uint32 type, value;
+                        if (recv.get_data (type) && recv.get_data (value))
+                            m_signal_update_ise_input_context ((int) context, (int)type, (int)value);
+                    }
+                    break;
+                case ISM_TRANS_CMD_UPDATE_ISF_CANDIDATE_PANEL:
+                    {
+                        uint32 type, value;
+                        if (recv.get_data (type) && recv.get_data (value))
+                            m_signal_update_isf_candidate_panel ((int) context, (int)type, (int)value);
                     }
                     break;
                 default:
@@ -453,7 +478,7 @@ public:
 
     bool prepare                (int icid)
     {
-        if (!m_socket.is_connected ()) return false;
+        if (!m_socket_active.is_connected ()) return false;
 
         int cmd;
         uint32 data;
@@ -462,7 +487,7 @@ public:
             m_current_icid = icid;
             m_send_trans.clear ();
             m_send_trans.put_command (SCIM_TRANS_CMD_REQUEST);
-            m_send_trans.put_data (m_socket_magic_key);
+            m_send_trans.put_data (m_socket_magic_key_active);
             m_send_trans.put_data ((uint32) icid);
 
             if (m_send_trans.get_command (cmd) &&
@@ -482,7 +507,7 @@ public:
 
     bool send                   ()
     {
-        if (!m_socket.is_connected ()) return false;
+        if (!m_socket_active.is_connected ()) return false;
 
         if (m_send_refcount <= 0) return false;
 
@@ -491,7 +516,7 @@ public:
         if (m_send_refcount > 0) return false;
 
         if (m_send_trans.get_data_type () != SCIM_TRANS_DATA_UNKNOWN)
-            return m_send_trans.write_to_socket (m_socket, 0x4d494353);
+            return m_send_trans.write_to_socket (m_socket_active, 0x4d494353);
 
         return false;
     }
@@ -717,6 +742,357 @@ public:
         }
     }
 
+    bool post_prepare           (void)
+    {
+        if (m_socket_active.is_connected () && m_send_refcount > 0) {
+            m_send_trans.clear ();
+            m_send_trans.put_command (SCIM_TRANS_CMD_REQUEST);
+            m_send_trans.put_data (m_socket_magic_key_active);
+            m_send_trans.put_data ((uint32) m_current_icid);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    bool instant_send           (void)
+    {
+        if (m_socket_active.is_connected () && m_send_refcount > 0) {
+
+            m_send_refcount --;
+
+            if (m_send_trans.get_data_type () != SCIM_TRANS_DATA_UNKNOWN)
+                return m_send_trans.write_to_socket (m_socket_active, 0x4d494353);
+        }
+
+        return false;
+    }
+
+    void show_ise               (int client_id, int icid, void *data, int length, int *input_panel_show) {
+        if (m_send_refcount > 0 && m_current_icid == icid) {
+            int cmd;
+            uint32 temp;
+            m_send_trans.put_command (ISM_TRANS_CMD_SHOW_ISE_PANEL);
+            m_send_trans.put_data ((uint32)client_id);
+            m_send_trans.put_data ((uint32)icid);
+            m_send_trans.put_data ((const char *)data, (size_t)length);
+            instant_send ();
+            if (!m_send_trans.read_from_socket (m_socket_active, m_socket_timeout))
+                std::cerr << __func__ << " read_from_socket() may be timeout \n";
+            if (m_send_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_REPLY &&
+                    m_send_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_OK &&
+                    m_send_trans.get_data (temp)) {
+                if (input_panel_show)
+                    *input_panel_show = temp;
+            } else {
+                std::cerr << __func__ << " get_command() or get_data() may fail!!!\n";
+                if (input_panel_show)
+                    *input_panel_show = false;
+            }
+            post_prepare ();
+        }
+    }
+
+    void hide_ise               (int client_id, int icid) {
+        if (m_send_refcount > 0 && m_current_icid == icid) {
+            m_send_trans.put_command (ISM_TRANS_CMD_HIDE_ISE_PANEL);
+            m_send_trans.put_data ((uint32)client_id);
+            m_send_trans.put_data ((uint32)icid);
+        }
+    }
+
+    void show_control_panel (void) {
+        if (m_send_refcount > 0)
+            m_send_trans.put_command (ISM_TRANS_CMD_SHOW_ISF_CONTROL);
+    }
+
+    void hide_control_panel (void) {
+        if (m_send_refcount > 0)
+            m_send_trans.put_command (ISM_TRANS_CMD_HIDE_ISF_CONTROL);
+    }
+
+    void set_imdata (const char* data, int len) {
+        if (m_send_refcount > 0) {
+            m_send_trans.put_command (ISM_TRANS_CMD_SET_ISE_IMDATA);
+            m_send_trans.put_data (data, len);
+        }
+    }
+
+    void get_imdata (char* data, int* len) {
+        if (m_send_refcount > 0) {
+            int cmd;
+            size_t datalen = 0;
+            char* data_temp = NULL;
+
+            m_send_trans.put_command (ISM_TRANS_CMD_GET_ISE_IMDATA);
+            instant_send ();
+            if (!m_send_trans.read_from_socket (m_socket_active, m_socket_timeout))
+                std::cerr << __func__ << " read_from_socket() may be timeout \n";
+
+            if (m_send_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_REPLY &&
+                    m_send_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_OK &&
+                    m_send_trans.get_data (&data_temp, datalen)) {
+                memcpy (data, data_temp, datalen);
+                *len = datalen;
+            } else {
+                std::cerr << __func__ << " get_command() or get_data() may fail!!!\n";
+            }
+            if (data_temp)
+                delete [] data_temp;
+            post_prepare ();
+        }
+    }
+
+    void get_ise_window_geometry (int* x, int* y, int* width, int* height) {
+        if (m_send_refcount > 0) {
+            int cmd;
+            uint32 x_temp = 0;
+            uint32 y_temp = 0;
+            uint32 w_temp = 0;
+            uint32 h_temp = 0;
+
+            m_send_trans.put_command (ISM_TRANS_CMD_GET_ACTIVE_ISE_GEOMETRY);
+            instant_send ();
+
+            if (!m_send_trans.read_from_socket (m_socket_active, m_socket_timeout))
+                std::cerr << __func__ << " read_from_socket() may be timeout \n";
+
+            if (m_send_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_REPLY &&
+                m_send_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_OK &&
+                m_send_trans.get_data (x_temp) &&
+                m_send_trans.get_data (y_temp) &&
+                m_send_trans.get_data (w_temp) &&
+                m_send_trans.get_data (h_temp)) {
+                *x = x_temp;
+                *y = y_temp;
+                *width = w_temp;
+                *height = h_temp;
+            } else {
+                std::cerr << __func__ << " get_command() or get_data() may fail!!!\n";
+            }
+            post_prepare ();
+        }
+    }
+
+    void get_candidate_window_geometry (int* x, int* y, int* width, int* height) {
+        if (m_send_refcount > 0) {
+            int cmd;
+            uint32 x_temp = 0;
+            uint32 y_temp = 0;
+            uint32 w_temp = 0;
+            uint32 h_temp = 0;
+
+            m_send_trans.put_command (ISM_TRANS_CMD_GET_CANDIDATE_GEOMETRY);
+            instant_send ();
+
+            if (!m_send_trans.read_from_socket (m_socket_active, m_socket_timeout))
+                std::cerr << __func__ << " read_from_socket () may be timeout \n";
+
+            if (m_send_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_REPLY &&
+                m_send_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_OK &&
+                m_send_trans.get_data (x_temp) &&
+                m_send_trans.get_data (y_temp) &&
+                m_send_trans.get_data (w_temp) &&
+                m_send_trans.get_data (h_temp)) {
+                *x = x_temp;
+                *y = y_temp;
+                *width = w_temp;
+                *height = h_temp;
+            } else {
+                std::cerr << __func__ << " get_command () or get_data () is failed!!!\n";
+            }
+            post_prepare ();
+        }
+    }
+
+    void get_ise_language_locale (char **locale) {
+        if (m_send_refcount > 0) {
+            int cmd;
+            size_t datalen = 0;
+            char  *data = NULL;
+
+            m_send_trans.put_command (ISM_TRANS_CMD_GET_ISE_LANGUAGE_LOCALE);
+            instant_send ();
+            if (!m_send_trans.read_from_socket (m_socket_active, m_socket_timeout))
+                std::cerr << __func__ << " read_from_socket () may be timeout \n";
+
+            if (m_send_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_REPLY &&
+                m_send_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_OK &&
+                m_send_trans.get_data (&data, datalen)) {
+                if (locale)
+                    *locale = strndup (data, datalen);
+            } else {
+                std::cerr << __func__ << " get_command () or get_data () is failed!!!\n";
+                if (locale)
+                    *locale = strdup ("");
+            }
+            if (data)
+                delete [] data;
+            post_prepare ();
+        }
+    }
+
+    void set_return_key_type (int type) {
+        if (m_send_refcount > 0) {
+            m_send_trans.put_command (ISM_TRANS_CMD_SET_RETURN_KEY_TYPE);
+            m_send_trans.put_data (type);
+        }
+    }
+
+    void get_return_key_type (int &type) {
+        if (m_send_refcount > 0) {
+            int cmd;
+            uint32 temp;
+
+            m_send_trans.put_command (ISM_TRANS_CMD_GET_RETURN_KEY_TYPE);
+            instant_send ();
+            if (!m_send_trans.read_from_socket (m_socket_active, m_socket_timeout))
+                std::cerr << __func__ << " read_from_socket() may be timeout \n";
+
+            if (m_send_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_REPLY &&
+                    m_send_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_OK &&
+                    m_send_trans.get_data (temp)) {
+                type = temp;
+            } else {
+                std::cerr << __func__ << " get_command() or get_data() may fail!!!\n";
+            }
+            post_prepare ();
+        }
+    }
+
+    void set_return_key_disable (int disabled) {
+        if (m_send_refcount > 0) {
+            m_send_trans.put_command (ISM_TRANS_CMD_SET_RETURN_KEY_DISABLE);
+            m_send_trans.put_data (disabled);
+        }
+    }
+
+    void get_return_key_disable (int &disabled) {
+        if (m_send_refcount > 0) {
+            int cmd;
+            uint32 temp;
+
+            m_send_trans.put_command (ISM_TRANS_CMD_GET_RETURN_KEY_DISABLE);
+            instant_send ();
+            if (!m_send_trans.read_from_socket (m_socket_active, m_socket_timeout))
+                std::cerr << __func__ << " read_from_socket() may be timeout \n";
+
+            if (m_send_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_REPLY &&
+                    m_send_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_OK &&
+                    m_send_trans.get_data (temp)) {
+                disabled = temp;
+            } else {
+                std::cerr << __func__ << " get_command() or get_data() may fail!!!\n";
+            }
+            post_prepare ();
+        }
+    }
+
+    void set_layout (int layout) {
+        if (m_send_refcount > 0) {
+            m_send_trans.put_command (ISM_TRANS_CMD_SET_LAYOUT);
+            m_send_trans.put_data (layout);
+        }
+    }
+
+    void get_layout (int* layout) {
+        if (m_send_refcount > 0) {
+            int cmd;
+            uint32 layout_temp;
+
+            m_send_trans.put_command (ISM_TRANS_CMD_GET_LAYOUT);
+            instant_send ();
+            if (!m_send_trans.read_from_socket (m_socket_active, m_socket_timeout))
+                std::cerr << __func__ << " read_from_socket() may be timeout \n";
+
+            if (m_send_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_REPLY &&
+                    m_send_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_OK &&
+                    m_send_trans.get_data (layout_temp)) {
+                *layout = layout_temp;
+            } else {
+                std::cerr << __func__ << " get_command() or get_data() may fail!!!\n";
+            }
+            post_prepare ();
+        }
+    }
+
+    void set_ise_language (int language) {
+        if (m_send_refcount > 0) {
+            m_send_trans.put_command (ISM_TRANS_CMD_SET_ISE_LANGUAGE);
+            m_send_trans.put_data (language);
+        }
+    }
+
+    void set_caps_mode (int mode) {
+        if (m_send_refcount > 0) {
+            m_send_trans.put_command (ISM_TRANS_CMD_SET_CAPS_MODE);
+            m_send_trans.put_data (mode);
+        }
+    }
+
+    void send_will_show_ack (void) {
+        if (m_send_refcount > 0)
+            m_send_trans.put_command (ISM_TRANS_CMD_SEND_WILL_SHOW_ACK);
+    }
+
+    void send_will_hide_ack (void) {
+        if (m_send_refcount > 0)
+            m_send_trans.put_command (ISM_TRANS_CMD_SEND_WILL_HIDE_ACK);
+    }
+
+    void set_hardware_keyboard_mode (void) {
+        if (m_send_refcount > 0)
+            m_send_trans.put_command (ISM_TRANS_CMD_SET_HARDWARE_KEYBOARD_MODE);
+    }
+
+    void send_candidate_will_hide_ack (void) {
+        if (m_send_refcount > 0)
+            m_send_trans.put_command (ISM_TRANS_CMD_SEND_CANDIDATE_WILL_HIDE_ACK);
+    }
+
+    bool get_client_id (int &client_id) {
+        if (!m_socket.is_connected ()) return false;
+
+        int cmd;
+        uint32 data;
+        uint32 id;
+
+        m_send_trans.clear ();
+        m_send_trans.put_command (SCIM_TRANS_CMD_REQUEST);
+        m_send_trans.put_data (m_socket_magic_key);
+        m_send_trans.put_data (0);
+
+        if (m_send_trans.get_command (cmd) &&
+            m_send_trans.get_data (data) &&
+            m_send_trans.get_data (data)) {
+            m_send_trans.put_command (ISM_TRANS_CMD_GET_PANEL_CLIENT_ID);
+            m_send_trans.write_to_socket (m_socket);
+
+            if (!m_send_trans.read_from_socket (m_socket, m_socket_timeout))
+                std::cerr << __func__ << " read_from_socket() may be timeout \n";
+
+            if (m_send_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_REPLY &&
+                    m_send_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_OK &&
+                    m_send_trans.get_data (id)) {
+                client_id = id;
+                return true;
+            } else {
+                std::cerr << __func__ << " get_command() or get_data() may fail!!!\n";
+                return false;
+            }
+        }
+
+        return false;
+    }
+
+    void register_client (int client_id) {
+        if (m_send_refcount > 0) {
+            m_send_trans.put_command (ISM_TRANS_CMD_REGISTER_PANEL_CLIENT);
+            m_send_trans.put_data (client_id);
+        }
+    }
+
 public:
     void reset_signal_handler                               (void)
     {
@@ -750,7 +1126,8 @@ public:
         m_signal_candidate_more_window_show.reset();
         m_signal_candidate_more_window_hide.reset();
         m_signal_longpress_candidate.reset();
-        m_signal_update_client_id.reset();
+        m_signal_update_ise_input_context.reset();
+        m_signal_update_isf_candidate_panel.reset();
     }
 
     Connection signal_connect_reload_config                 (PanelClientSlotVoid                    *slot)
@@ -885,9 +1262,14 @@ public:
         return m_signal_longpress_candidate.connect (slot);
     }
 
-    Connection signal_connect_update_client_id              (PanelClientSlotInt                     *slot)
+    Connection signal_connect_update_ise_input_context      (PanelClientSlotIntInt                  *slot)
     {
-        return m_signal_update_client_id.connect (slot);
+        return m_signal_update_ise_input_context.connect (slot);
+    }
+
+    Connection signal_connect_update_isf_candidate_panel    (PanelClientSlotIntInt                  *slot)
+    {
+        return m_signal_update_isf_candidate_panel.connect (slot);
     }
 
 private:
@@ -1127,6 +1509,144 @@ PanelClient::set_candidate_style    (int icid, ISF_CANDIDATE_PORTRAIT_LINE_T por
 }
 
 void
+PanelClient::show_ise               (int client_id, int icid, void *data, int length, int *input_panel_show)
+{
+    m_impl->show_ise (client_id, icid, data, length, input_panel_show);
+}
+
+void
+PanelClient::hide_ise               (int client_id, int icid)
+{
+    m_impl->hide_ise (client_id, icid);
+}
+
+void
+PanelClient::show_control_panel     (void)
+{
+    m_impl->show_control_panel ();
+}
+
+void
+PanelClient::hide_control_panel     (void)
+{
+    m_impl->hide_control_panel ();
+}
+
+void
+PanelClient::set_imdata             (const char* data, int len)
+{
+    m_impl->set_imdata (data, len);
+}
+
+void
+PanelClient::get_imdata             (char* data, int* len)
+{
+    m_impl->get_imdata (data, len);
+}
+
+void
+PanelClient::get_ise_window_geometry (int* x, int* y, int* width, int* height)
+{
+    m_impl->get_ise_window_geometry (x, y, width, height);
+}
+
+void
+PanelClient::get_candidate_window_geometry (int* x, int* y, int* width, int* height)
+{
+    m_impl->get_candidate_window_geometry (x, y, width, height);
+}
+
+void
+PanelClient::get_ise_language_locale (char **locale)
+{
+    m_impl->get_ise_language_locale (locale);
+}
+
+void
+PanelClient::set_return_key_type    (int type)
+{
+    m_impl->set_return_key_type (type);
+}
+
+void
+PanelClient::get_return_key_type    (int &type)
+{
+    m_impl->get_return_key_type (type);
+}
+
+void
+PanelClient::set_return_key_disable (int disabled)
+{
+    m_impl->set_return_key_disable (disabled);
+}
+
+void
+PanelClient::get_return_key_disable (int &disabled)
+{
+    m_impl->get_return_key_disable (disabled);
+}
+
+void
+PanelClient::set_layout             (int layout)
+{
+    m_impl->set_layout (layout);
+}
+
+void
+PanelClient::get_layout             (int* layout)
+{
+    m_impl->get_layout (layout);
+}
+
+void
+PanelClient::set_ise_language       (int language)
+{
+    m_impl->set_ise_language (language);
+}
+
+void
+PanelClient::set_caps_mode          (int mode)
+{
+    m_impl->set_caps_mode (mode);
+}
+
+void
+PanelClient::send_will_show_ack     (void)
+{
+    m_impl->send_will_show_ack ();
+}
+
+void
+PanelClient::send_will_hide_ack     (void)
+{
+    m_impl->send_will_hide_ack ();
+}
+
+void
+PanelClient::set_hardware_keyboard_mode (void)
+{
+    m_impl->set_hardware_keyboard_mode ();
+}
+
+void
+PanelClient::send_candidate_will_hide_ack (void)
+{
+    m_impl->send_candidate_will_hide_ack ();
+}
+
+bool
+PanelClient::get_client_id (int &client_id)
+{
+    return m_impl->get_client_id (client_id);
+}
+
+void
+PanelClient::register_client (int client_id)
+{
+    m_impl->register_client (client_id);
+}
+
+void
 PanelClient::reset_signal_handler                         (void)
 {
     m_impl->reset_signal_handler ();
@@ -1295,9 +1815,15 @@ PanelClient::signal_connect_longpress_candidate           (PanelClientSlotInt   
 }
 
 Connection
-PanelClient::signal_connect_update_client_id              (PanelClientSlotInt                     *slot)
+PanelClient::signal_connect_update_ise_input_context      (PanelClientSlotIntInt                  *slot)
 {
-    return m_impl->signal_connect_update_client_id (slot);
+    return m_impl->signal_connect_update_ise_input_context (slot);
+}
+
+Connection
+PanelClient::signal_connect_update_isf_candidate_panel    (PanelClientSlotIntInt                  *slot)
+{
+    return m_impl->signal_connect_update_isf_candidate_panel (slot);
 }
 
 } /* namespace scim */
