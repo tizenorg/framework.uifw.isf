@@ -253,6 +253,8 @@ static void     open_specific_factory                   (GtkIMContextSCIM       
                                                          const String           &uuid);
 
 static void     attach_instance                         (const IMEngineInstancePointer &si);
+static void     _hide_preedit_string                    (int                     context,
+                                                         bool                    update_preedit);
 
 /* slot functions */
 static void     slot_show_preedit_string                (IMEngineInstanceBase   *si);
@@ -843,7 +845,7 @@ gtk_im_context_scim_reset (GtkIMContext *context)
 
         if (context_scim->impl->need_commit_preedit)
         {
-            panel_slot_hide_preedit_string (context_scim->id);
+            _hide_preedit_string (context_scim->id, false);
 
             if (wstr.length ())
                 g_signal_emit_by_name (context_scim, "commit", utf8_wcstombs (wstr).c_str ());
@@ -1018,7 +1020,7 @@ gtk_im_context_scim_focus_out (GtkIMContext *context)
         //sehwan added
         if (context_scim->impl->need_commit_preedit)
         {
-            panel_slot_hide_preedit_string (context_scim->id);
+            _hide_preedit_string (context_scim->id, false);
 
             if (wstr.length ())
                 g_signal_emit_by_name (context_scim, "commit", utf8_wcstombs (wstr).c_str ());
@@ -1548,7 +1550,7 @@ panel_slot_reset_keyboard_ise (int context)
         WideString wstr = ic->impl->preedit_string;
         if (ic->impl->need_commit_preedit)
         {
-            panel_slot_hide_preedit_string (ic->id);
+            _hide_preedit_string (ic->id, false);
 
             if (wstr.length ())
                 g_signal_emit_by_name (ic, "commit", utf8_wcstombs (wstr).c_str ());
@@ -1585,7 +1587,7 @@ panel_slot_show_preedit_string (int context)
 }
 
 static void
-panel_slot_hide_preedit_string (int context)
+_hide_preedit_string (int context, bool update_preedit)
 {
     GtkIMContextSCIM *ic = find_ic (context);
     SCIM_DEBUG_FRONTEND(1) << "panel_slot_hide_preedit_string context=" << context << "\n";
@@ -1603,7 +1605,7 @@ panel_slot_hide_preedit_string (int context)
             emit = true;
         }
         if (ic->impl->use_preedit) {
-            if (emit) g_signal_emit_by_name (ic, "preedit-changed");
+            if (update_preedit && emit) g_signal_emit_by_name (ic, "preedit-changed");
             if (ic->impl->preedit_started) {
                 g_signal_emit_by_name (ic, "preedit-end");
                 ic->impl->preedit_started     = false;
@@ -1611,6 +1613,12 @@ panel_slot_hide_preedit_string (int context)
             }
         }
     }
+}
+
+static void
+panel_slot_hide_preedit_string (int context)
+{
+    _hide_preedit_string (context, true);
 }
 
 static void

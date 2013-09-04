@@ -177,6 +177,7 @@ static void     initialize_modifier_bits                (Display *display);
 static unsigned int scim_x11_keymask_scim_to_x11        (Display *display, uint16 scimkeymask);
 static XKeyEvent createKeyEvent                         (bool press, int keycode, int modifiers, bool fake);
 static void     send_x_key_event                        (const KeyEvent &key, bool fake);
+static void     _hide_preedit_string                    (int context, bool update_preedit);
 
 static void     attach_instance                         (const IMEngineInstancePointer &si);
 
@@ -1338,7 +1339,7 @@ isf_imf_context_focus_out (Ecore_IMF_Context *ctx)
             ecore_imf_context_input_panel_hide (ctx);
 
         if (context_scim->impl->need_commit_preedit) {
-            panel_slot_hide_preedit_string (context_scim->id);
+            _hide_preedit_string (context_scim->id, false);
 
             if (wstr.length ()) {
                 ecore_imf_context_commit_event_add (context_scim->ctx, utf8_wcstombs (wstr).c_str ());
@@ -1389,7 +1390,7 @@ isf_imf_context_reset (Ecore_IMF_Context *ctx)
         _panel_client.send ();
 
         if (context_scim->impl->need_commit_preedit) {
-            panel_slot_hide_preedit_string (context_scim->id);
+            _hide_preedit_string (context_scim->id, false);
 
             if (wstr.length ()) {
                 ecore_imf_context_commit_event_add (context_scim->ctx, utf8_wcstombs (wstr).c_str ());
@@ -2194,7 +2195,7 @@ panel_slot_commit_string (int context, const WideString &wstr)
             autoperiod_insert (ic->ctx);
 
         if (ic->impl->need_commit_preedit)
-            panel_slot_hide_preedit_string (ic->id);
+            _hide_preedit_string (ic->id, false);
         ecore_imf_context_commit_event_add (ic->ctx, utf8_wcstombs (wstr).c_str ());
         ecore_imf_context_event_callback_call (ic->ctx, ECORE_IMF_CALLBACK_COMMIT, (void *)utf8_wcstombs (wstr).c_str ());
     }
@@ -2263,7 +2264,7 @@ panel_slot_reset_keyboard_ise (int context)
     if (ic && ic->impl) {
         WideString wstr = ic->impl->preedit_string;
         if (ic->impl->need_commit_preedit) {
-            panel_slot_hide_preedit_string (ic->id);
+            _hide_preedit_string (ic->id, false);
 
             if (wstr.length ()) {
                 ecore_imf_context_commit_event_add (ic->ctx, utf8_wcstombs (wstr).c_str ());
@@ -2311,7 +2312,7 @@ panel_slot_show_preedit_string (int context)
 }
 
 static void
-panel_slot_hide_preedit_string (int context)
+_hide_preedit_string (int context, bool update_preedit)
 {
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
 
@@ -2329,7 +2330,7 @@ panel_slot_hide_preedit_string (int context)
             emit = true;
         }
         if (ic->impl->use_preedit) {
-            if (emit) {
+            if (update_preedit && emit) {
                 ecore_imf_context_preedit_changed_event_add (ic->ctx);
                 ecore_imf_context_event_callback_call (ic->ctx, ECORE_IMF_CALLBACK_PREEDIT_CHANGED, NULL);
             }
@@ -2345,6 +2346,14 @@ panel_slot_hide_preedit_string (int context)
             _panel_client.send ();
         }
     }
+}
+
+static void
+panel_slot_hide_preedit_string (int context)
+{
+    SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
+
+    _hide_preedit_string (context, true);
 }
 
 static void
