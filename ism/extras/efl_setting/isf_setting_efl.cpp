@@ -328,9 +328,17 @@ static int pkg_list_cb (pkgmgrinfo_appinfo_h handle, void *user_data)
         return -1;
 
     if (strcmp (pkgid , id) == 0) {
-        _ise_option_module_stat = ISE_OPTION_MODULE_EXIST_XML;
-        ISFUG_DEBUG ("pkgid : %s\n", pkgid);
-        return -1;
+        char path[256] = {'\0'};
+        snprintf (path, sizeof (path), "/opt/apps/%s/setting/setting.xml", (char *)(pkgid));
+        if (0 != access(path, R_OK|W_OK|F_OK )) {
+            ISFUG_DEBUG ("/opt/apps/%s/setting/setting.xml not found \n", pkgid);
+            return 0;
+        } else {
+            _ise_option_module_stat = ISE_OPTION_MODULE_EXIST_XML;
+            ISFUG_DEBUG ("/opt/apps/%s/setting/setting.xml exists\n", pkgid);
+            return -1;
+        }
+
     }
     else {
         ISFUG_DEBUG ("%s", pkgid);
