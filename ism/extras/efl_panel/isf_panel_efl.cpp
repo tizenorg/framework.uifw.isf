@@ -178,7 +178,9 @@ static void       slot_show_ise                        (void);
 static void       slot_hide_ise                        (void);
 
 static void       slot_will_hide_ack                   (void);
-static void       slot_candidate_will_hide_ack                   (void);
+static void       slot_candidate_will_hide_ack         (void);
+
+static void       slot_get_ise_state                   (int &state);
 
 static Eina_Bool  panel_agent_handler                  (void *data, Ecore_Fd_Handler *fd_handler);
 
@@ -2210,6 +2212,8 @@ static Evas_Object *efl_create_window (const char *strWinName, const char *strEf
  */
 static Eina_Bool efl_create_control_window (void)
 {
+    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
+
     /* WMSYNC, #1 Creating and registering control window */
     if (ecore_x_display_get () == NULL)
         return EINA_FALSE;
@@ -2274,6 +2278,8 @@ static Ecore_X_Window efl_get_app_window (void)
  */
 static Eina_Bool efl_get_default_zone_geometry_info (Ecore_X_Window root, uint *x, uint *y, uint *w, uint *h)
 {
+    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
+
     Ecore_X_Atom    zone_geometry_atom;
     Ecore_X_Window *zone_lists;
     int             num_zone_lists;
@@ -2320,6 +2326,8 @@ static Eina_Bool efl_get_default_zone_geometry_info (Ecore_X_Window root, uint *
  */
 static void efl_get_screen_resolution (int &width, int &height)
 {
+    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
+
     static Evas_Coord scr_w = 0, scr_h = 0;
 
     if (scr_w == 0 || scr_h == 0) {
@@ -2401,6 +2409,7 @@ static bool initialize_panel_agent (const String &config, const String &display,
     _panel_agent->signal_connect_will_hide_ack              (slot (slot_will_hide_ack));
 
     _panel_agent->signal_connect_candidate_will_hide_ack    (slot (slot_candidate_will_hide_ack));
+    _panel_agent->signal_connect_get_ise_state              (slot (slot_get_ise_state));
 
     std::vector<String> load_ise_list;
     _panel_agent->get_active_ise_list (load_ise_list);
@@ -3504,7 +3513,7 @@ static bool slot_get_ise_info (const String &uuid, ISE_INFO &info)
  */
 static void slot_set_keyboard_ise (const String &uuid)
 {
-    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
+    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << " uuid = " << uuid << "\n";
 
     if (uuid.length () <= 0 || std::find (_uuids.begin (), _uuids.end (), uuid) == _uuids.end ())
         return;
@@ -3545,10 +3554,10 @@ static void slot_set_keyboard_ise (const String &uuid)
  */
 static void slot_get_keyboard_ise (String &ise_name, String &ise_uuid)
 {
-    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
-
     uint32 ise_option = 0;
     isf_get_keyboard_ise (_config, ise_uuid, ise_name, ise_option);
+
+    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << " uuid = " << ise_uuid << "\n";
 }
 
 /**
@@ -3596,6 +3605,8 @@ static void slot_exit (void)
 
 static void slot_register_helper_properties (int id, const PropertyList &props)
 {
+    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
+
     /* WMSYNC, #2 Receiving X window ID from ISE */
     /* FIXME : We should add an API to set window id of ISE */
     Property prop = props[0];
@@ -3608,6 +3619,8 @@ static void slot_register_helper_properties (int id, const PropertyList &props)
 
 static void slot_show_ise (void)
 {
+    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
+
     /* WMSYNC, #3 Clear the existing application's conformant area and set transient_for */
     // Unset conformant area
     Ecore_X_Window current_app_window = efl_get_app_window ();
@@ -3627,6 +3640,8 @@ static void slot_show_ise (void)
 
 static void slot_hide_ise (void)
 {
+    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
+
     // From this point, slot_get_input_panel_geometry should return hidden state geometry
     _ise_show = false;
     _window_angle = -1;
@@ -3634,6 +3649,8 @@ static void slot_hide_ise (void)
 
 static void slot_will_hide_ack (void)
 {
+    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
+
     /* WMSYNC, #8 Let the Window Manager to actually hide keyboard window */
     // WILL_HIDE_REQUEST_DONE Ack to WM
     Ecore_X_Window root_window = ecore_x_window_root_get (_control_window);
@@ -3651,6 +3668,15 @@ static void slot_candidate_will_hide_ack (void)
     if (_candidate_will_hide) {
         candidate_window_hide ();
     }
+}
+
+static void slot_get_ise_state (int &state)
+{
+    if (_ise_show || evas_object_visible_get (_candidate_window))
+        state = ECORE_IMF_INPUT_PANEL_STATE_SHOW;
+    else
+        state = ECORE_IMF_INPUT_PANEL_STATE_HIDE;
+    LOGD ("state = %d", state);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -4162,6 +4188,8 @@ static Eina_Bool x_event_client_message_cb (void *data, int type, void *event)
  */
 static bool check_wm_ready (void)
 {
+    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
+
 #ifdef WAIT_WM
     int try_count = 0;
     while (check_file (ISF_SYSTEM_WM_READY_FILE) == false) {
@@ -4179,6 +4207,8 @@ static bool check_wm_ready (void)
  */
 static bool check_system_ready (void)
 {
+    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
+
     int ret = 0;
     int val = 0;
     ret = vconf_get_int (ISF_SYSTEM_APPSERVICE_READY_VCONF, &val);
@@ -4206,6 +4236,8 @@ static bool check_system_ready (void)
 
 static void _launch_default_soft_keyboard (void)
 {
+    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
+
     if (_appsvc_callback_regist)
         vconf_ignore_key_changed (ISF_SYSTEM_APPSERVICE_READY_VCONF, launch_default_soft_keyboard);
 
@@ -4224,6 +4256,8 @@ static void _launch_default_soft_keyboard (void)
  */
 static void launch_default_soft_keyboard (keynode_t *key, void* data)
 {
+    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
+
     /* Soft keyboard will be started when all system service are ready */
     if (check_system_ready ()) {
         _launch_default_soft_keyboard ();

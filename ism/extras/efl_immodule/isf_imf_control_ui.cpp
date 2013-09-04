@@ -825,9 +825,13 @@ Ecore_IMF_Input_Panel_Layout isf_imf_context_input_panel_layout_get (Ecore_IMF_C
  */
 Ecore_IMF_Input_Panel_State isf_imf_context_input_panel_state_get (Ecore_IMF_Context *ctx)
 {
+    Ecore_IMF_Input_Panel_State state;
     if (!IfInitContext)
         _isf_imf_context_init ();
-    return input_panel_state;
+
+    _isf_imf_context_input_panel_state_get (_get_context_id (ctx), state);
+    LOGD ("    state:%d\n", state);
+    return state;
 }
 
 void isf_imf_context_input_panel_event_callback_clear (Ecore_IMF_Context *ctx)

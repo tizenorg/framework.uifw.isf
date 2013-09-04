@@ -45,6 +45,7 @@ extern "C"
     int _isf_imf_context_input_panel_geometry_get (int context, int *x, int *y, int *w, int *h);
     int _isf_imf_context_input_panel_layout_set (int context, Ecore_IMF_Input_Panel_Layout layout);
     int _isf_imf_context_input_panel_layout_get (int context, Ecore_IMF_Input_Panel_Layout *layout);
+    int _isf_imf_context_input_panel_state_get (int context, Ecore_IMF_Input_Panel_State &state);
     int _isf_imf_context_input_panel_return_key_type_set (int context, Ecore_IMF_Input_Panel_Return_Key_Type type);
     int _isf_imf_context_input_panel_return_key_type_get (int context, Ecore_IMF_Input_Panel_Return_Key_Type &type);
     int _isf_imf_context_input_panel_return_key_disabled_set (int context, Eina_Bool disabled);

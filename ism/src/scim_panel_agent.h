@@ -89,6 +89,9 @@ typedef Slot0<void>
 typedef Slot1<void, int>
         PanelAgentSlotInt;
 
+typedef Slot1<void, int &>
+        PanelAgentSlotInt2;
+
 typedef Slot1<void, const String &>
         PanelAgentSlotString;
 
@@ -1143,6 +1146,13 @@ public:
      * slot prototype: void candidate_will_hide_ack (void);
      */
     Connection signal_connect_candidate_will_hide_ack    (PanelAgentSlotVoid                *slot);
+
+    /**
+     * @brief Signal: Get ISE state.
+     *
+     * slot prototype: void get_ise_state (int &state);
+     */
+    Connection signal_connect_get_ise_state              (PanelAgentSlotInt2                *slot);
 
 };
 

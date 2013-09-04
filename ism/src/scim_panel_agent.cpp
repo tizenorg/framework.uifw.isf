@@ -78,6 +78,9 @@ typedef Signal0<void>
 typedef Signal1<void, int>
         PanelAgentSignalInt;
 
+typedef Signal1<void, int &>
+        PanelAgentSignalInt2;
+
 typedef Signal1<void, const String &>
         PanelAgentSignalString;
 
@@ -363,6 +366,7 @@ class PanelAgent::PanelAgentImpl
     PanelAgentSignalVoid                m_signal_set_hardware_keyboard_mode;
 
     PanelAgentSignalVoid                m_signal_candidate_will_hide_ack;
+    PanelAgentSignalInt2                m_signal_get_ise_state;
 public:
     PanelAgentImpl ()
         : m_should_exit (false),
@@ -2002,6 +2006,22 @@ public:
         trans.write_to_socket (client_socket);
     }
 
+    void get_ise_state (int client_id)
+    {
+        SCIM_DEBUG_MAIN(4) << __func__ << "\n";
+        int state = 0;
+        m_signal_get_ise_state (state);
+
+        Transaction trans;
+        Socket client_socket (client_id);
+
+        trans.clear ();
+        trans.put_command (SCIM_TRANS_CMD_REPLY);
+        trans.put_command (SCIM_TRANS_CMD_OK);
+        trans.put_data (state);
+        trans.write_to_socket (client_socket);
+    }
+
     void get_active_ise (int client_id)
     {
         SCIM_DEBUG_MAIN(4) << __func__ << "\n";
@@ -2866,6 +2886,11 @@ public:
         return m_signal_candidate_will_hide_ack.connect (slot);
     }
 
+    Connection signal_connect_get_ise_state              (PanelAgentSlotInt2                *slot)
+    {
+        return m_signal_get_ise_state.connect (slot);
+    }
+
 private:
     bool socket_check_client_connection (const Socket &client)
     {
@@ -3088,6 +3113,9 @@ private:
                         continue;
                     } else if (cmd == ISM_TRANS_CMD_SEND_CANDIDATE_WILL_HIDE_ACK) {
                         candidate_will_hide_ack (client_id);
+                        continue;
+                    } else if (cmd == ISM_TRANS_CMD_GET_ISE_STATE) {
+                        get_ise_state (client_id);
                         continue;
                     }
 
@@ -6012,6 +6040,12 @@ Connection
 PanelAgent::signal_connect_candidate_will_hide_ack    (PanelAgentSlotVoid                *slot)
 {
     return m_impl->signal_connect_candidate_will_hide_ack (slot);
+}
+
+Connection
+PanelAgent::signal_connect_get_ise_state              (PanelAgentSlotInt2                *slot)
+{
+    return m_impl->signal_connect_get_ise_state (slot);
 }
 
 } /* namespace scim */

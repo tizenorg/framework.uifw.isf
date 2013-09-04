@@ -1017,6 +1017,27 @@ public:
         }
     }
 
+    void get_ise_state (int &ise_state) {
+        if (m_send_refcount > 0) {
+            int cmd;
+            uint32 temp;
+
+            m_send_trans.put_command (ISM_TRANS_CMD_GET_ISE_STATE);
+            instant_send ();
+            if (!m_send_trans.read_from_socket (m_socket_active, m_socket_timeout))
+                std::cerr << __func__ << " read_from_socket() may be timeout \n";
+
+            if (m_send_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_REPLY &&
+                    m_send_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_OK &&
+                    m_send_trans.get_data (temp)) {
+                ise_state = temp;
+            } else {
+                std::cerr << __func__ << " get_command() or get_data() may fail!!!\n";
+            }
+            post_prepare ();
+        }
+    }
+
     void set_ise_language (int language) {
         if (m_send_refcount > 0) {
             m_send_trans.put_command (ISM_TRANS_CMD_SET_ISE_LANGUAGE);
@@ -1644,6 +1665,12 @@ void
 PanelClient::register_client (int client_id)
 {
     m_impl->register_client (client_id);
+}
+
+void
+PanelClient::get_ise_state (int &ise_state)
+{
+    m_impl->get_ise_state (ise_state);
 }
 
 void

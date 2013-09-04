@@ -242,6 +242,7 @@ public:
     void send_candidate_will_hide_ack (void);
     bool get_client_id          (int &client_id);
     void register_client        (int client_id);
+    void get_ise_state          (int &ise_state);
 
     /** @} */
 

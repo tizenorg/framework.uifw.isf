@@ -624,6 +624,7 @@ const int ISM_TRANS_CMD_SET_HARDWARE_KEYBOARD_MODE        = 1012;
 const int ISM_TRANS_CMD_SEND_CANDIDATE_WILL_HIDE_ACK      = 1013;
 const int ISM_TRANS_CMD_GET_PANEL_CLIENT_ID               = 1014;
 const int ISM_TRANS_CMD_REGISTER_PANEL_CLIENT             = 1015;
+const int ISM_TRANS_CMD_GET_ISE_STATE                     = 1016;
 
 
 /* IMControl to ISE */

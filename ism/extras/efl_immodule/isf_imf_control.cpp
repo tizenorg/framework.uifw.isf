@@ -166,6 +166,16 @@ int _isf_imf_context_input_panel_layout_get (int context, Ecore_IMF_Input_Panel_
     return 0;
 }
 
+int _isf_imf_context_input_panel_state_get (int context, Ecore_IMF_Input_Panel_State &state)
+{
+    int temp = 0;
+    _panel_client.prepare (context);
+    _panel_client.get_ise_state (temp);
+
+    state = (Ecore_IMF_Input_Panel_State)temp;
+    return 0;
+}
+
 int _isf_imf_context_input_panel_caps_mode_set (int context, unsigned int mode)
 {
     _panel_client.prepare (context);
