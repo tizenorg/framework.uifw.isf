@@ -80,6 +80,7 @@ enum ClientCapability
 enum IMEngineOption
 {
     SCIM_IME_NOT_SUPPORT_HARDWARE_KEYBOARD = (1 << 0),   /**< This option indicates IME could not support hardware keyboard */
+    SCIM_IME_SUPPORT_LANGUAGE_TOGGLE_KEY   = (1 << 1),   /**< This option indicates IME could support language toggle key */
 };
 
 /**
