@@ -1,3 +1,32 @@
+ISF 2.4.6904 :
+ 1. Fix bug candidate window hide after 1 sec when application is terminated
+ 2. [efl_setting] Update Makefile.am
+ 3. Donot call getpid () for DLOG
+ 4. Remove unused source codes
+ 5. Use singleton config instance
+ 6. call reset after hiding IME for avoiding the blink of candidate window
+ 7. call ecore_imf_context_reset when H/W back key is released
+ 8. Fix bug IME remains show status even though application terminated
+ 9. Send hide request in case of abnormal exit
+10. fix N_SE-50420
+11. Change SCIM_LOOKUP_TABLE_MAX_PAGESIZE to 300
+12. [efl_immodule] Merge IMControlClient function into PanelClient
+13. Fix bug candidate window disappear after about 1 sec in H/W keyboard mode
+14. delete candidate timer when candidate window is hidden
+15. Modified to update window_angle when ROT_CHANGE_REQ recved from ISE
+16. Modified to show candidate window without visibility checking
+17. Added code for resetting candidate_will_hide flag
+18. [scim-launcher] set locale
+19. Fix bug the name of heleper or engine displays as gettext ID
+20. remove candidate rotation code in update_ise_geometry, Add candidate close code for rotation
+21. remove code to set ELM engine and fps
+22. modify log information and level
+23. Enable feedback (sound & vibration) on candidate item
+24. Remove unused declaration
+25. skip will show sync to improve the performance of show effect
+26. [panel] Set SIP status in vconf
+
+
 ISF 2.4.6829 :
  1. Change label of UG
  2. Add autocapital type in isecontext

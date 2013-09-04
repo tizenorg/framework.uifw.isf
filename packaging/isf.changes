@@ -1,3 +1,31 @@
+* Wed Sep 04 2013 Jihoon Kim <jihoon48.kim@samsung.com> submit/tizen_2.2/20130829.082133@a396d4d
+- Fix bug candidate window hide after 1 sec when application is terminated
+- [efl_setting] Update Makefile.am
+- Donot call getpid () for DLOG
+- Remove unused source codes
+- Use singleton config instance
+- call reset after hiding IME for avoiding the blink of candidate window
+- call ecore_imf_context_reset when H/W back key is released
+- Fix bug IME remains show status even though application terminated
+- Send hide request in case of abnormal exit
+- fix N_SE-50420
+- Change SCIM_LOOKUP_TABLE_MAX_PAGESIZE to 300
+- [efl_immodule] Merge IMControlClient function into PanelClient
+- Fix bug candidate window disappear after about 1 sec in H/W keyboard mode
+- delete candidate timer when candidate window is hidden
+- Modified to update window_angle when ROT_CHANGE_REQ recved from ISE
+- Modified to show candidate window without visibility checking
+- Added code for resetting candidate_will_hide flag
+- set locale
+- Fix bug the name of heleper or engine displays as gettext ID
+- remove candidate rotation code in update_ise_geometry, Add candidate close code for rotation
+- remove code to set ELM engine and fps
+- modify log information and level
+- Enable feedback (sound & vibration) on candidate item
+- Remove unused declaration
+- skip will show sync to improve the performance of show effect
+- [panel] Set SIP status in vconf
+
 * Thu Aug 29 2013 Jihoon Kim <jihoon48.kim@samsung.com> submit/tizen_2.2/20130827.035107@cff004b
 - Change label of UG
 - Add autocapital type in isecontext
