@@ -2585,13 +2585,18 @@ filter_hotkeys (EcoreIMFContextISF *ic, const KeyEvent &key)
     FrontEndHotkeyAction hotkey_action = _frontend_hotkey_matcher.get_match_result ();
 
     if (hotkey_action == SCIM_FRONTEND_HOTKEY_TRIGGER) {
-        if (!ic->impl->is_on)
-            turn_on_ic (ic);
-        else
-            turn_off_ic (ic);
+        IMEngineFactoryPointer sf = _backend->get_factory (ic->impl->si->get_factory_uuid ());
+        if (sf && (sf->get_option () & SCIM_IME_SUPPORT_LANGUAGE_TOGGLE_KEY)) {
+            ret = false;
+        } else {
+            if (!ic->impl->is_on)
+                turn_on_ic (ic);
+            else
+                turn_off_ic (ic);
 
-        _display_input_language (ic);
-        ret = true;
+            _display_input_language (ic);
+            ret = true;
+        }
     } else if (hotkey_action == SCIM_FRONTEND_HOTKEY_ON) {
         if (!ic->impl->is_on) {
             turn_on_ic (ic);
