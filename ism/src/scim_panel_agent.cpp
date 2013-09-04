@@ -3399,9 +3399,6 @@ private:
                 m_pending_active_imcontrol_id = -1;
             }
 
-            if (const_cast<Socket &>(client).set_nonblock_mode () == -1)
-                std::cerr << __func__ << " client.set_nonblock_mode () is failed!!!\n";
-
             unlock ();
             return true;
         }

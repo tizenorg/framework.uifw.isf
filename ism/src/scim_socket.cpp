@@ -1405,7 +1405,8 @@ scim_socket_open_connection   (uint32       &key,
     trans.put_command (SCIM_TRANS_CMD_OPEN_CONNECTION);
     trans.put_data (String (SCIM_BINARY_VERSION));
     trans.put_data (client_type);
-
+    if (const_cast<Socket &>(socket).set_nonblock_mode () == -1)
+        std::cerr << __func__ << "set_nonblock_mode () is failed!!!\n";
     if (trans.write_to_socket (socket)) {
         int cmd;
         String server_types;
@@ -1440,7 +1441,8 @@ scim_socket_accept_connection (uint32       &key,
         return String ("");
 
     Transaction trans;
-
+    if (const_cast<Socket &>(socket).set_nonblock_mode () == -1)
+        std::cerr << __func__ << "set_nonblock_mode () is failed!!!\n";
     if (trans.read_from_socket (socket, timeout)) {
         int cmd;
         String version;

@@ -291,9 +291,6 @@ HelperAgent::open_connection (const HelperInfo &info,
         return -1;
     }
 
-    if (m_impl->socket_active.set_nonblock_mode () == -1)
-        std::cerr << __func__ << " socket_active.set_nonblock_mode () is failed!!!\n";
-
     m_impl->magic_active = magic;
 
     m_impl->send.clear ();
