@@ -437,6 +437,8 @@ void isf_imf_input_panel_shutdown (void)
             LOGD ("No hide timer\n");
     }
 
+    isf_imf_context_input_panel_send_candidate_will_hide_ack (_get_using_ic (ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_SHOW));
+
     if (_prop_change_handler) {
         ecore_event_handler_del (_prop_change_handler);
         _prop_change_handler = NULL;
