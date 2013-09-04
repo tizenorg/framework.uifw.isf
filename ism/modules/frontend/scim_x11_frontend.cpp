@@ -126,6 +126,7 @@ X11FrontEnd::X11FrontEnd (const BackEndPointer &backend,
       m_display (0),
       m_xims_window (0),
       m_server_name (server_name),
+      m_panel_client_id (0),
       m_focus_ic (0),
       m_xims_dynamic (true),
       m_wchar_ucs4_equal (scim_if_wchar_ucs4_equal ()),
@@ -429,8 +430,15 @@ X11FrontEnd::init (int argc, char **argv)
 
     SCIM_DEBUG_FRONTEND (1) << "X11 -- Connecting to panel daemon.\n";
 
-    if (m_panel_client.open_connection (m_config->get_name (), m_display_name) < 0)
+    if (m_panel_client.open_connection (m_config->get_name (), m_display_name) < 0) {
         throw FrontEndError (String ("X11 -- failed to connect to the panel daemon!"));
+    } else {
+        if (m_panel_client.get_client_id (m_panel_client_id)) {
+            m_panel_client.prepare (0);
+            m_panel_client.register_client (m_panel_client_id);
+            m_panel_client.send ();
+        }
+    }
 
     // Only use ComposeKeyFactory when it's enabled.
     if (validate_factory (SCIM_COMPOSE_KEY_FACTORY_UUID, "UTF-8"))
@@ -495,6 +503,12 @@ X11FrontEnd::run ()
                 FD_SET (xserver_fd, &active_fds);
 
                 if (m_panel_client.open_connection (m_config->get_name (), m_display_name) >= 0) {
+                    if (m_panel_client.get_client_id (m_panel_client_id)) {
+                        m_panel_client.prepare (0);
+                        m_panel_client.register_client (m_panel_client_id);
+                        m_panel_client.send ();
+                    }
+
                     panel_fd = m_panel_client.get_connection_number ();
                     FD_SET (panel_fd, &active_fds);
                     max_fd = (panel_fd > xserver_fd) ? panel_fd : xserver_fd;
@@ -1347,7 +1361,7 @@ X11FrontEnd::ims_preedit_callback_draw (X11IC *ic, const WideString& str, const 
     pcb.major_code = XIM_PREEDIT_DRAW;
     pcb.connect_id = ic->connect_id;
     pcb.icid = ic->icid;
-    if (caret>=0 && caret <= len)
+    if (caret >= 0 && caret <= (int)len)
         pcb.todo.draw.caret = len;
     else
         pcb.todo.draw.caret = caret;
@@ -1867,13 +1881,13 @@ void
 X11FrontEnd::panel_slot_update_preedit_string (int context,
                                   const WideString    &str,
                                   const AttributeList &attrs,
-                                  int            caret)
+                                  int                  caret)
 {
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
 
     X11IC *ic = m_ic_manager.find_ic (context);
     if (validate_ic (ic)) {
-        update_preedit_string(ic->siid,str,attrs,caret);
+        update_preedit_string (ic->siid, str, attrs, caret);
     }
 }
 

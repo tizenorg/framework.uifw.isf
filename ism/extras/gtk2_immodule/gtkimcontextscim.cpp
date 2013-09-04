@@ -213,7 +213,7 @@ static void     panel_slot_hide_preedit_string          (int                    
 static void     panel_slot_update_preedit_string        (int                     context,
                                                          const WideString       &str,
                                                          const AttributeList    &attrs,
-                                                         int   caret);
+                                                         int                     caret);
 
 static void     panel_req_focus_in                      (GtkIMContextSCIM       *ic);
 static void     panel_req_update_screen                 (GtkIMContextSCIM       *ic);
@@ -268,7 +268,7 @@ static void     slot_update_preedit_caret               (IMEngineInstanceBase   
 static void     slot_update_preedit_string              (IMEngineInstanceBase   *si,
                                                          const WideString       &str,
                                                          const AttributeList    &attrs
-                                                         int               caret);
+                                                         int                     caret);
 static void     slot_update_aux_string                  (IMEngineInstanceBase   *si,
                                                          const WideString       &str,
                                                          const AttributeList    &attrs);
@@ -349,6 +349,7 @@ static IMEngineFactoryPointer                           _fallback_factory;
 static IMEngineInstancePointer                          _fallback_instance;
 
 static PanelClient                                      _panel_client;
+static int                                              _panel_client_id            = 0;
 
 static GIOChannel                                      *_panel_iochannel            = 0;
 static guint                                            _panel_iochannel_read_source= 0;
@@ -1636,7 +1637,7 @@ panel_slot_update_preedit_string (int context,
                     ic->impl->preedit_started = true;
                     ic->impl->need_commit_preedit = true;
                 }
-                if(caret >= 0 && caret <= str.length ())
+                if (caret >= 0 && caret <= str.length ())
                     ic->impl->preedit_caret = caret;
                 else
                     ic->impl->preedit_caret = str.length ();
@@ -1799,6 +1800,12 @@ panel_initialize ()
     SCIM_DEBUG_FRONTEND(1) << "panel_initialize..\n";
 
     if (_panel_client.open_connection (_config->get_name (), display_name) >= 0) {
+        if (_panel_client.get_client_id (_panel_client_id)) {
+            _panel_client.prepare (0);
+            _panel_client.register_client (_panel_client_id);
+            _panel_client.send ();
+        }
+
         int fd = _panel_client.get_connection_number ();
         _panel_iochannel = g_io_channel_unix_new (fd);
 
@@ -1822,9 +1829,9 @@ panel_initialize ()
         }
 
         if (_focused_ic) {
-            _panel_client.prepare (_focused_ic->id);
-            panel_req_focus_in (_focused_ic);
-            _panel_client.send ();
+            context_scim = _focused_ic;
+            _focused_ic = 0;
+            gtk_im_context_scim_focus_in (GTK_IM_CONTEXT (context_scim));
         }
 
         return true;
@@ -2642,7 +2649,7 @@ slot_update_preedit_string (IMEngineInstanceBase *si,
                 g_signal_emit_by_name(_focused_ic, "preedit-start");
                 ic->impl->preedit_started = true;
             }
-            if(caret >= 0 && caret <= str.length ())
+            if (caret >= 0 && caret <= str.length ())
                 ic->impl->preedit_caret = caret;
             else
                 ic->impl->preedit_caret = str.length ();
