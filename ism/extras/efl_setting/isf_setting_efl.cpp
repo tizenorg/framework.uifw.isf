@@ -1309,7 +1309,6 @@ static void load_config_data (ConfigPointer config)
         _auto_full_stop = EINA_TRUE;
 }
 
-ConfigPointer isf_imf_context_get_config (void);
 static void load_config_module (void)
 {
     _config = ConfigBase::get (true, "socket");
@@ -1601,7 +1600,6 @@ static void on_destroy (ui_gadget_h ug, service_h s, void *priv)
         _config->flush ();
         _config.reset ();
     }
-    ConfigBase::set (0);
 
     for (int i = 0; i < ITEM_TOTAL_COUNT; i++) {
         if (_p_items[i] != NULL) {

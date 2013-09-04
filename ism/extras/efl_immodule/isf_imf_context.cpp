@@ -324,11 +324,6 @@ public:
 
 static FinalizeHandler                                  _finalize_handler;
 
-EAPI ConfigPointer isf_imf_context_get_config (void)
-{
-    return _config;
-}
-
 EAPI EcoreIMFContextISF *
 get_focused_ic ()
 {
