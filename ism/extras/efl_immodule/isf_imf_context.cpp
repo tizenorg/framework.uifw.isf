@@ -2887,7 +2887,7 @@ initialize (void)
     }
 
     if (_config.null ()) {
-        SECURE_LOGD ("Config module cannot be loaded, using dummy Config. pid : %d\n", getpid ());
+        LOGD ("Config module cannot be loaded, using dummy Config.\n");
         _config = new DummyConfig ();
         config_module_name = "dummy";
     }
