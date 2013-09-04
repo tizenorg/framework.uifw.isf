@@ -131,7 +131,6 @@ static std::vector <String>         _setup_modules;
 static String                       _mdl_name;
 
 static SetupModule                 *_mdl                      = NULL;
-static Ecore_IMF_Context           *_imf_context              = NULL;
 
 static Eina_Bool                    _auto_capitalisation      = EINA_FALSE;
 static Eina_Bool                    _auto_full_stop           = EINA_FALSE;
@@ -1313,7 +1312,7 @@ static void load_config_data (ConfigPointer config)
 ConfigPointer isf_imf_context_get_config (void);
 static void load_config_module (void)
 {
-    _config = isf_imf_context_get_config ();
+    _config = ConfigBase::get (true, "socket");
     if (_config.null ()) {
         std::cerr << "Create dummy config!!!\n";
         _config = new DummyConfig ();
@@ -1512,13 +1511,6 @@ static void *on_create (ui_gadget_h ug, enum ug_mode mode, service_h s, void *pr
     if (parent == NULL)
         return NULL;
 
-    if (_imf_context == NULL) {
-        const char *ctx_id = ecore_imf_context_default_id_get ();
-        if (ctx_id) {
-            _imf_context = ecore_imf_context_add (ctx_id);
-        }
-    }
-
     load_config_module ();
     load_config_data (_config);
     scim_get_setup_module_list (_setup_modules);
@@ -1588,11 +1580,6 @@ static void on_destroy (ui_gadget_h ug, service_h s, void *priv)
     if (ug == NULL || priv == NULL)
         return;
 
-    if (_imf_context != NULL) {
-        ecore_imf_context_del (_imf_context);
-        _imf_context = NULL;
-    }
-
     struct ug_data *ugd = (struct ug_data *) priv;
 
     if (ugd->naviframe != NULL) {
@@ -1614,6 +1601,7 @@ static void on_destroy (ui_gadget_h ug, service_h s, void *priv)
         _config->flush ();
         _config.reset ();
     }
+    ConfigBase::set (0);
 
     for (int i = 0; i < ITEM_TOTAL_COUNT; i++) {
         if (_p_items[i] != NULL) {
@@ -1738,13 +1726,6 @@ extern "C"
         if (vconf_set_bool (VCONFKEY_AUTOPERIOD_ALLOW_BOOL, false) == -1)
             return -1;
 
-        if (_imf_context == NULL) {
-            const char *ctx_id = ecore_imf_context_default_id_get ();
-            if (ctx_id) {
-                _imf_context = ecore_imf_context_add (ctx_id);
-            }
-        }
-
         load_config_module ();
         isf_load_ise_information (ALL_ISE, _config);
 
@@ -1823,10 +1804,6 @@ extern "C"
 
         helper_ise_reload_config ();
 
-        if (_imf_context != NULL) {
-            ecore_imf_context_del (_imf_context);
-            _imf_context = NULL;
-        }
         return 0;
     }
 

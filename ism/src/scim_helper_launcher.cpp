@@ -170,13 +170,7 @@ int main (int argc, char *argv [])
         return -1;
     }
 
-    ConfigModule config_module (config);
-
-    ConfigPointer config_pointer;
-
-    if (config_module.valid ()) {
-        config_pointer = config_module.create_config ();
-    }
+    ConfigPointer config_pointer = ConfigBase::get (true, config);
 
     if (config_pointer.null ()) {
         config_pointer = new DummyConfig ();
@@ -190,7 +184,7 @@ int main (int argc, char *argv [])
 
     if (!config_pointer.null ())
         config_pointer.reset ();
-
+    ConfigBase::set (0);
     snprintf (buf, sizeof (buf), "time:%ld  pid:%d  %s  %s  Helper ISE (%s) is destroyed!!!\n",
         time (0), getpid (), __FILE__, __func__, uuid.c_str ());
     isf_save_log (buf);

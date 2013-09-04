@@ -253,8 +253,8 @@ static IMEngineHotkeyMatcher                            _imengine_hotkey_matcher
 
 static IMEngineInstancePointer                          _default_instance;
 
-static ConfigModule                                    *_config_module              = 0;
 static ConfigPointer                                    _config;
+static Connection                                       _config_connection;
 static BackEndPointer                                   _backend;
 
 static EcoreIMFContextISF                              *_focused_ic                 = 0;
@@ -2888,27 +2888,17 @@ initialize (void)
     }
 
     if (config_module_name != "dummy") {
-        //load config module
-        SCIM_DEBUG_FRONTEND(1) << "Loading Config module: " << config_module_name << "...\n";
-        _config_module = new ConfigModule (config_module_name);
-
-        //create config instance
-        if (_config_module != NULL && _config_module->valid ())
-            _config = _config_module->create_config ();
+        _config = ConfigBase::get (true, config_module_name);
     }
 
     if (_config.null ()) {
-        SCIM_DEBUG_FRONTEND(1) << "Config module cannot be loaded, using dummy Config.\n";
-
-        if (_config_module) delete _config_module;
-        _config_module = NULL;
-
+        SECURE_LOGD ("Config module cannot be loaded, using dummy Config. pid : %d\n", getpid ());
         _config = new DummyConfig ();
         config_module_name = "dummy";
     }
 
     reload_config_callback (_config);
-    _config->signal_connect_reload (slot (reload_config_callback));
+    _config_connection = _config->signal_connect_reload (slot (reload_config_callback));
 
     // create backend
     _backend = new CommonBackEnd (_config, load_engine_list.size () > 0 ? load_engine_list : engine_list);
@@ -2991,13 +2981,8 @@ finalize (void)
 
     SCIM_DEBUG_FRONTEND(2) << " Releasing Config...\n";
     _config.reset ();
-
-    if (_config_module) {
-        SCIM_DEBUG_FRONTEND(2) << " Deleting _config_module...\n";
-        delete _config_module;
-        _config_module = 0;
-    }
-
+    _config_connection.disconnect ();
+    ConfigBase::set (0);
     _focused_ic = NULL;
     _ic_list = NULL;
 
