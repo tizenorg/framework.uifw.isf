@@ -60,6 +60,7 @@ class EAPI X11FrontEnd : public FrontEndBase
     String                  m_display_name;
 
     PanelClient             m_panel_client;
+    int                     m_panel_client_id;
 
     X11IC                  *m_focus_ic;
 
@@ -210,7 +211,7 @@ private:
     void panel_slot_select_aux (int context,int aux_index);
     void panel_slot_show_preedit_string (int context);
     void panel_slot_hide_preedit_string (int context);
-    void panel_slot_update_preedit_string (int context,const WideString &str,const AttributeList &attrs,int caret);
+    void panel_slot_update_preedit_string (int context, const WideString &str, const AttributeList &attrs, int caret);
 
     void panel_req_update_screen (const X11IC *ic);
     void panel_req_show_help (const X11IC *ic);
