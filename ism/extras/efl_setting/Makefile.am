@@ -44,6 +44,5 @@ libug_isfsetting_efl_la_LIBADD  =  @LIBTOOL_EXPORT_OPTIONS@ \
                                    @UIGADGET_LIBS@ \
                                    @PKGMGR_INFO_LIBS@ \
                                    @EFL_ASSIST_LIBS@ \
-                                   $(top_builddir)/ism/src/libscim@SCIM_EPOCH@.la \
-                                   $(top_builddir)/ism/extras/efl_immodule/libisf-imf-module.la
+                                   $(top_builddir)/ism/src/libscim@SCIM_EPOCH@.la
 
