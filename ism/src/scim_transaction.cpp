@@ -431,7 +431,7 @@ Transaction::put_data (const LookupTable &table)
     unsigned char stat = 0;
     size_t i;
 
-    m_holder->request_buffer_size (4);
+    m_holder->request_buffer_size (6);
 
     //Can be page up.
     if (table.get_current_page_start ())
@@ -452,9 +452,10 @@ Transaction::put_data (const LookupTable &table)
 
     m_holder->m_buffer [m_holder->m_write_pos++] = (unsigned char) SCIM_TRANS_DATA_LOOKUP_TABLE;
     m_holder->m_buffer [m_holder->m_write_pos++] = stat;
-    m_holder->m_buffer [m_holder->m_write_pos++] = (unsigned char) table.get_current_page_size ();
-    m_holder->m_buffer [m_holder->m_write_pos++] = (unsigned char) table.get_cursor_pos_in_current_page ();
-
+    scim_uint16tobytes (m_holder->m_buffer + m_holder->m_write_pos, (uint16) table.get_current_page_size ());
+    m_holder->m_write_pos += sizeof (uint16);
+    scim_uint16tobytes (m_holder->m_buffer + m_holder->m_write_pos, (uint16) table.get_cursor_pos_in_current_page ());
+    m_holder->m_write_pos += sizeof (uint16);
     // Store page labels.
     for (i = 0; i < ((uint32)table.get_current_page_size ()); ++i)
         put_data (table.get_candidate_label (i));
@@ -1066,7 +1067,7 @@ TransactionReader::get_data (CommonLookupTable &table)
 
         std::vector<WideString> labels;
 
-        if (m_impl->m_holder->m_write_pos < (m_impl->m_read_pos + 4))
+        if (m_impl->m_holder->m_write_pos < (m_impl->m_read_pos + 6))
             return false;
 
         table.clear ();
@@ -1076,11 +1077,11 @@ TransactionReader::get_data (CommonLookupTable &table)
         stat = m_impl->m_holder->m_buffer [m_impl->m_read_pos];
         m_impl->m_read_pos ++;
 
-        page_size = (uint32) m_impl->m_holder->m_buffer [m_impl->m_read_pos];
-        m_impl->m_read_pos ++;
+        page_size = (uint32)scim_bytestouint16 (m_impl->m_holder->m_buffer + m_impl->m_read_pos);
+        m_impl->m_read_pos += sizeof (uint16);
 
-        cursor_pos = (uint32) m_impl->m_holder->m_buffer [m_impl->m_read_pos];
-        m_impl->m_read_pos ++;
+        cursor_pos = (uint32)scim_bytestouint16 (m_impl->m_holder->m_buffer + m_impl->m_read_pos);
+        m_impl->m_read_pos += sizeof (uint16);
 
         if (page_size > SCIM_LOOKUP_TABLE_MAX_PAGESIZE ||
             (cursor_pos >= page_size && page_size > 0)) {
