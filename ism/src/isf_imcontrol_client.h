@@ -56,7 +56,6 @@ public:
     void get_ise_info (const char* uuid, String &name, String &language, int &type, int &option);
     void reset_ise_option (void);
     void set_active_ise_to_default (void);
-    void send_candidate_will_hide_ack (void);
 };
 
 }
