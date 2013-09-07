@@ -199,6 +199,9 @@ typedef Slot3<void, const HelperAgent *, int, char **>
 typedef Slot2<void, const HelperAgent *, const std::vector<uint32> &>
         HelperAgentSlotUintVector;
 
+typedef Slot2<void, const HelperAgent *, LookupTable &>
+        HelperAgentSlotLookupTable;
+
 /**
  * @brief The accessory class to write a Helper object.
  *
@@ -562,6 +565,11 @@ public:
      * @brief Request to contract candidate window.
      */
     void contract_candidate       (void) const;
+
+    /**
+     * @brief Send selected candidate string index number.
+     */
+    void select_candidate         (int index) const;
 
     /**
      * @brief Update ise exit status
@@ -949,6 +957,36 @@ public:
      * void candidate_more_window_hide (const HelperAgent *agent, int ic, const String &uuid);
      */
     Connection signal_connect_candidate_more_window_hide        (HelperAgentSlotVoid                *slot);
+
+    /**
+     * @brief Connect a slot to Helper candidate show signal.
+     *
+     * This signal is used to do candidate show.
+     *
+     * The prototype of the slot is:
+     * void candidate_show (const HelperAgent *agent, int ic, const String &uuid);
+     */
+    Connection signal_connect_candidate_show                    (HelperAgentSlotVoid                *slot);
+
+    /**
+     * @brief Connect a slot to Helper candidate hide signal.
+     *
+     * This signal is used to do candidate hide.
+     *
+     * The prototype of the slot is:
+     * void candidate_hide (const HelperAgent *agent,int ic, const String &uuid);
+     */
+    Connection signal_connect_candidate_hide                    (HelperAgentSlotVoid                *slot);
+
+    /**
+     * @brief Connect a slot to Helper update lookup table signal.
+     *
+     * This signal is used to do someting when update lookup table.
+     *
+     * The prototype of the slot is:
+     * void update_lookup_table (const HelperAgent *agent, int ic, const String &uuid, LookupTable &Table);
+     */
+    Connection signal_connect_update_lookup_table               (HelperAgentSlotLookupTable          *slot);
 
     /**
      * @brief Connect a slot to Helper select aux signal.

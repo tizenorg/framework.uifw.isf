@@ -157,6 +157,7 @@ static void       slot_update_preedit_string           (const String &str, const
 static void       slot_update_preedit_caret            (int caret);
 static void       slot_update_aux_string               (const String &str, const AttributeList &attrs);
 static void       slot_update_candidate_table          (const LookupTable &table);
+static void       slot_select_candidate                (int index);
 static void       slot_set_active_ise                  (const String &uuid, bool changeDefault);
 static bool       slot_get_ise_list                    (std::vector<String> &list);
 static bool       slot_get_ise_information             (String uuid, String &name, String &language, int &type, int &option);
@@ -2386,6 +2387,7 @@ static bool initialize_panel_agent (const String &config, const String &display,
     _panel_agent->signal_connect_update_preedit_caret       (slot (slot_update_preedit_caret));
     _panel_agent->signal_connect_update_aux_string          (slot (slot_update_aux_string));
     _panel_agent->signal_connect_update_lookup_table        (slot (slot_update_candidate_table));
+    _panel_agent->signal_connect_select_candidate           (slot (slot_select_candidate));
     _panel_agent->signal_connect_get_candidate_geometry     (slot (slot_get_candidate_geometry));
     _panel_agent->signal_connect_get_input_panel_geometry   (slot (slot_get_input_panel_geometry));
     _panel_agent->signal_connect_set_active_ise_by_uuid     (slot (slot_set_active_ise));
@@ -2454,6 +2456,8 @@ static void slot_focus_out (void)
 static void slot_expand_candidate (void)
 {
     SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
+    if (_candidate_mode == SOFT_CANDIDATE_WINDOW)
+        return;
 
     if (_candidate_area_2 && !evas_object_visible_get (_candidate_area_2))
         ui_candidate_window_more_button_cb (NULL, NULL, NULL, NULL);
@@ -2465,6 +2469,9 @@ static void slot_expand_candidate (void)
 static void slot_contract_candidate (void)
 {
     SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
+
+    if (_candidate_mode == SOFT_CANDIDATE_WINDOW)
+        return;
 
     ui_candidate_window_close_button_cb (NULL, NULL, NULL, NULL);
 }
@@ -2481,6 +2488,14 @@ static void slot_set_candidate_style (int portrait_line, int mode)
     if ((portrait_line != _candidate_port_line) || (mode != _candidate_mode)) {
         _candidate_mode      = (ISF_CANDIDATE_MODE_T)mode;
         _candidate_port_line = (ISF_CANDIDATE_PORTRAIT_LINE_T)portrait_line;
+
+        if (_candidate_mode == SOFT_CANDIDATE_WINDOW) {
+            if (_candidate_window)
+                ui_destroy_candidate_window ();
+
+            return;
+        }
+
         if (_candidate_window)
             ui_create_candidate_window ();
     }
@@ -2642,9 +2657,14 @@ static void slot_show_aux_string (void)
  */
 static void slot_show_candidate_table (void)
 {
-    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
     int feedback_result = 0;
 
+    if (_candidate_mode == SOFT_CANDIDATE_WINDOW) {
+        _panel_agent->helper_candidate_show ();
+        return;
+    }
+
+    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
     if (_candidate_window == NULL)
         ui_create_candidate_window ();
 
@@ -2710,6 +2730,11 @@ static void slot_hide_candidate_table (void)
     SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
 
     int feedback_result = 0;
+
+    if (_candidate_mode == SOFT_CANDIDATE_WINDOW) {
+        _panel_agent->helper_candidate_hide ();
+        return;
+    }
 
     if (!_candidate_area_1)
         return;
@@ -3218,6 +3243,12 @@ static void update_table (int table_type, const LookupTable &table)
 static void slot_update_candidate_table (const LookupTable &table)
 {
     SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
+
+    if (_candidate_mode == SOFT_CANDIDATE_WINDOW){
+        _panel_agent->update_helper_lookup_table (table);
+        return ;
+    }
+
     if (_candidate_window == NULL)
         ui_create_candidate_window ();
 
@@ -3225,6 +3256,17 @@ static void slot_update_candidate_table (const LookupTable &table)
         return;
 
     update_table (ISF_CANDIDATE_TABLE, table);
+}
+
+/**
+ * @brief Send selected candidate index.
+ *
+ * @param selected candidate string index number.
+ */
+static void slot_select_candidate (int index)
+{
+    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
+    _panel_agent->select_candidate (index);
 }
 
 /**
@@ -3238,6 +3280,15 @@ static void slot_get_candidate_geometry (struct rectinfo &info)
     int y      = 0;
     int width  = 0;
     int height = 0;
+
+    if (_candidate_mode == SOFT_CANDIDATE_WINDOW) {
+        info.pos_x  = x;
+        info.pos_y  = y;
+        info.width  = width;
+        info.height = height;
+        return;
+    }
+
     if (!_candidate_will_hide) {
         if (_candidate_window && evas_object_visible_get (_candidate_window)) {
             /* Get candidate window position */

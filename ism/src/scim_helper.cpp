@@ -50,6 +50,8 @@
 #include "scim_private.h"
 #include "scim.h"
 
+EAPI scim::CommonLookupTable g_helper_candidate_table;
+
 namespace scim {
 
 typedef Signal3<void, const HelperAgent *, int, const String &>
@@ -100,6 +102,9 @@ typedef Signal3 <void, const HelperAgent *, int, char **>
 typedef Signal2<void, const HelperAgent *, const std::vector<uint32> &>
         HelperAgentSignalUintVector;
 
+typedef Signal2<void, const HelperAgent *, LookupTable &>
+        HelperAgentSignalLookupTable;
+
 class HelperAgent::HelperAgentImpl
 {
 public:
@@ -126,6 +131,8 @@ public:
     HelperAgentSignalVoid           signal_focus_in;
     HelperAgentSignalIntRawVoid     signal_ise_show;
     HelperAgentSignalVoid           signal_ise_hide;
+    HelperAgentSignalVoid           signal_candidate_show;
+    HelperAgentSignalVoid           signal_candidate_hide;
     HelperAgentSignalSize           signal_get_geometry;
     HelperAgentSignalUintVoid       signal_set_mode;
     HelperAgentSignalUintVoid       signal_set_language;
@@ -146,6 +153,7 @@ public:
     HelperAgentSignalStringVector       signal_update_keyboard_ise_list;
     HelperAgentSignalVoid               signal_candidate_more_window_show;
     HelperAgentSignalVoid               signal_candidate_more_window_hide;
+    HelperAgentSignalLookupTable        signal_update_lookup_table;
     HelperAgentSignalInt                signal_select_aux;
     HelperAgentSignalInt                signal_select_candidate;
     HelperAgentSignalVoid               signal_candidate_table_page_up;
@@ -712,6 +720,22 @@ HelperAgent::filter_event ()
                 uint32 size;
                 if (m_impl->recv.get_data (size))
                     m_impl->signal_update_candidate_table_page_size (this, ic, ic_uuid, size);
+                break;
+            }
+            case ISM_TRANS_CMD_CANDIDATE_SHOW:
+            {
+                m_impl->signal_candidate_show (this, ic, ic_uuid);
+                break;
+            }
+            case ISM_TRANS_CMD_CANDIDATE_HIDE:
+            {
+                m_impl->signal_candidate_hide (this, ic, ic_uuid);
+                break;
+            }
+            case ISM_TRANS_CMD_UPDATE_LOOKUP_TABLE:
+            {
+                if (m_impl->recv.get_data (g_helper_candidate_table))
+                    m_impl->signal_update_lookup_table (this, g_helper_candidate_table);
                 break;
             }
             case ISM_TRANS_CMD_UPDATE_CANDIDATE_ITEM_LAYOUT:
@@ -1461,6 +1485,22 @@ HelperAgent::contract_candidate (void) const
 }
 
 /**
+ * @brief Send selected candidate string index number.
+ */
+void
+HelperAgent::select_candidate (int index) const
+{
+    if (m_impl->socket_active.is_connected ()) {
+        m_impl->send.clear ();
+        m_impl->send.put_command (SCIM_TRANS_CMD_REQUEST);
+        m_impl->send.put_data (m_impl->magic_active);
+        m_impl->send.put_command (ISM_TRANS_CMD_SELECT_CANDIDATE);
+        m_impl->send.put_data (index);
+        m_impl->send.write_to_socket (m_impl->socket_active, m_impl->magic_active);
+    }
+}
+
+/**
  * @brief Update our ISE is exiting.
  */
 void
@@ -1980,6 +2020,48 @@ Connection
 HelperAgent::signal_connect_candidate_more_window_hide (HelperAgentSlotVoid *slot)
 {
     return m_impl->signal_candidate_more_window_hide.connect (slot);
+}
+
+/**
+ * @brief Connect a slot to Helper candidate show signal.
+ *
+ * This signal is used to do candidate show.
+ *
+ * The prototype of the slot is:
+ * void candidate_show (const HelperAgent *agent, int ic, const String &uuid);
+ */
+Connection
+HelperAgent::signal_connect_candidate_show (HelperAgentSlotVoid *slot)
+{
+    return m_impl->signal_candidate_show.connect (slot);
+}
+
+/**
+ * @brief Connect a slot to Helper candidate hide signal.
+ *
+ * This signal is used to do candidate hide.
+ *
+ * The prototype of the slot is:
+ * void candidate_hide (const HelperAgent *agent, int ic, const String &uuid);
+ */
+Connection
+HelperAgent::signal_connect_candidate_hide (HelperAgentSlotVoid *slot)
+{
+    return m_impl->signal_candidate_hide.connect (slot);
+}
+
+/**
+ * @brief Connect a slot to Helper update lookup table signal.
+ *
+ * This signal is used to do someting when update lookup table.
+ *
+ * The prototype of the slot is:
+ * void update_lookup_table (const HelperAgent *agent, int ic, const String &uuid ,LookupTable &table);
+ */
+Connection
+HelperAgent::signal_connect_update_lookup_table (HelperAgentSlotLookupTable *slot)
+{
+    return m_impl->signal_update_lookup_table.connect (slot);
 }
 
 /**

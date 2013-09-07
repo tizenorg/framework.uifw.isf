@@ -665,12 +665,16 @@ const int ISM_TRANS_CMD_UPDATE_ISE_GEOMETRY               = 1213;
 const int ISM_TRANS_CMD_EXPAND_CANDIDATE                  = 1214;
 const int ISM_TRANS_CMD_CONTRACT_CANDIDATE                = 1215;
 const int ISM_TRANS_CMD_UPDATE_ISE_EXIT                   = 1216;
+const int ISM_TRANS_CMD_SELECT_CANDIDATE                  = 1217;
 
 /* Panel to ISE */
 const int ISM_TRANS_CMD_CANDIDATE_MORE_WINDOW_SHOW        = 1251;
 const int ISM_TRANS_CMD_CANDIDATE_MORE_WINDOW_HIDE        = 1252;
 const int ISM_TRANS_CMD_UPDATE_DISPLAYED_CANDIDATE        = 1253;
 const int ISM_TRANS_CMD_LONGPRESS_CANDIDATE               = 1254;
+const int ISM_TRANS_CMD_UPDATE_LOOKUP_TABLE               = 1255;
+const int ISM_TRANS_CMD_CANDIDATE_SHOW                    = 1256;
+const int ISM_TRANS_CMD_CANDIDATE_HIDE                    = 1257;
 
 const int ISM_TRANS_CMD_TURN_ON_LOG                       = 1301;
 

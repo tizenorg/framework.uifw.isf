@@ -476,6 +476,24 @@ public:
     bool candidate_more_window_hide     (void);
 
     /**
+     * @brief Notice Helper ISE that show candidate.
+     * @return true if the command was sent correctly.
+     */
+    bool helper_candidate_show     (void);
+
+    /**
+     * @brief Notice Helper ISE that hide candidate.
+     * @return true if the command was sent correctly.
+     */
+    bool helper_candidate_hide     (void);
+
+    /**
+     * @brief Update helper lookup table.
+     * @return true if the command was sent correctly.
+     */
+    bool update_helper_lookup_table     (const LookupTable &table);
+
+    /**
      * @brief Let the focused IMEngineInstance object
      *        select a aux in current aux string.
      *
@@ -990,6 +1008,13 @@ public:
      * slot prototype: void contract_candidate (void);
      */
     Connection signal_connect_contract_candidate         (PanelAgentSlotVoid                *slot);
+
+    /**
+     * @brief Signal: Select candidate string index.
+     *
+     * slot prototype: void select_candidate (int index);
+     */
+    Connection signal_connect_select_candidate           (PanelAgentSlotInt                 *slot);
 
     /**
      * @brief Signal: Get the list of ise name.

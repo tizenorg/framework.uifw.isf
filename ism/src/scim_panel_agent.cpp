@@ -337,6 +337,7 @@ class PanelAgent::PanelAgentImpl
     PanelAgentSignalVoid                m_signal_focus_out;
     PanelAgentSignalVoid                m_signal_expand_candidate;
     PanelAgentSignalVoid                m_signal_contract_candidate;
+    PanelAgentSignalInt                 m_signal_select_candidate;
     PanelAgentSignalBoolStringVector    m_signal_get_ise_list;
     PanelAgentSignalBoolString3int2     m_signal_get_ise_information;
     PanelAgentSignalBoolStringVector    m_signal_get_keyboard_ise_list;
@@ -695,6 +696,66 @@ public:
         return client >= 0;
     }
 
+    bool helper_candidate_show (void)
+    {
+        SCIM_DEBUG_MAIN(4) << __FUNCTION__ << "...\n";
+
+        int    client;
+        uint32 context;
+
+        get_focused_context (client, context);
+
+        if (TOOLBAR_HELPER_MODE == m_current_toolbar_mode) {
+            HelperClientIndex::iterator it = m_helper_client_index.find (m_current_helper_uuid);
+
+            if (it != m_helper_client_index.end ()) {
+                Socket client_socket (it->second.id);
+                uint32 ctx = get_helper_ic (client, context);
+
+                m_send_trans.clear ();
+                m_send_trans.put_command (SCIM_TRANS_CMD_REPLY);
+                m_send_trans.put_data (ctx);
+                m_send_trans.put_data (m_current_helper_uuid);
+                m_send_trans.put_command (ISM_TRANS_CMD_CANDIDATE_SHOW);
+                m_send_trans.write_to_socket (client_socket);
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    bool helper_candidate_hide (void)
+    {
+        SCIM_DEBUG_MAIN(4) << __FUNCTION__ << "...\n";
+
+        int    client;
+        uint32 context;
+
+        get_focused_context (client, context);
+
+        if (TOOLBAR_HELPER_MODE == m_current_toolbar_mode) {
+            HelperClientIndex::iterator it = m_helper_client_index.find (m_current_helper_uuid);
+
+            if (it != m_helper_client_index.end ()) {
+                Socket client_socket (it->second.id);
+                uint32 ctx = get_helper_ic (client, context);
+
+                m_send_trans.clear ();
+                m_send_trans.put_command (SCIM_TRANS_CMD_REPLY);
+                m_send_trans.put_data (ctx);
+                m_send_trans.put_data (m_current_helper_uuid);
+                m_send_trans.put_command (ISM_TRANS_CMD_CANDIDATE_HIDE);
+                m_send_trans.write_to_socket (client_socket);
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     bool candidate_more_window_show (void)
     {
         SCIM_DEBUG_MAIN(4) << __FUNCTION__ << "...\n";
@@ -771,6 +832,36 @@ public:
 
                     return true;
                 }
+            }
+        }
+
+        return false;
+    }
+
+    bool update_helper_lookup_table (const LookupTable &table)
+    {
+        int    client;
+        uint32 context;
+
+        if (TOOLBAR_HELPER_MODE == m_current_toolbar_mode) {
+            HelperClientIndex::iterator it = m_helper_client_index.find (m_current_helper_uuid);
+
+            if (it != m_helper_client_index.end ()) {
+                Socket client_socket (it->second.id);
+                uint32 ctx;
+
+                get_focused_context (client, context);
+                ctx = get_helper_ic (client, context);
+
+                m_send_trans.clear ();
+                m_send_trans.put_command (SCIM_TRANS_CMD_REPLY);
+                m_send_trans.put_data (ctx);
+                m_send_trans.put_data (m_current_helper_uuid);
+                m_send_trans.put_command (ISM_TRANS_CMD_UPDATE_LOOKUP_TABLE);
+                m_send_trans.put_data (table);
+                m_send_trans.write_to_socket (client_socket);
+
+                return true;
             }
         }
 
@@ -2771,6 +2862,11 @@ public:
         return m_signal_contract_candidate.connect (slot);
     }
 
+    Connection signal_connect_select_candidate           (PanelAgentSlotInt                    *slot)
+    {
+        return m_signal_select_candidate.connect (slot);
+    }
+
     Connection signal_connect_get_ise_list               (PanelAgentSlotBoolStringVector       *slot)
     {
         return m_signal_get_ise_list.connect (slot);
@@ -3346,6 +3442,8 @@ private:
                     socket_helper_expand_candidate (client_id);
                 } else if (cmd == ISM_TRANS_CMD_CONTRACT_CANDIDATE) {
                     socket_helper_contract_candidate (client_id);
+                } else if (cmd == ISM_TRANS_CMD_SELECT_CANDIDATE) {
+                    socket_helper_select_candidate ();
                 } else if (cmd == SCIM_TRANS_CMD_GET_SURROUNDING_TEXT) {
                     socket_helper_get_surrounding_text (client_id);
                 } else if (cmd == SCIM_TRANS_CMD_DELETE_SURROUNDING_TEXT) {
@@ -4064,6 +4162,15 @@ private:
         String uuid;
         if (m_recv_trans.get_data (uuid))
             m_signal_set_keyboard_ise (uuid);
+    }
+
+    void socket_helper_select_candidate (void)
+    {
+        SCIM_DEBUG_MAIN(4) << "PanelAgent::socket_set_keyboard_ise ()\n";
+
+        uint32 index;
+        if (m_recv_trans.get_data (index))
+            m_signal_select_candidate (index);
     }
 
     void socket_helper_update_ise_geometry (int client)
@@ -5460,6 +5567,18 @@ PanelAgent::change_factory                 (const String  &uuid)
 }
 
 bool
+PanelAgent::helper_candidate_show          (void)
+{
+    return m_impl->helper_candidate_show ();
+}
+
+bool
+PanelAgent::helper_candidate_hide          (void)
+{
+    return m_impl->helper_candidate_hide ();
+}
+
+bool
 PanelAgent::candidate_more_window_show     (void)
 {
     return m_impl->candidate_more_window_show ();
@@ -5469,6 +5588,12 @@ bool
 PanelAgent::candidate_more_window_hide     (void)
 {
     return m_impl->candidate_more_window_hide ();
+}
+
+bool
+PanelAgent::update_helper_lookup_table     (const LookupTable &table)
+{
+    return m_impl->update_helper_lookup_table (table);
 }
 
 bool
@@ -5902,6 +6027,12 @@ Connection
 PanelAgent::signal_connect_contract_candidate         (PanelAgentSlotVoid                *slot)
 {
     return m_impl->signal_connect_contract_candidate (slot);
+}
+
+Connection
+PanelAgent::signal_connect_select_candidate           (PanelAgentSlotInt                 *slot)
+{
+    return m_impl->signal_connect_select_candidate (slot);
 }
 
 Connection

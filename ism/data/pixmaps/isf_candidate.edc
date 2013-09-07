@@ -218,6 +218,87 @@ collections {
         }
     }
 
+    group { name: "soft_candidate";
+        images {
+            image: BUTTON_NORMAL_BG COMP;
+            image: BUTTON_PRESS_BG COMP;
+        }
+
+        parts {
+            part { name: "bg";
+                type: RECT;
+                mouse_events: 1;
+                description { state: "default" 0.0;
+                    rel1.relative: 0.0 0.0;
+                    rel2.relative: 1.0 1.0;
+                    color_class: "rect_color";
+                }
+                description { state: "pressed" 0.0;
+                    rel1.relative: 0.0 0.0;
+                    rel2.relative: 1.0 1.0;
+                    color: COLOR_PRESS_BUTTON;
+                }
+            }
+
+            part { name: "candidate";
+                type: TEXT;
+                mouse_events: 0;
+                //effect: SHADOW;
+                description { state: "default" 0.0;
+                    color: COLOR_NORMAL_TEXT;
+                    color_class: "text_color";
+                    text {
+                        text_class: "candidate_text_class";
+                        text: "Test";
+                        font: FONT_NAME;
+                        size: FONT_SIZE;
+                        align: 0.5 0.5;
+                    }
+                    rel1.to: "bg";
+                    rel1.relative: 0.0 0.0;
+                    rel1.offset: 11 0;
+                    rel2.to: "bg";
+                    rel2.relative: 1.0 1.0;
+                    rel2.offset: -11 0;
+                }
+                description { state: "pressed" 0.0;
+                    inherit: "default" 0.0;
+                    color: COLOR_PRESS_TEXT;
+                }
+            }
+        }
+        programs {
+            program { name: "button_click";
+                signal: "mouse,clicked,1";
+                source: "bg";
+                action: SIGNAL_EMIT "candidate,action,clicked" "";
+            }
+
+            program { name, "button_press";
+                signal, "mouse,down,1";
+                source, "bg";
+                action, STATE_SET "pressed" 0.0;
+                target, "bg";
+                target, "candidate";
+            }
+
+            program { name, "button_release";
+                signal, "mouse,up,1";
+                source, "bg";
+                action, STATE_SET "default" 0.0;
+                target, "bg";
+                target, "candidate";
+                //after, "do_me";
+            }
+
+            program { name, "do_me";
+                //signal, "*";
+                //source, "button_release";
+                action, SIGNAL_EMIT "candidate,action,clicked" "";
+            }
+        }
+    }
+
     group { name: "more_button";
 
         images {
