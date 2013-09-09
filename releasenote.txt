@@ -1,3 +1,16 @@
+ISF 2.4.6909 :
+ 1. Release configbase when App exiting
+ 2. Add soft candidate interface
+ 3. Remove send_candidate_will_hide_ack from IMControlClient
+ 4. Change pagesize to 2 bytes
+ 5. Solve input_panel_state_get issue
+ 6. Avoiding keyboard flickering when focus out,reset and commit string
+ 7. Use non-blocking mode socket
+ 8. Update gtkimcontextscim.cpp and scim_x11_frontend.cpp for PanelClient
+ 9. Add SCIM_IME_SUPPORT_LANGUAGE_TOGGLE_KEY option for keyboard ISE
+10. add exit test case
+
+
 ISF 2.4.6904 :
  1. Fix bug candidate window hide after 1 sec when application is terminated
  2. [efl_setting] Update Makefile.am

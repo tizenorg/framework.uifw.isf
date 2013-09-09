@@ -1,3 +1,15 @@
+* Mon Sep 09 2013 Li Zhang <li2012.zhang@samsung.com> submit/tizen_2.2/20130904.051918@b285e72
+- Release configbase when App exiting
+- Add soft candidate interface
+- Remove send_candidate_will_hide_ack from IMControlClient
+- Change pagesize to 2 bytes
+- Solve input_panel_state_get issue
+- Avoiding keyboard flickering when focus out,reset and commit string
+- Use non-blocking mode socket
+- Update gtkimcontextscim.cpp and scim_x11_frontend.cpp for PanelClient
+- Add SCIM_IME_SUPPORT_LANGUAGE_TOGGLE_KEY option for keyboard ISE
+- add exit test case
+
 * Wed Sep 04 2013 Jihoon Kim <jihoon48.kim@samsung.com> submit/tizen_2.2/20130829.082133@a396d4d
 - Fix bug candidate window hide after 1 sec when application is terminated
 - [efl_setting] Update Makefile.am
