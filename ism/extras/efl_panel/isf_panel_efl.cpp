@@ -370,6 +370,7 @@ static void flush_memory (void)
 
 /**
  * @brief Get ISE geometry information.
+ *        Returns the "expected" ISE geometry when kbd_state is ON, otherwise w/h set to 0
  *
  * @param info The data is used to store ISE position and size.
  * @param kbd_state The keyboard state.
@@ -408,10 +409,12 @@ static void get_ise_geometry (RECT_INFO &info, VIRTUAL_KEYBOARD_STATE kbd_state)
             info.width = 0;
             info.height = 0;
         } else {
-            if (kbd_state == KEYBOARD_STATE_OFF) {
-                info.pos_y = win_h;
-            } else {
+            if (kbd_state == KEYBOARD_STATE_ON) {
                 info.pos_y = win_h - info.height;
+            } else {
+                info.pos_y = win_h;
+                info.width = 0;
+                info.height = 0;
             }
         }
 
@@ -430,6 +433,7 @@ static void get_ise_geometry (RECT_INFO &info, VIRTUAL_KEYBOARD_STATE kbd_state)
 
 /**
  * @brief Set keyboard geometry for autoscroll.
+ *        This includes the ISE geometry together with candidate window
  *
  * @param kbd_state The keyboard state.
  */
@@ -473,17 +477,16 @@ static void set_keyboard_geometry_atom_info (Ecore_X_Window window, VIRTUAL_KEYB
         }
     }
 
-    if (kbd_state == KEYBOARD_STATE_ON) {
-        ecore_x_e_illume_keyboard_geometry_set (window, info.pos_x, info.pos_y, info.width, info.height);
-        ecore_x_e_virtual_keyboard_state_set (window, ECORE_X_VIRTUAL_KEYBOARD_STATE_ON);
-        SCIM_DEBUG_MAIN (3) << "    KEYBOARD_STATE_ON x=" << info.pos_x << " y=" << info.pos_y
-                            << " width=" << info.width << " height=" << info.height << "\n";
-        LOGD ("KEYBOARD_GEOMETRY_SET : %d %d %d %d\n", info.pos_x, info.pos_y, info.width, info.height);
-    } else {
-        ecore_x_e_illume_keyboard_geometry_set (window, info.pos_x, info.pos_y, 0, 0);
+    ecore_x_e_illume_keyboard_geometry_set (window, info.pos_x, info.pos_y, info.width, info.height);
+    LOGD ("KEYBOARD_GEOMETRY_SET : %d %d %d %d\n", info.pos_x, info.pos_y, info.width, info.height);
+    SCIM_DEBUG_MAIN (3) << "    KEYBOARD_GEOMETRY x=" << info.pos_x << " y=" << info.pos_y
+        << " width=" << info.width << " height=" << info.height << "\n";
+
+    /* even the kbd_state is OFF, consider the keyboard is still ON if we have candidate opened */
+    if (info.width == 0 && info.height == 0) {
         ecore_x_e_virtual_keyboard_state_set (window, ECORE_X_VIRTUAL_KEYBOARD_STATE_OFF);
-        SCIM_DEBUG_MAIN (3) << "    KEYBOARD_STATE_OFF x=" << info.pos_x << " y=" << info.pos_y << "\n";
-        LOGD ("KEYBOARD_GEOMETRY_SET : %d %d %d %d\n", info.pos_x, info.pos_y, 0, 0);
+    } else {
+        ecore_x_e_virtual_keyboard_state_set (window, ECORE_X_VIRTUAL_KEYBOARD_STATE_ON);
     }
 }
 
@@ -1237,11 +1240,17 @@ static void ui_candidate_show (bool bSetVirtualKbd)
     _panel_agent->update_candidate_panel_event ((uint32)ECORE_IMF_CANDIDATE_PANEL_STATE_EVENT, (uint32)ECORE_IMF_CANDIDATE_PANEL_SHOW);
 
     if (_candidate_mode == FIXED_CANDIDATE_WINDOW) {
-        if (!_ise_show)
+        int hw_kbd_detect = _config->read (ISF_CONFIG_HARDWARE_KEYBOARD_DETECT, 0);
+        if (hw_kbd_detect)
             _panel_agent->update_input_panel_event ((uint32)ECORE_IMF_INPUT_PANEL_STATE_EVENT, (uint32)ECORE_IMF_INPUT_PANEL_STATE_SHOW);
 
-        if (bSetVirtualKbd)
-            set_keyboard_geometry_atom_info (_app_window, KEYBOARD_STATE_ON);
+        if (bSetVirtualKbd) {
+            if (_ise_show)  {
+                set_keyboard_geometry_atom_info (_app_window, KEYBOARD_STATE_ON);
+            } else {
+                set_keyboard_geometry_atom_info (_app_window, KEYBOARD_STATE_OFF);
+            }
+        }
         _panel_agent->update_input_panel_event (ECORE_IMF_INPUT_PANEL_GEOMETRY_EVENT, 0);
     }
 
@@ -1301,7 +1310,11 @@ static void ui_candidate_hide (bool bForce, bool bSetVirtualKbd, bool will_hide)
             } else {
                 if (bSetVirtualKbd)
                     set_keyboard_geometry_atom_info (_app_window, KEYBOARD_STATE_OFF);
-                _panel_agent->update_input_panel_event ((uint32)ECORE_IMF_INPUT_PANEL_STATE_EVENT, (uint32)ECORE_IMF_INPUT_PANEL_STATE_HIDE);
+            }
+            int hw_kbd_detect = _config->read (ISF_CONFIG_HARDWARE_KEYBOARD_DETECT, 0);
+            if (hw_kbd_detect) {
+                _panel_agent->update_input_panel_event
+                    ((uint32)ECORE_IMF_INPUT_PANEL_STATE_EVENT, (uint32)ECORE_IMF_INPUT_PANEL_STATE_HIDE);
             }
         }
 
@@ -3344,7 +3357,7 @@ static void slot_get_input_panel_geometry (struct rectinfo &info)
         info.width = 0;
         info.height = 0;
         if (!_candidate_will_hide) {
-            if (_candidate_window && evas_object_visible_get (_candidate_window)) {
+            if (_candidate_window && _candidate_window_show) {
                 info.width  = _candidate_width;
                 info.height = _candidate_height;
             }
@@ -3362,7 +3375,7 @@ static void slot_get_input_panel_geometry (struct rectinfo &info)
         } else {
             if (_candidate_mode == FIXED_CANDIDATE_WINDOW) {
                 if (!_candidate_will_hide) {
-                    if (_candidate_window && evas_object_visible_get (_candidate_window)) {
+                    if (_candidate_window && _candidate_window_show) {
                         int height = ui_candidate_get_valid_height ();
                         if ((_candidate_height - height) > _ise_height) {
                             info.pos_y  = info.pos_y + info.height - _candidate_height;
