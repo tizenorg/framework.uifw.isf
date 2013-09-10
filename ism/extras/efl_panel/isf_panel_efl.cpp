@@ -275,6 +275,7 @@ static int                _window_angle                     = -1;
 static int                _ise_width                        = 0;
 static int                _ise_height                       = 0;
 static bool               _ise_show                         = false;
+static Ecore_IMF_Input_Panel_State _ise_state               = ECORE_IMF_INPUT_PANEL_STATE_HIDE;
 
 static int                _indicator_height                 = 0;//24;
 static int                _screen_width                     = 720;
@@ -746,6 +747,7 @@ static bool set_active_ise (const String &uuid)
                 _ise_width  = 0;
                 _ise_height = 0;
                 _ise_show   = false;
+                _ise_state  = ECORE_IMF_INPUT_PANEL_STATE_HIDE;
                 _candidate_mode      = FIXED_CANDIDATE_WINDOW;
                 _candidate_port_line = ONE_LINE_CANDIDATE;
                 if (_candidate_window)
@@ -3687,6 +3689,7 @@ static void slot_show_ise (void)
     }
 
     efl_set_transient_for_app_window (_ise_window);
+    _ise_state = ECORE_IMF_INPUT_PANEL_STATE_WILL_SHOW;
 }
 
 static void slot_hide_ise (void)
@@ -3694,6 +3697,7 @@ static void slot_hide_ise (void)
     SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
 
     // From this point, slot_get_input_panel_geometry should return hidden state geometry
+    _ise_state = ECORE_IMF_INPUT_PANEL_STATE_HIDE;
     _ise_show = false;
     _window_angle = -1;
 }
@@ -3726,7 +3730,7 @@ static void slot_get_ise_state (int &state)
     if (_ise_show || evas_object_visible_get (_candidate_window))
         state = ECORE_IMF_INPUT_PANEL_STATE_SHOW;
     else
-        state = ECORE_IMF_INPUT_PANEL_STATE_HIDE;
+        state = _ise_state;
     LOGD ("state = %d", state);
 }
 
@@ -4049,6 +4053,7 @@ static Eina_Bool x_event_window_property_cb (void *data, int ev_type, void *even
             if (state == ECORE_X_VIRTUAL_KEYBOARD_STATE_ON) {
                 LOGD ("ECORE_X_VIRTUAL_KEYBOARD_STATE_ON\n");
                 _ise_show = true;
+                _ise_state = ECORE_IMF_INPUT_PANEL_STATE_SHOW;
 
                 /* Make sure that we have the same rotation angle with the keyboard window */
                 if (_ise_window) {
@@ -4077,6 +4082,7 @@ static Eina_Bool x_event_window_property_cb (void *data, int ev_type, void *even
                 //_panel_agent->update_input_panel_event (
                 //    ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_HIDE);
                 _ise_show = false;
+                _ise_state = ECORE_IMF_INPUT_PANEL_STATE_HIDE;
                 if (_panel_agent->get_current_toolbar_mode() == TOOLBAR_HELPER_MODE) {
                     ui_candidate_hide (true, false);
                 } else {
@@ -4128,6 +4134,7 @@ static Eina_Bool x_event_client_message_cb (void *data, int type, void *event)
             vconf_set_int (VCONFKEY_ISF_INPUT_PANEL_STATE, VCONFKEY_ISF_INPUT_PANEL_STATE_WILL_SHOW);
         } else if (ev->message_type == ECORE_X_ATOM_E_VIRTUAL_KEYBOARD_OFF_PREPARE_REQUEST) {
             _ise_show = false;
+            _ise_state = ECORE_IMF_INPUT_PANEL_STATE_HIDE;
             /* WMSYNC, #7 Send WILL_HIDE event when the keyboard window is about to hidden */
             LOGD ("_ECORE_X_ATOM_E_VIRTUAL_KEYBOARD_OFF_PREPARE_REQUEST\n");
             // Clear conformant geometry information first
