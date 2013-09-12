@@ -674,11 +674,11 @@ static bool set_helper_ise (const String &uuid, const String &module_name)
     SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
 
     TOOLBAR_MODE_T mode = _panel_agent->get_current_toolbar_mode ();
+    String pre_uuid = _panel_agent->get_current_helper_uuid ();
+    if (pre_uuid == uuid)
+        return false;
 
     if (TOOLBAR_HELPER_MODE == mode) {
-        String pre_uuid = _panel_agent->get_current_helper_uuid ();
-        if (pre_uuid == uuid)
-            return false;
         _panel_agent->hide_helper (pre_uuid);
         _panel_agent->stop_helper (pre_uuid);
         char buf[256] = {0};
