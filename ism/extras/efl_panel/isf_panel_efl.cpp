@@ -58,7 +58,9 @@
 #include <privilege-control.h>
 #include "isf_panel_utility.h"
 #include <dlog.h>
+#if HAVE_TTS
 #include <tts.h>
+#endif
 
 using namespace scim;
 
@@ -316,7 +318,9 @@ static Ecore_X_Window     _control_window                   = 0;
 static Ecore_File_Monitor *_helper_ise_em                   = NULL;
 static Ecore_File_Monitor *_keyboard_ise_em                 = NULL;
 
+#if HAVE_TTS
 static tts_h              _tts                              = NULL;
+#endif
 
 static bool               _candidate_will_hide              = false;
 static bool               feedback_initialized              = false;
@@ -1494,6 +1498,7 @@ static bool ui_open_tts (void)
 {
     SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
 
+#if HAVE_TTS
     int r = tts_create (&_tts);
     if (TTS_ERROR_NONE != r) {
         LOGW ("tts_create FAILED : result(%d)\n", r);
@@ -1519,6 +1524,9 @@ static bool ui_open_tts (void)
         }
     }
     return true;
+#else
+    return false;
+#endif
 }
 
 /**
@@ -1528,6 +1536,7 @@ static void ui_close_tts (void)
 {
     SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
 
+#if HAVE_TTS
     if (_tts) {
         int r = tts_unprepare (_tts);
         if (TTS_ERROR_NONE != r) {
@@ -1539,6 +1548,7 @@ static void ui_close_tts (void)
             LOGW ("tts_destroy FAILED : result(%d)\n", r);
         }
     }
+#endif
 }
 
 /**
@@ -1550,6 +1560,7 @@ static void ui_play_tts (const char* str)
 {
     SCIM_DEBUG_MAIN (3) << __FUNCTION__ << " str=" << str << "\n";
 
+#if HAVE_TTS
     if (_tts == NULL) {
         if (!ui_open_tts ())
             return;
@@ -1580,6 +1591,7 @@ static void ui_play_tts (const char* str)
             }
         }
     }
+#endif
 }
 
 /**

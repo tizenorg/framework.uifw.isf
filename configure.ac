@@ -258,7 +258,13 @@ PKG_CHECK_MODULES(PRIVILEGE_CONTROL, [libprivilege-control >= 0])
 PKG_CHECK_MODULES(NOTIFICATION, [notification])
 
 # Check tts library
-PKG_CHECK_MODULES(TTS, [tts])
+PKG_CHECK_MODULES(TTS, [tts],
+                  [ISF_HAS_TTS=yes],
+                  [ISF_HAS_TTS=no])
+
+if test "$ISF_HAS_TTS" = "yes"; then
+  AC_DEFINE(HAVE_TTS,1,[Have TTS functions.])
+fi
 
 # Check vconf library
 PKG_CHECK_MODULES(VCONF, [vconf],
