@@ -2028,6 +2028,11 @@ static void ui_settle_candidate_window (void)
     if (!_candidate_window)
         return;
 
+    /* If both ISE and candidate window are going to be hidden,
+       let's just not move our candidate window */
+    if (_ise_state == WINDOW_STATE_WILL_HIDE && _candidate_state == WINDOW_STATE_WILL_HIDE)
+        return;
+
     int spot_x, spot_y;
     int x, y, width, height;
     int pos_x = 0, pos_y = 0, ise_width = 0, ise_height = 0;
