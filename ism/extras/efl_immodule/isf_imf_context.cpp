@@ -308,6 +308,7 @@ static int      __current_numlock_mask = Mod2Mask;
 #define SHIFT_MODE_DISABLE 0x9fe8
 
 extern Ecore_IMF_Input_Panel_State  input_panel_state;
+extern Ecore_IMF_Input_Panel_State  notified_state;
 extern Ecore_IMF_Context           *input_panel_ctx;
 
 // A hack to shutdown the immodule cleanly even if im_module_exit () is not called when exiting.
@@ -1060,7 +1061,6 @@ isf_imf_context_del (Ecore_IMF_Context *ctx)
     if (!_ic_list) return;
 
     EcoreIMFContextISF *context_scim = (EcoreIMFContextISF*)ecore_imf_context_data_get (ctx);
-    Ecore_IMF_Input_Panel_State input_panel_state = ecore_imf_context_input_panel_state_get (ctx);
 
     if (context_scim) {
         if (context_scim->id != _ic_list->id) {
@@ -1090,8 +1090,8 @@ isf_imf_context_del (Ecore_IMF_Context *ctx)
 
         if (input_panel_ctx == ctx && _scim_initialized) {
             LOGD ("ctx : %p\n", ctx);
-            if (input_panel_state == ECORE_IMF_INPUT_PANEL_STATE_WILL_SHOW ||
-                input_panel_state == ECORE_IMF_INPUT_PANEL_STATE_SHOW) {
+            if (notified_state == ECORE_IMF_INPUT_PANEL_STATE_WILL_SHOW ||
+                notified_state == ECORE_IMF_INPUT_PANEL_STATE_SHOW) {
                 ecore_imf_context_input_panel_hide (ctx);
                 input_panel_event_callback_call (ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_HIDE);
                 isf_imf_context_input_panel_send_will_hide_ack (ctx);
