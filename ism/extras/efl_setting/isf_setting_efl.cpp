@@ -1353,8 +1353,8 @@ static void hw_connection_change_cb (ug_data *ugd)
         if (_hw_kbd_connected)
             elm_naviframe_item_pop (ugd->naviframe);
     }
-    else if (ugd->key_end_cb == ise_option_view_set_cb) {
-        // ISE or IMEngine option view
+    else if (ugd->key_end_cb == ise_option_view_set_cb || ugd->key_end_cb == language_view_back_cb) {
+        // ISE or IMEngine option view or language display view
         Elm_Object_Item *top_it = elm_naviframe_top_item_get (ugd->naviframe);
         if (top_it != nf_main_it) {
             elm_naviframe_item_pop_to (nf_main_it);
