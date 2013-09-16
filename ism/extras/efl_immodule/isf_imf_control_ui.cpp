@@ -242,11 +242,6 @@ static void _event_callback_call (Ecore_IMF_Input_Panel_Event type, int value)
     if (using_ic)
         ecore_imf_context_input_panel_event_callback_call (using_ic, type, value);
 
-    if (type == ECORE_IMF_INPUT_PANEL_STATE_EVENT &&
-        value == ECORE_IMF_INPUT_PANEL_STATE_WILL_SHOW) {
-        isf_imf_context_input_panel_send_will_show_ack (using_ic);
-    }
-
     if (type == ECORE_IMF_CANDIDATE_PANEL_STATE_EVENT &&
         value == ECORE_IMF_CANDIDATE_PANEL_HIDE &&
         notified_state != ECORE_IMF_INPUT_PANEL_STATE_HIDE) {
