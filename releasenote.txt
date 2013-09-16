@@ -1,3 +1,8 @@
+ISF 2.4.6917 :
+ 1. [isfsetting] fix N_SE-52363
+ 2. fix bug hide event callback wasn't called when context is deleted
+
+
 ISF 2.4.6916 :
  1. remove code to send will_show_ack
  2. changed logic location of checking pre_uuid
