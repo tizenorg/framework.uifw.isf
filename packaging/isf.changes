@@ -1,3 +1,10 @@
+* Mon Sep 16 2013 Jihoon Kim <jihoon48.kim@samsung.com> submit/tizen_2.2/20130910.054608@b126aba
+- remove code to send will_show_ack
+- changed logic location of checking pre_uuid
+- Hide IME when H/W back key is released even though there is no focus
+- conditional use tts library
+- Fix WILL_SHOW state missing issue
+
 * Mon Sep 09 2013 Li Zhang <li2012.zhang@samsung.com> submit/tizen_2.2/20130904.051918@b285e72
 - Release configbase when App exiting
 - Add soft candidate interface
