@@ -2056,7 +2056,8 @@ static void ui_settle_candidate_window (void)
     else
         get_geometry_result = ecore_x_e_window_rotation_geometry_get (_ise_window, _candidate_angle, &pos_x, &pos_y, &ise_width, &ise_height);
 
-    if (_ise_state != WINDOW_STATE_SHOW || get_geometry_result == false) {
+    if ((_ise_state != WINDOW_STATE_SHOW && _ise_state != WINDOW_STATE_WILL_HIDE) ||
+            get_geometry_result == false) {
         ise_height = 0;
         ise_width = 0;
     }
