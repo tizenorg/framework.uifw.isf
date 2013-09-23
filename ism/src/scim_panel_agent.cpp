@@ -1317,6 +1317,7 @@ public:
             m_send_trans.put_data (uuid);
 
             m_ise_exiting = true;
+            m_current_helper_uuid = String ("");
             m_send_trans.put_command (SCIM_TRANS_CMD_EXIT);
             m_send_trans.write_to_socket (client_socket);
             SCIM_DEBUG_MAIN(1) << "Stop helper\n";
