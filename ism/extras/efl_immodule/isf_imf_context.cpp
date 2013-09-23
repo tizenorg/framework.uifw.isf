@@ -1283,6 +1283,8 @@ isf_imf_context_focus_in (Ecore_IMF_Context *ctx)
         if (need_reg) _panel_client.register_input_context (context_scim->id, context_scim->impl->si->get_factory_uuid ());
         if (need_cap) set_ic_capabilities (context_scim);
 
+        save_current_xid (ctx);
+
         panel_req_focus_in (context_scim);
 //        panel_req_update_spot_location (context_scim);
 //        panel_req_update_factory_info (context_scim);

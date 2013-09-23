@@ -177,7 +177,7 @@ static Ecore_X_Window _client_window_id_get (Ecore_IMF_Context *ctx)
     return xid;
 }
 
-static void _save_current_xid (Ecore_IMF_Context *ctx)
+void save_current_xid (Ecore_IMF_Context *ctx)
 {
     Ecore_X_Window xid = 0, rootwin_xid = 0;
 
@@ -493,7 +493,7 @@ void isf_imf_context_input_panel_show (Ecore_IMF_Context* ctx)
     active_context_canvas = (Evas *)ecore_imf_context_client_canvas_get (ctx);
 
     /* Set the current XID of the active window into the root window property */
-    _save_current_xid (ctx);
+    save_current_xid (ctx);
 
     if (get_desktop_mode ()) {
         LOGD ("IME will not appear in case of desktop mode.\n");
