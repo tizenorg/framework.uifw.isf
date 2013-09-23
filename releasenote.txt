@@ -1,3 +1,7 @@
+ISF 2.4.6923 :
+ 1. initialize current helper uuid when stop_helper () is called
+
+
 ISF 2.4.6917 :
  1. [isfsetting] fix N_SE-52363
  2. fix bug hide event callback wasn't called when context is deleted

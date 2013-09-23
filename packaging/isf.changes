@@ -1,3 +1,6 @@
+* Mon Sep 23 2013 Jihoon Kim <jihoon48.kim@samsung.com> submit/tizen_2.2/20130916.225857@e64feee
+- initialize current helper uuid when stop_helper () is called
+
 * Tue Sep 17 2013 Jihoon Kim <jihoon48.kim@samsung.com> submit/tizen_2.2/20130916.060443@132356a
 - [isfsetting] fix N_SE-52363
 - fix bug hide event callback wasn't called when context is deleted
