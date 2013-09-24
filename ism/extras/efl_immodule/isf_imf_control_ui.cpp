@@ -82,7 +82,7 @@ Ecore_IMF_Context *get_using_ic (Ecore_IMF_Input_Panel_Event type, int value) {
 
 static void _render_post_cb (void *data, Evas *e, void *event_info)
 {
-    LOGD ("[_render_post_cb]\n");
+    LOGD ("[_render_post_cb], conformant_reset_done = 1\n");
     evas_event_callback_del_full (e, EVAS_CALLBACK_RENDER_POST, _render_post_cb, NULL);
     conformant_reset_done = EINA_TRUE;
     isf_imf_context_input_panel_send_will_hide_ack (get_using_ic (ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_SHOW));
@@ -90,7 +90,7 @@ static void _render_post_cb (void *data, Evas *e, void *event_info)
 
 static void _candidate_render_post_cb (void *data, Evas *e, void *event_info)
 {
-    LOGD ("[%s]\n", __func__);
+    LOGD ("[%s], candidate_conformant_reset_done = 1\n", __func__);
     evas_event_callback_del_full (e, EVAS_CALLBACK_RENDER_POST, _candidate_render_post_cb, NULL);
     candidate_conformant_reset_done = EINA_TRUE;
     isf_imf_context_input_panel_send_candidate_will_hide_ack (get_using_ic (ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_SHOW));
@@ -133,6 +133,7 @@ static Eina_Bool _prop_change (void *data, int ev_type, void *ev)
             sx = sy = sw = sh = 0;
 
         if (state == ECORE_X_VIRTUAL_KEYBOARD_STATE_OFF) {
+            LOGD ("conformant_reset_done = 0, candidate_conformant_reset_done = 0, registering _render_post_cb\n");
             conformant_reset_done = EINA_FALSE;
             candidate_conformant_reset_done = EINA_FALSE;
             if (active_context_canvas && _conformant_get ()) {
@@ -142,6 +143,7 @@ static Eina_Bool _prop_change (void *data, int ev_type, void *ev)
             LOGD ("[ECORE_X_VIRTUAL_KEYBOARD_STATE_OFF] geometry x : %d, y : %d, w : %d, h : %d\n", sx, sy, sw, sh);
         }
         else if (state == ECORE_X_VIRTUAL_KEYBOARD_STATE_ON) {
+            LOGD ("conformant_reset_done = 0, candidate_conformant_reset_done = 0, registering _candidate_render_post_cb\n");
             conformant_reset_done = EINA_FALSE;
             candidate_conformant_reset_done = EINA_FALSE;
             if (active_context_canvas && _conformant_get ()) {
@@ -239,7 +241,7 @@ static void _event_callback_call (Ecore_IMF_Input_Panel_Event type, int value)
             LOGD ("[input panel geometry is changed] ctx : %p\n", using_ic);
             break;
         case ECORE_IMF_CANDIDATE_PANEL_STATE_EVENT:
-            LOGD ("[candidate state is changed] ctx : %p\n", using_ic);
+            LOGD ("[candidate state is changed] ctx : %p, %d\n", using_ic, value);
             break;
         case ECORE_IMF_CANDIDATE_PANEL_GEOMETRY_EVENT:
             LOGD ("[candidate geometry is changed] ctx : %p\n", using_ic);
@@ -251,11 +253,19 @@ static void _event_callback_call (Ecore_IMF_Input_Panel_Event type, int value)
     if (using_ic)
         ecore_imf_context_input_panel_event_callback_call (using_ic, type, value);
 
-    if (type == ECORE_IMF_CANDIDATE_PANEL_STATE_EVENT &&
-        value == ECORE_IMF_CANDIDATE_PANEL_HIDE &&
-        notified_state != ECORE_IMF_INPUT_PANEL_STATE_HIDE) {
-            received_candidate_will_hide_event = TRUE;
-            isf_imf_context_input_panel_send_candidate_will_hide_ack (using_ic);
+    if (type == ECORE_IMF_CANDIDATE_PANEL_STATE_EVENT) {
+        if (value == ECORE_IMF_CANDIDATE_PANEL_HIDE) {
+            if (notified_state != ECORE_IMF_INPUT_PANEL_STATE_HIDE) {
+                SECURE_LOGD ("received_candidate_will_hide_event = 1");
+                received_candidate_will_hide_event = TRUE;
+                isf_imf_context_input_panel_send_candidate_will_hide_ack (using_ic);
+            } else {
+                SECURE_LOGD ("received_candidate_will_hide_event != 1, due to notified_state");
+            }
+        } else if (value == ECORE_IMF_INPUT_PANEL_STATE_SHOW) {
+            SECURE_LOGD ("received_candidate_will_hide_event = 0");
+            received_candidate_will_hide_event = EINA_FALSE;
+        }
     }
 }
 
@@ -440,6 +450,7 @@ void isf_imf_input_panel_shutdown (void)
     }
 
     candidate_conformant_reset_done = TRUE;
+    SECURE_LOGD ("candidate_conformant_reset_done = 1");
     isf_imf_context_input_panel_send_candidate_will_hide_ack (get_using_ic (ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_SHOW));
 
     if (_prop_change_handler) {
@@ -884,10 +895,13 @@ void isf_imf_context_input_panel_send_will_hide_ack (Ecore_IMF_Context *ctx)
 
     if (_conformant_get ()) {
         if (conformant_reset_done && received_will_hide_event) {
-            LOGD ("Send will hide ack\n");
+            LOGD ("Send will hide ack, conformant_reset_done = 0, received_will_hide_event = 0\n");
             _isf_imf_context_input_panel_send_will_hide_ack (_get_context_id (ctx));
             conformant_reset_done = EINA_FALSE;
             received_will_hide_event = EINA_FALSE;
+        } else {
+            LOGD ("conformant_reset_done=%d, received_will_hide_event=%d\n",
+                conformant_reset_done, received_will_hide_event);
         }
     } else {
         _isf_imf_context_input_panel_send_will_hide_ack (_get_context_id (ctx));
@@ -913,10 +927,14 @@ void isf_imf_context_input_panel_send_candidate_will_hide_ack (Ecore_IMF_Context
 
     if (_conformant_get ()) {
         if (candidate_conformant_reset_done && received_candidate_will_hide_event) {
-            LOGD ("Send candidate will hide ack\n");
+            LOGD ("Send candidate will hide ack, cand_conf_reset_done = 0, recv_cand_will_hide = 0\n");
             _isf_imf_context_input_panel_send_candidate_will_hide_ack (_get_context_id (ctx));
             candidate_conformant_reset_done = EINA_FALSE;
             received_candidate_will_hide_event = EINA_FALSE;
+        }
+        else {
+            LOGD ("isf_imf_context_input_panel_send_will_hide_ack, cand_conf_reset_done=%d recv_cand_will_hide=%d\n",
+                candidate_conformant_reset_done, received_candidate_will_hide_event);
         }
     } else {
         _isf_imf_context_input_panel_send_candidate_will_hide_ack (_get_context_id (ctx));
@@ -936,6 +954,7 @@ static bool _process_ise_panel_showed (void)
     _event_callback_call (ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_SHOW);
 
     received_will_hide_event = EINA_FALSE;
+    LOGD ("received_will_hide_event = 0\n");
 
     return true;
 }
@@ -955,6 +974,7 @@ static bool _process_ise_panel_hided (void)
     _event_callback_call (ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_HIDE);
 
     received_will_hide_event = EINA_TRUE;
+    LOGD ("received_will_hide_event = 1\n");
     isf_imf_context_input_panel_send_will_hide_ack (get_using_ic (ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_HIDE));
 
     return true;

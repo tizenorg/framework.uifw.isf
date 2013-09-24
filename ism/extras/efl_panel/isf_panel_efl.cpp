@@ -1254,8 +1254,9 @@ static Eina_Bool x_event_window_show_cb (void *data, int ev_type, void *event)
 
             /* If we are in hardward keyboard mode, this candidate window is now considered to be a input panel */
             if (_candidate_mode == FIXED_CANDIDATE_WINDOW) {
-                if (hw_kbd_mode)
+                if (hw_kbd_mode) {
                     _panel_agent->update_input_panel_event ((uint32)ECORE_IMF_INPUT_PANEL_STATE_EVENT, (uint32)ECORE_IMF_INPUT_PANEL_STATE_SHOW);
+                }
             }
         }
     }
@@ -1306,6 +1307,14 @@ static void ui_candidate_show (bool bSetVirtualKbd)
     } else {
         edje_object_file_set (_more_btn, _candidate_edje_file.c_str (), "close_button");
         edje_object_file_set (_close_btn, _candidate_edje_file.c_str (), "more_button");
+    }
+
+    /* If we are in hardward keyboard mode, this candidate window is now considered to be a input panel */
+    if (_candidate_mode == FIXED_CANDIDATE_WINDOW) {
+        if (hw_kbd_mode) {
+            LOGD ("<<CANDIDATE_AUTOSCROLL>> ECORE_IMF_INPUT_PANEL_STATE_WILL_SHOW");
+            _panel_agent->update_input_panel_event ((uint32)ECORE_IMF_INPUT_PANEL_STATE_EVENT, (uint32)ECORE_IMF_INPUT_PANEL_STATE_WILL_SHOW);
+        }
     }
 
     delete_candidate_show_handler();
@@ -4262,6 +4271,7 @@ static Eina_Bool x_event_client_message_cb (void *data, int type, void *event)
                since the candidate window will work as an "input panel" afterwards */
             bool send_input_panel_hide_event = true;
             if (hw_kbd_mode) {
+                LOGD ("_candidate_state : %d", _candidate_state);
                 if (_candidate_state == WINDOW_STATE_SHOW) {
                     send_input_panel_hide_event = false;
                 }
