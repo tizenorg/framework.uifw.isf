@@ -3759,15 +3759,22 @@ static void slot_show_ise (void)
     }
 
     efl_set_transient_for_app_window (_ise_window);
-    _ise_state = WINDOW_STATE_WILL_SHOW;
+
+    /* If our ISE was already in SHOW state, skip state transition to WILL_SHOW */
+    if (_ise_state != WINDOW_STATE_SHOW) {
+        _ise_state = WINDOW_STATE_WILL_SHOW;
+    }
 }
 
 static void slot_hide_ise (void)
 {
     SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
 
-    // From this point, slot_get_input_panel_geometry should return hidden state geometry
-    _ise_state = WINDOW_STATE_WILL_HIDE;
+    /* Only if we are not already in HIDE state */
+    if (_ise_state != WINDOW_STATE_HIDE) {
+        /* From this point, slot_get_input_panel_geometry should return hidden state geometry */
+        _ise_state = WINDOW_STATE_WILL_HIDE;
+    }
     _window_angle = -1;
 }
 
