@@ -56,6 +56,8 @@
 using namespace scim;
 using namespace std;
 
+#define LOG_TAG                                   "ISF_SETTING"
+
 #define _EDJ(x)                                   elm_layout_edje_get(x)
 #define ISF_SETTING_EDJ                           (SCIM_DATADIR "/isfsetting.edj")
 #define PADDING_X                                 25
@@ -137,6 +139,10 @@ static Eina_Bool                    _auto_full_stop           = EINA_FALSE;
 
 static ConfigPointer                _config;
 static Connection                   _reload_signal_connection;
+
+static Ecore_Fd_Handler            *_read_handler             = 0;
+static HelperAgent                  _helper_agent;
+static HelperInfo                   _helper_info ("fd491a70-22f5-11e2-89f3-eb5999be869e", "ISF Setting", "", "", SCIM_HELPER_STAND_ALONE);
 
 static Elm_Genlist_Item_Class       itc1, itc2, itc3, itc4, itc5, itcText, itcTitle, itcSeparator[2];
 
@@ -526,19 +532,8 @@ static void show_language_cb (void *data, Evas_Object *obj, void *event_info)
 
 static void helper_ise_reload_config (void)
 {
-    String display_name = String (":13");
-    const char *p = getenv ("DISPLAY");
-    if (p != NULL)
-        display_name = String (p);
-    HelperAgent helper_agent;
-    HelperInfo  helper_info ("fd491a70-22f5-11e2-89f3-eb5999be869e", "ISF Setting", "", "", SCIM_HELPER_STAND_ALONE);
-    int id = helper_agent.open_connection (helper_info, display_name);
-    if (id == -1) {
-        std::cerr << "    open_connection failed!!!!!!\n";
-    } else {
-        helper_agent.reload_config ();
-        helper_agent.close_connection ();
-    }
+    if (_helper_agent.is_connected ())
+        _helper_agent.reload_config ();
 }
 
 static Eina_Bool ise_option_view_set_cb (void *data, Elm_Object_Item *it)
@@ -1410,24 +1405,6 @@ static void init_hw_keyboard_listener (ug_data *ugd)
         _hw_kbd_connected = true;
 }
 
-static void reload_config_cb (const ConfigPointer &config)
-{
-    uint32 option = 0;
-    String uuid, name;
-    isf_get_keyboard_ise (_config, uuid, name, option);
-    for (unsigned int i = 0; i < _hw_uuid_list.size(); i ++)
-    {
-        if (uuid == _hw_uuid_list[i]) {
-            _hw_ise_index = i;
-            break;
-        }
-    }
-
-    _hw_ise_index_bak = _hw_ise_index;
-    update_setting_main_view (_common_ugd);
-    //std::cout << "    " << __func__ << " (keyboard ISE : " << name << ")\n";
-}
-
 static void sort_sw_ise ()
 {
     std::sort (_sw_ise_list.begin (), _sw_ise_list.end ());
@@ -1495,8 +1472,55 @@ static void load_ise_info ()
     sort_hw_ise();
 }
 
+/**
+ * @brief Reload config slot function for HelperAgent.
+ *
+ * @param ic The context of application.
+ * @param ise_uuid The ISE uuid.
+ *
+ * @return void
+ */
+static void slot_reload_config (const HelperAgent *, int ic, const String &ise_uuid)
+{
+    uint32 option = 0;
+    String uuid, name;
+    isf_get_keyboard_ise (_config, uuid, name, option);
+    for (unsigned int i = 0; i < _hw_uuid_list.size (); i ++) {
+        if (uuid == _hw_uuid_list[i]) {
+            _hw_ise_index = i;
+            break;
+        }
+    }
+
+    _hw_ise_index_bak = _hw_ise_index;
+    update_setting_main_view (_common_ugd);
+    LOGD ("keyboard ISE: %s", name.c_str ());
+}
+
+/**
+ * @brief Handler function for HelperAgent input.
+ *
+ * @param user_data Data to pass when it is called.
+ * @param fd_handler The Ecore Fd handler.
+ *
+ * @return ECORE_CALLBACK_RENEW
+ */
+static Eina_Bool helper_agent_input_handler (void *user_data, Ecore_Fd_Handler *fd_handler)
+{
+    if (fd_handler == _read_handler && _helper_agent.has_pending_event ()) {
+        if (!_helper_agent.filter_event ()) {
+            std::cerr << "helper_agent.filter_event () is failed!!!\n";
+        }
+    } else {
+        std::cerr << "helper_agent.has_pending_event () is failed!!!\n";
+    }
+
+    return ECORE_CALLBACK_RENEW;
+}
+
 static void *on_create (ui_gadget_h ug, enum ug_mode mode, service_h s, void *priv)
 {
+    LOGD ("create ug");
     Evas_Object *parent  = NULL;
     Evas_Object *content = NULL;
 
@@ -1517,7 +1541,21 @@ static void *on_create (ui_gadget_h ug, enum ug_mode mode, service_h s, void *pr
     load_ise_info ();
     init_hw_keyboard_listener (ugd);
 
-    _reload_signal_connection = _config->signal_connect_reload (slot (reload_config_cb));
+    /* Connect PanelAgent by HelperAgent */
+    String display_name = String (":13");
+    const char *p = getenv ("DISPLAY");
+    if (p != NULL)
+        display_name = String (p);
+
+    _reload_signal_connection = _helper_agent.signal_connect_reload_config (slot (slot_reload_config));
+    int id = _helper_agent.open_connection (_helper_info, display_name);
+    if (id == -1) {
+        std::cerr << "    open_connection failed!!!!!!\n";
+    } else {
+        int fd = _helper_agent.get_connection_number ();
+        if (fd >= 0)
+            _read_handler = ecore_main_fd_handler_add (fd, ECORE_FD_READ, helper_agent_input_handler, NULL, NULL, NULL);
+    }
 
     //-------------------------- ise infomation ----------------------------
 
@@ -1571,11 +1609,12 @@ static void on_resume (ui_gadget_h ug, service_h s, void *priv)
         _mdl->query_changed ();
     }
 
-    reload_config_cb (_config);
+    slot_reload_config (NULL, 0, String (""));
 }
 
 static void on_destroy (ui_gadget_h ug, service_h s, void *priv)
 {
+    LOGD ("destroy ug");
     if (ug == NULL || priv == NULL)
         return;
 
@@ -1622,6 +1661,11 @@ static void on_destroy (ui_gadget_h ug, service_h s, void *priv)
     }
 
     _reload_signal_connection.disconnect ();
+    _helper_agent.close_connection ();
+    if (_read_handler) {
+        ecore_main_fd_handler_del (_read_handler);
+        _read_handler = 0;
+    }
 }
 
 static void on_message (ui_gadget_h ug, service_h msg, service_h data, void *priv)
