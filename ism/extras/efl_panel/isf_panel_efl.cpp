@@ -3792,6 +3792,12 @@ static void slot_will_hide_ack (void)
         ui_candidate_hide (true, false);
     }
 
+    /* WILL_HIDE_ACK means that the application finished redrawing the autoscroll area,
+       now hide the candidate window right away if it is also in WILL_HIDE state */
+    if (_candidate_state == WINDOW_STATE_WILL_HIDE) {
+        candidate_window_hide ();
+    }
+
     if (_off_prepare_done_timer) {
         ecore_timer_del(_off_prepare_done_timer);
         _off_prepare_done_timer = NULL;
