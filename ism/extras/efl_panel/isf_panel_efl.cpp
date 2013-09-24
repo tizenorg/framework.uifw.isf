@@ -445,7 +445,7 @@ static void set_keyboard_geometry_atom_info (Ecore_X_Window window, VIRTUAL_KEYB
     if (_ise_width == 0 && _ise_height == 0) {
         info.pos_x = 0;
         if (!_candidate_will_hide) {
-            if (_candidate_window && evas_object_visible_get (_candidate_window)) {
+            if (_candidate_window && _candidate_window_show) {
                 info.width  = _candidate_width;
                 info.height = _candidate_height;
             }
@@ -458,7 +458,7 @@ static void set_keyboard_geometry_atom_info (Ecore_X_Window window, VIRTUAL_KEYB
     } else {
         if (_candidate_mode == FIXED_CANDIDATE_WINDOW) {
             if (!_candidate_will_hide) {
-                if (_candidate_window && evas_object_visible_get (_candidate_window)) {
+                if (_candidate_window && _candidate_window_show) {
                     _candidate_valid_height = ui_candidate_get_valid_height ();
                     if ((_candidate_height - _candidate_valid_height) > _ise_height) {
                         _candidate_valid_height = _candidate_height;
@@ -1177,6 +1177,7 @@ static Eina_Bool off_prepare_done_timeout (void *data)
  */
 static void delete_candidate_hide_timer (void)
 {
+    LOGD ("deleting candidate_hide_timer");
     if (_candidate_hide_timer) {
         ecore_timer_del (_candidate_hide_timer);
         _candidate_hide_timer = NULL;
@@ -1188,6 +1189,8 @@ static void candidate_window_hide (void)
     delete_candidate_hide_timer ();
     _candidate_window_show = false;
     _candidate_will_hide = false;
+
+    LOGD ("evas_object_hide (_candidate_window, %p)\n", elm_win_xwindow_get ( _candidate_window));
 
     if (_candidate_window)
         evas_object_hide (_candidate_window);
@@ -1202,6 +1205,7 @@ static void candidate_window_hide (void)
  */
 static Eina_Bool candidate_hide_timer (void *data)
 {
+    LOGD ("calling candidate_window_hide()");
     candidate_window_hide ();
 
     return ECORE_CALLBACK_CANCEL;
@@ -1223,13 +1227,13 @@ static void ui_candidate_show (bool bSetVirtualKbd)
         return;
     }
 
-    delete_candidate_hide_timer ();
     ui_candidate_window_rotate (_candidate_angle);
 
+    _candidate_window_show = true;
     _candidate_will_hide = false;
+    delete_candidate_hide_timer ();
 
     efl_set_transient_for_app_window (elm_win_xwindow_get (_candidate_window));
-    evas_object_show (_candidate_window);
     _panel_agent->update_candidate_panel_event ((uint32)ECORE_IMF_CANDIDATE_PANEL_STATE_EVENT, (uint32)ECORE_IMF_CANDIDATE_PANEL_SHOW);
 
     if (_candidate_mode == FIXED_CANDIDATE_WINDOW) {
@@ -1245,7 +1249,6 @@ static void ui_candidate_show (bool bSetVirtualKbd)
     _check_size_timer = ecore_timer_add (0.02, ui_candidate_check_size_timeout, NULL);
 
     SCIM_DEBUG_MAIN (3) << "    Show candidate window\n";
-    _candidate_window_show = true;
     if (_ise_show) {
         edje_object_file_set (_more_btn, _candidate_edje_file.c_str (), "more_button");
         edje_object_file_set (_close_btn, _candidate_edje_file.c_str (), "close_button");
@@ -1282,30 +1285,30 @@ static void ui_candidate_hide (bool bForce, bool bSetVirtualKbd, bool will_hide)
     }
 
     if (bForce || ui_candidate_can_be_hide ()) {
-        if (evas_object_visible_get (_candidate_window)) {
-            if (will_hide)
-                _candidate_will_hide = true;
-            else
-                candidate_window_hide ();
+        if (will_hide) {
+            _candidate_will_hide = true;
 
-            _panel_agent->update_candidate_panel_event ((uint32)ECORE_IMF_CANDIDATE_PANEL_STATE_EVENT, (uint32)ECORE_IMF_CANDIDATE_PANEL_HIDE);
+            delete_candidate_hide_timer ();
+            _candidate_hide_timer = ecore_timer_add (1.0, candidate_hide_timer, NULL);
+        }
 
-            if (_candidate_mode == FIXED_CANDIDATE_WINDOW) {
-                _panel_agent->update_input_panel_event (ECORE_IMF_INPUT_PANEL_GEOMETRY_EVENT, 0);
-                if (_ise_show) {
-                    set_keyboard_geometry_atom_info (_app_window, KEYBOARD_STATE_ON);
-                } else {
-                    if (bSetVirtualKbd)
-                        set_keyboard_geometry_atom_info (_app_window, KEYBOARD_STATE_OFF);
-                    _panel_agent->update_input_panel_event ((uint32)ECORE_IMF_INPUT_PANEL_STATE_EVENT, (uint32)ECORE_IMF_INPUT_PANEL_STATE_HIDE);
-                }
+        _panel_agent->update_candidate_panel_event ((uint32)ECORE_IMF_CANDIDATE_PANEL_STATE_EVENT, (uint32)ECORE_IMF_CANDIDATE_PANEL_HIDE);
+
+        if (_candidate_mode == FIXED_CANDIDATE_WINDOW) {
+            _panel_agent->update_input_panel_event (ECORE_IMF_INPUT_PANEL_GEOMETRY_EVENT, 0);
+            if (_ise_show) {
+                set_keyboard_geometry_atom_info (_app_window, KEYBOARD_STATE_ON);
+            } else {
+                if (bSetVirtualKbd)
+                    set_keyboard_geometry_atom_info (_app_window, KEYBOARD_STATE_OFF);
+                _panel_agent->update_input_panel_event ((uint32)ECORE_IMF_INPUT_PANEL_STATE_EVENT, (uint32)ECORE_IMF_INPUT_PANEL_STATE_HIDE);
             }
         }
 
         SCIM_DEBUG_MAIN (3) << "    Hide candidate window\n";
-        if (will_hide) {
-            _candidate_hide_timer = ecore_timer_add (1.0, candidate_hide_timer, NULL);
-        } else {
+
+        if (!will_hide) {
+            /* If we are not in will_hide state, hide the candidate window immediately */
             candidate_window_hide ();
             evas_object_hide (_preedit_window);
         }
