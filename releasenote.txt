@@ -1,3 +1,8 @@
+ISF 2.4.6924 :
+ 1. Replace SocketConfig reload with HelperAgent reload
+ 2. [immodule] Save current active X window ID in focus-in for candidate window
+
+
 ISF 2.4.6923 :
  1. initialize current helper uuid when stop_helper () is called
 

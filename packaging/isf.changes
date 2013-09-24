@@ -1,3 +1,7 @@
+* Tue Sep 24 2013 Li Zhang <li2012.zhang@samsung.com> submit/tizen_2.2/20130923.021825@db7da88
+- Replace SocketConfig reload with HelperAgent reload
+- [immodule] Save current active X window ID in focus-in for candidate window
+
 * Mon Sep 23 2013 Jihoon Kim <jihoon48.kim@samsung.com> submit/tizen_2.2/20130916.225857@e64feee
 - initialize current helper uuid when stop_helper () is called
 
