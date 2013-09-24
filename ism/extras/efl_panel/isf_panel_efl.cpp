@@ -3791,6 +3791,11 @@ static void slot_will_hide_ack (void)
     if (_panel_agent->get_current_toolbar_mode () == TOOLBAR_HELPER_MODE) {
         ui_candidate_hide (true, false);
     }
+
+    if (_off_prepare_done_timer) {
+        ecore_timer_del(_off_prepare_done_timer);
+        _off_prepare_done_timer = NULL;
+    }
 }
 
 static void slot_candidate_will_hide_ack (void)
