@@ -1,3 +1,8 @@
+* Wed Sep 25 2013 Jihoon Kim <jihoon48.kim@samsung.com> submit/tizen_2.2/20130924.051447@0b43651
+- fix flicker problem in setting
+- fix bug H/W keyboard selection is enabled after disconnecting H/W keyboard
+- check NULL pointer before accessing pointer
+
 * Tue Sep 24 2013 Li Zhang <li2012.zhang@samsung.com> submit/tizen_2.2/20130923.021825@db7da88
 - Replace SocketConfig reload with HelperAgent reload
 - [immodule] Save current active X window ID in focus-in for candidate window

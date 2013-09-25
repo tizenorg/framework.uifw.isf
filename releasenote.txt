@@ -1,3 +1,9 @@
+ISF 2.4.6925 :
+ 1. fix flicker problem in setting
+ 2. fix bug H/W keyboard selection is enabled after disconnecting H/W keyboard
+ 3. check NULL pointer before accessing pointer
+
+
 ISF 2.4.6924 :
  1. Replace SocketConfig reload with HelperAgent reload
  2. [immodule] Save current active X window ID in focus-in for candidate window
