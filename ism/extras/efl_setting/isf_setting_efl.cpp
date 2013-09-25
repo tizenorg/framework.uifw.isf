@@ -71,8 +71,6 @@ using namespace std;
 enum {
     AUTO_CAPITALIZATION_ITEM = 0,
     AUTO_CAPITALIZATION_TXT_ITEM,
-    AUTO_FULL_STOP_ITEM,
-    AUTO_FULL_STOP_TXT_ITEM,
     SW_KEYBOARD_GROUP_TITLE_ITEM,
     SW_KEYBOARD_SEL_ITEM,
     SW_ISE_OPTION_ITEM,
@@ -135,7 +133,6 @@ static String                       _mdl_name;
 static SetupModule                 *_mdl                      = NULL;
 
 static Eina_Bool                    _auto_capitalisation      = EINA_FALSE;
-static Eina_Bool                    _auto_full_stop           = EINA_FALSE;
 
 static ConfigPointer                _config;
 static Connection                   _reload_signal_connection;
@@ -408,12 +405,6 @@ static void set_autocap_mode (void)
         std::cerr << "Failed to set vconf autocapital\n";
 }
 
-static void set_auto_full_stop_mode (void)
-{
-    if (vconf_set_bool (VCONFKEY_AUTOPERIOD_ALLOW_BOOL, _auto_full_stop) == -1)
-        std::cerr << "Failed to set vconf autoperiod\n";
-}
-
 static void update_setting_main_view (ug_data *ugd)
 {
     if (!ugd)
@@ -629,9 +620,6 @@ static void onoff_check_cb (void *data, Evas_Object *obj, void *event_info)
     if (id == AUTO_CAPITALIZATION_ITEM) {
         _auto_capitalisation = (_auto_capitalisation == EINA_TRUE ? EINA_FALSE : EINA_TRUE);
         set_autocap_mode ();
-    } else if (id == AUTO_FULL_STOP_ITEM) {
-        _auto_full_stop = (_auto_full_stop == EINA_TRUE ? EINA_FALSE : EINA_TRUE);
-        set_auto_full_stop_mode ();
     }
 }
 
@@ -648,8 +636,6 @@ static Evas_Object *_gl_icon_get (void *data, Evas_Object *obj, const char *part
         evas_object_propagate_events_set (onoff_ck, EINA_FALSE);
         if (item_data->mode == AUTO_CAPITALIZATION_ITEM) {
             elm_check_state_set (onoff_ck, _auto_capitalisation);
-        } else if (item_data->mode == AUTO_FULL_STOP_ITEM) {
-            elm_check_state_set (onoff_ck, _auto_full_stop);
         }
         return onoff_ck;
     }
@@ -710,9 +696,6 @@ static void _gl_sel (void *data, Evas_Object *obj, void *event_info)
     if (id == AUTO_CAPITALIZATION_ITEM) {
         _auto_capitalisation = (_auto_capitalisation == EINA_TRUE ? EINA_FALSE : EINA_TRUE);
         set_autocap_mode ();
-    } else if (id == AUTO_FULL_STOP_ITEM) {
-        _auto_full_stop = (_auto_full_stop == EINA_TRUE ? EINA_FALSE : EINA_TRUE);
-        set_auto_full_stop_mode ();
     }
 
     elm_genlist_item_update (item);
@@ -989,7 +972,6 @@ static Elm_Object_Item *nf_main_it = NULL;
 static Evas_Object *create_setting_main_view (ug_data *ugd)
 {
     Elm_Object_Item *item     = NULL;
-    Eina_Bool        fullstop = EINA_FALSE;
 
     if (!ugd)
         return NULL;
@@ -1093,52 +1075,6 @@ static Evas_Object *create_setting_main_view (ug_data *ugd)
                     NULL,
                     NULL);
             elm_genlist_item_select_mode_set (item, ELM_OBJECT_SELECT_MODE_DISPLAY_ONLY);
-        }
-
-        char *env = getenv ("ISF_AUTOFULLSTOP");
-        if (env)
-            fullstop = !!atoi (env);
-
-        if (fullstop) {
-            // Separator
-            append_separator (genlist, SEPARATOR_TYPE1);
-
-            // Group1 item2
-            item_data = (ItemData *)malloc (sizeof (ItemData));
-            if (item_data != NULL) {
-                memset (item_data, 0, sizeof (ItemData));
-                _p_items[AUTO_FULL_STOP_ITEM] = item_data;
-                item_data->text = strdup (_T("Automatic full stop"));
-                item_data->mode = AUTO_FULL_STOP_ITEM;
-                elm_genlist_item_append (
-                        genlist,                // genlist object
-                        &itc1,                  // item class
-                        item_data,              // data
-                        NULL,
-                        ELM_GENLIST_ITEM_NONE,
-                        _gl_sel,
-                        (void *)(item_data->mode));
-            }
-
-            // Separator
-            append_separator (genlist, SEPARATOR_TYPE2);
-
-            // Text
-            item_data = (ItemData *)malloc (sizeof (ItemData));
-            if (item_data != NULL) {
-                memset (item_data, 0, sizeof (ItemData));
-                _p_items[AUTO_FULL_STOP_TXT_ITEM] = item_data;
-                item_data->text = strdup (_T("Automatically insert a full stop by tapping the space bar twice"));
-                item = elm_genlist_item_append (
-                        genlist,                            // genlist object
-                        &itcText,                           // item class
-                        item_data,                          // data
-                        NULL,
-                        ELM_GENLIST_ITEM_NONE,
-                        NULL,
-                        NULL);
-                elm_genlist_item_select_mode_set (item, ELM_OBJECT_SELECT_MODE_DISPLAY_ONLY);
-            }
         }
 
         // Separator
@@ -1338,13 +1274,9 @@ static void update_ise_list (void)
 static void load_config_data (ConfigPointer config)
 {
     int tmp_cap    = 0;
-    int tmp_period = 0;
     vconf_get_bool (VCONFKEY_AUTOCAPITAL_ALLOW_BOOL, &tmp_cap);
-    vconf_get_bool (VCONFKEY_AUTOPERIOD_ALLOW_BOOL, &tmp_period);
     if (tmp_cap == true)
         _auto_capitalisation = EINA_TRUE;
-    if (tmp_period == true)
-        _auto_full_stop = EINA_TRUE;
 }
 
 static void load_config_module (void)
