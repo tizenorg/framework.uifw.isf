@@ -1381,10 +1381,10 @@ static void hw_connection_change_cb (ug_data *ugd)
         elm_object_item_disabled_set (ugd->autocapital_item, !elm_object_item_disabled_get (ugd->autocapital_item));
 
     if (ugd->sw_ise_item_tizen)
-        elm_object_item_disabled_set (ugd->sw_ise_item_tizen, !elm_object_item_disabled_get (ugd->sw_ise_item_tizen));
+        elm_object_item_disabled_set (ugd->sw_ise_item_tizen, _hw_kbd_connected);
 
     if (ugd->hw_ise_item_tizen)
-        elm_object_item_disabled_set (ugd->hw_ise_item_tizen, !elm_object_item_disabled_get (ugd->hw_ise_item_tizen));
+        elm_object_item_disabled_set (ugd->hw_ise_item_tizen, !_hw_kbd_connected);
 
     if (ugd->sw_ise_opt_item_tizen) {
         if (_hw_kbd_connected || ISE_OPTION_MODULE_NO_EXIST == find_ise_option_module ((const char *)(_sw_uuid_list[_sw_ise_index].c_str ())))
