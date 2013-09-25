@@ -26,7 +26,9 @@
 #define __ISF_SETTING_EFL_H
 
 #include <dlog.h>
-#define ISFUG_DEBUG(msg, args...) SLOG(LOG_DEBUG, "ISFSETTING", "[%5d][%s] "msg, __LINE__, __func__, ##args)
+#define LOG_TAG                                   "ISF_SETTING"
+#define ISFUG_DEBUG(msg, args...) LOGD(msg, ##args)
+#define ISFUG_ERROR(msg, args...) LOGE(msg, ##args)
 
 enum
 {

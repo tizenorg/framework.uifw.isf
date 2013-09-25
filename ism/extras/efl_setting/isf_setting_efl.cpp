@@ -56,7 +56,6 @@
 using namespace scim;
 using namespace std;
 
-#define LOG_TAG                                   "ISF_SETTING"
 
 #define _EDJ(x)                                   elm_layout_edje_get(x)
 #define ISF_SETTING_EDJ                           (SCIM_DATADIR "/isfsetting.edj")
@@ -1102,6 +1101,7 @@ static Evas_Object *create_setting_main_view (ug_data *ugd)
 
         String ise_uuid = _config->read (SCIM_CONFIG_DEFAULT_HELPER_ISE, String (""));
         if (ise_uuid == String ("")) {
+            ISFUG_ERROR("get SCIM_CONFIG_DEFAULT_HELPER_ISE fail");
             //one more chance
             ise_uuid = _config->read (SCIM_CONFIG_DEFAULT_HELPER_ISE, String (""));
         }
@@ -1430,7 +1430,7 @@ static void sort_hw_ise ()
         _hw_ise_list.push_back(hw_ise_list[j]);
 }
 
-static void load_ise_info ()
+static bool load_ise_info ()
 {
     isf_load_ise_information (ALL_ISE, _config);
 
@@ -1439,6 +1439,8 @@ static void load_ise_info ()
     isf_get_all_languages (all_langs);
     std::vector<String> sw_ise_list;
     isf_get_helper_ises_in_languages (all_langs, sw_uuid_list, sw_ise_list);
+    if (sw_uuid_list.size() == 0)
+        return false;
     //compose name and uuid .
     for (unsigned int i = 0 ; i < sw_uuid_list.size(); i ++) {
         String name =  sw_ise_list [i];
@@ -1451,6 +1453,8 @@ static void load_ise_info ()
     _hw_ise_list.clear ();
     std::vector<String> hw_ise_list;
     isf_get_keyboard_ises_in_languages (all_langs, hw_uuid_list, hw_ise_list);
+    if (hw_uuid_list.size() == 0)
+        return false;
     //compose name and uuid .
     for ( unsigned int i = 0 ; i < hw_uuid_list.size(); i ++) {
         String name =  hw_ise_list [i];
@@ -1459,6 +1463,7 @@ static void load_ise_info ()
         _hw_ise_list.push_back(str_name_uuid);
     }
     sort_hw_ise();
+    return true;
 }
 
 /**
@@ -1483,7 +1488,7 @@ static void slot_reload_config (const HelperAgent *, int ic, const String &ise_u
 
     _hw_ise_index_bak = _hw_ise_index;
     update_setting_main_view (_common_ugd);
-    LOGD ("keyboard ISE: %s", name.c_str ());
+    ISFUG_DEBUG ("keyboard ISE: %s", name.c_str ());
 }
 
 /**
@@ -1509,12 +1514,19 @@ static Eina_Bool helper_agent_input_handler (void *user_data, Ecore_Fd_Handler *
 
 static void *on_create (ui_gadget_h ug, enum ug_mode mode, service_h s, void *priv)
 {
-    LOGD ("create ug");
+    ISFUG_DEBUG ("create ug");
     Evas_Object *parent  = NULL;
     Evas_Object *content = NULL;
 
     if (ug == NULL || priv == NULL)
         return NULL;
+
+    load_config_module ();
+    bool loaded = load_ise_info();
+    if (!loaded) {
+        ISFUG_ERROR("load_ise_info() fail");
+        return NULL;
+    }
 
     bindtextdomain (SETTING_PACKAGE, SETTING_LOCALEDIR);
     struct ug_data *ugd = (struct ug_data *)priv;
@@ -1523,11 +1535,9 @@ static void *on_create (ui_gadget_h ug, enum ug_mode mode, service_h s, void *pr
     if (parent == NULL)
         return NULL;
 
-    load_config_module ();
     load_config_data (_config);
     scim_get_setup_module_list (_setup_modules);
     update_ise_list ();
-    load_ise_info ();
     init_hw_keyboard_listener (ugd);
 
     /* Connect PanelAgent by HelperAgent */
@@ -1593,7 +1603,7 @@ static void on_resume (ui_gadget_h ug, service_h s, void *priv)
 
 static void on_destroy (ui_gadget_h ug, service_h s, void *priv)
 {
-    LOGD ("destroy ug");
+    ISFUG_DEBUG ("destroy ug");
     if (ug == NULL || priv == NULL)
         return;
 
