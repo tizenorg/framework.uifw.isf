@@ -957,7 +957,7 @@ EAPI void
 isf_imf_context_shutdown (void)
 {
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
-
+    ConfigBase::set (0);
     if (_scim_initialized) {
         _scim_initialized = false;
 
@@ -971,7 +971,6 @@ isf_imf_context_shutdown (void)
         finalize ();
         ecore_x_shutdown ();
     }
-    ConfigBase::set (0);
 }
 
 EAPI void
