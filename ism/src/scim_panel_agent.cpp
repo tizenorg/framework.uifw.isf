@@ -539,7 +539,24 @@ public:
             m_send_trans.put_data (nValue);
             m_send_trans.write_to_socket (client_socket);
         } else {
-            std::cerr << __func__ << " client is not existed!!!" << "\n";
+            std::cerr << __func__ << " focused client is not existed!!!" << "\n";
+        }
+
+        if (m_panel_client_map[m_show_request_client_id] != focused_client) {
+            ClientInfo client_info = socket_get_client_info (m_panel_client_map[m_show_request_client_id]);
+            if (client_info.type == FRONTEND_CLIENT) {
+                Socket client_socket (m_panel_client_map[m_show_request_client_id]);
+                m_send_trans.clear ();
+                m_send_trans.put_command (SCIM_TRANS_CMD_REPLY);
+                m_send_trans.put_data (0);
+                m_send_trans.put_command (cmd);
+                m_send_trans.put_data (nType);
+                m_send_trans.put_data (nValue);
+                m_send_trans.write_to_socket (client_socket);
+                std::cerr << __func__ << " show request client=" << m_panel_client_map[m_show_request_client_id] << "\n";
+            } else {
+                std::cerr << __func__ << " show request client is not existed!!!" << "\n";
+            }
         }
     }
 
@@ -840,6 +857,8 @@ public:
 
     bool update_helper_lookup_table (const LookupTable &table)
     {
+        SCIM_DEBUG_MAIN(4) << __FUNCTION__ << "...\n";
+
         int    client;
         uint32 context;
 
@@ -2648,7 +2667,7 @@ public:
 
     void candidate_will_hide_ack (int client_id)
     {
-        SCIM_DEBUG_MAIN(4) << "PanelAgent::will_hide_ack ()\n";
+        SCIM_DEBUG_MAIN(4) << __FUNCTION__ << "\n";
 
         m_signal_candidate_will_hide_ack ();
     }
