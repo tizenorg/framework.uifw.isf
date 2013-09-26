@@ -329,6 +329,15 @@ static bool               feedback_initialized              = false;
 
 static Ecore_Event_Handler *_candidate_show_handler         = NULL;
 
+/* This structure stores the geometry information reported by ISE */
+struct GeometryCache
+{
+    bool valid;                /* Whether this information is currently valid */
+    int angle;                 /* For which angle this information is useful */
+    struct rectinfo geometry;  /* Geometry information */
+};
+static struct GeometryCache _ise_reported_geometry          = {0};
+
 /////////////////////////////////////////////////////////////////////////////
 // Implementation of internal functions.
 /////////////////////////////////////////////////////////////////////////////
@@ -393,45 +402,50 @@ static struct rectinfo get_ise_geometry ()
         win_h = _screen_width;
     }
 
-    /* READ ISE's SIZE HINT HERE */
-    int pos_x, pos_y, width, height;
-    if (ecore_x_e_window_rotation_geometry_get (_ise_window, angle,
-            &pos_x, &pos_y, &width, &height)) {
-        info.pos_x = pos_x;
-        info.pos_y = pos_y;
+    /* If we have geometry reported by ISE, use the geometry information */
+    if (_ise_reported_geometry.valid && _ise_reported_geometry.angle == angle) {
+        info = _ise_reported_geometry.geometry;
+    } else {
+        /* READ ISE's SIZE HINT HERE */
+        int pos_x, pos_y, width, height;
+        if (ecore_x_e_window_rotation_geometry_get (_ise_window, angle,
+                &pos_x, &pos_y, &width, &height)) {
+            info.pos_x = pos_x;
+            info.pos_y = pos_y;
 
-        if (angle == 90 || angle == 270) {
-            info.width = height;
-            info.height = width;
-        } else {
-            info.width = width;
-            info.height = height;
-        }
-
-        info.pos_x = (int)info.width > win_w ? 0 : (win_w - info.width) / 2;
-        if (_panel_agent->get_current_toolbar_mode () == TOOLBAR_KEYBOARD_MODE) {
-            info.pos_x = 0;
-            info.pos_y = win_h;
-            info.width = 0;
-            info.height = 0;
-        } else {
-            if (_ise_state == WINDOW_STATE_SHOW) {
-                info.pos_y = win_h - info.height;
+            if (angle == 90 || angle == 270) {
+                info.width = height;
+                info.height = width;
             } else {
+                info.width = width;
+                info.height = height;
+            }
+
+            info.pos_x = (int)info.width > win_w ? 0 : (win_w - info.width) / 2;
+            if (_panel_agent->get_current_toolbar_mode () == TOOLBAR_KEYBOARD_MODE) {
+                info.pos_x = 0;
                 info.pos_y = win_h;
                 info.width = 0;
                 info.height = 0;
+            } else {
+                if (_ise_state == WINDOW_STATE_SHOW) {
+                    info.pos_y = win_h - info.height;
+                } else {
+                    info.pos_y = win_h;
+                    info.width = 0;
+                    info.height = 0;
+                }
             }
-        }
 
-        LOGD ("Geometry : %d %d %d, %d %d %d %d\n", angle, _window_angle,
-            _panel_agent->get_current_toolbar_mode (),
-            info.pos_x, info.pos_y, info.width, info.height);
-    } else {
-        pos_x = 0;
-        pos_y = 0;
-        width = 0;
-        height = 0;
+            LOGD ("Geometry : %d %d %d, %d %d %d %d\n", angle, _window_angle,
+                _panel_agent->get_current_toolbar_mode (),
+                info.pos_x, info.pos_y, info.width, info.height);
+        } else {
+            pos_x = 0;
+            pos_y = 0;
+            width = 0;
+            height = 0;
+        }
     }
     _ise_width  = info.width;
     _ise_height = info.height;
@@ -2682,12 +2696,13 @@ static void slot_update_ise_geometry (int x, int y, int width, int height)
     }
 
     if (old_height != height && _ise_state == WINDOW_STATE_SHOW) {
-        struct rectinfo ise_rect;
-        ise_rect.pos_x = x;
-        ise_rect.pos_y = y;
-        ise_rect.width = width;
-        ise_rect.height = height;
-        set_keyboard_geometry_atom_info (_app_window, ise_rect);
+        _ise_reported_geometry.valid = true;
+        _ise_reported_geometry.angle = efl_get_angle_for_ise_window ();
+        _ise_reported_geometry.geometry.pos_x = x;
+        _ise_reported_geometry.geometry.pos_y = y;
+        _ise_reported_geometry.geometry.width = width;
+        _ise_reported_geometry.geometry.height = height;
+        set_keyboard_geometry_atom_info (_app_window, _ise_reported_geometry.geometry);
         _panel_agent->update_input_panel_event (ECORE_IMF_INPUT_PANEL_GEOMETRY_EVENT, 0);
     }
 }
@@ -4218,6 +4233,8 @@ static Eina_Bool x_event_window_property_cb (void *data, int ev_type, void *even
                 }
 
                 vconf_set_int (VCONFKEY_ISF_INPUT_PANEL_STATE, VCONFKEY_ISF_INPUT_PANEL_STATE_HIDE);
+
+                _ise_reported_geometry.valid = false;
             }
             ui_settle_candidate_window ();
         }
@@ -4272,6 +4289,7 @@ static Eina_Bool x_event_client_message_cb (void *data, int type, void *event)
             }
             _off_prepare_done_timer = ecore_timer_add (1.0, off_prepare_done_timeout, NULL);
 
+            _ise_reported_geometry.valid = false;
             set_keyboard_geometry_atom_info (_app_window, get_ise_geometry ());
             _panel_agent->update_input_panel_event (ECORE_IMF_INPUT_PANEL_GEOMETRY_EVENT, 0);
 
