@@ -468,7 +468,9 @@ public:
             isf_save_log (buf);
 
             if ((m_err = ::connect (m_id, data, len)) == 0) {
-                fcntl (m_id, F_SETFL, flags);
+                if (fcntl (m_id, F_SETFL, flags) == -1) {
+                    m_err = errno;
+                }
                 m_address = addr;
 
                 snprintf (buf, sizeof (buf), "time:%ld  pid:%d  %s  %s  connect() succeeded\n",
@@ -495,7 +497,7 @@ public:
                 isf_save_log (buf);
 
                 if (select (m_id + 1, &rset, &wset, NULL, nsec ? &tval : NULL) == 0) {
-                    errno = ETIMEDOUT;
+                    m_err = ETIMEDOUT;
 
                     snprintf (buf, sizeof (buf), "time:%ld  pid:%d  %s  %s  timeout in select()\n",
                         time (0), getpid (), __FILE__, __func__);
@@ -506,17 +508,21 @@ public:
                         time (0), getpid (), __FILE__, __func__);
                     isf_save_log (buf);
 
-                    fcntl (m_id, F_SETFL, flags);
+                    if (fcntl (m_id, F_SETFL, flags) == -1) {
+                        m_err = errno;
+                    }
                     m_address = addr;
                     return true;
                 }
             } else {
+                m_err = errno;
                 snprintf (buf, sizeof (buf), "time:%ld  pid:%d  %s  %s  connect() failed with %d\n",
                         time (0), getpid (), __FILE__, __func__, errno);
                 isf_save_log (buf);
             }
-            fcntl (m_id, F_SETFL, flags);
-            m_err = errno;
+            if (fcntl (m_id, F_SETFL, flags) == -1) {
+                m_err = errno;
+            }
         }
         return false;
     }
