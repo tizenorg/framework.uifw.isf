@@ -458,11 +458,64 @@ public:
             struct sockaddr * data = (sockaddr *) addr.get_data ();
             int len = addr.get_data_length ();
 
-            if (::connect (m_id, data, len) == 0) {
+            // Backup the current flag to restore after non-blocking connect() try
+            int flags = fcntl (m_id, F_GETFL, 0);
+            fcntl (m_id, F_SETFL, flags | O_NONBLOCK);
+
+            char buf[256] = {0};
+            snprintf (buf, sizeof (buf), "time:%ld  pid:%d  ppid:%d  %s  %s  trying connect() to %s\n",
+                time (0), getpid (), getppid (), __FILE__, __func__, addr.get_address ().c_str ());
+            isf_save_log (buf);
+
+            if ((m_err = ::connect (m_id, data, len)) == 0) {
+                fcntl (m_id, F_SETFL, flags);
                 m_address = addr;
-                m_err = 0;
+
+                snprintf (buf, sizeof (buf), "time:%ld  pid:%d  %s  %s  connect() succeeded\n",
+                    time (0), getpid (), __FILE__, __func__);
+                isf_save_log (buf);
+
                 return true;
             }
+
+            // If still in progress, use select() to wait for the connection result
+            if (m_err == EINPROGRESS) {
+                const int nsec = scim_get_default_socket_timeout () / 1000;
+
+                fd_set rset, wset;
+                struct timeval tval;
+                FD_ZERO(&rset);
+                FD_SET(m_id, &rset);
+                wset = rset;
+                tval.tv_sec = nsec;
+                tval.tv_usec = 0;
+
+                snprintf (buf, sizeof (buf), "time:%ld  pid:%d  %s  %s  EINPROGRESS, select() with timeout %d\n",
+                    time (0), getpid (), __FILE__, __func__, nsec);
+                isf_save_log (buf);
+
+                if (select (m_id + 1, &rset, &wset, NULL, nsec ? &tval : NULL) == 0) {
+                    errno = ETIMEDOUT;
+
+                    snprintf (buf, sizeof (buf), "time:%ld  pid:%d  %s  %s  timeout in select()\n",
+                        time (0), getpid (), __FILE__, __func__);
+                    isf_save_log (buf);
+                } else {
+                    // We've got something, connection succeeded
+                    snprintf (buf, sizeof (buf), "time:%ld  pid:%d  %s  %s  finally connected\n",
+                        time (0), getpid (), __FILE__, __func__);
+                    isf_save_log (buf);
+
+                    fcntl (m_id, F_SETFL, flags);
+                    m_address = addr;
+                    return true;
+                }
+            } else {
+                snprintf (buf, sizeof (buf), "time:%ld  pid:%d  %s  %s  connect() failed with %d\n",
+                        time (0), getpid (), __FILE__, __func__, errno);
+                isf_save_log (buf);
+            }
+            fcntl (m_id, F_SETFL, flags);
             m_err = errno;
         }
         return false;
