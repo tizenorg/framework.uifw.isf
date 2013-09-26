@@ -57,7 +57,9 @@ static Ecore_X_Window     active_context_window = -1;
 Ecore_IMF_Context        *input_panel_ctx = NULL;
 static Ecore_Event_Handler *_win_focus_out_handler = NULL;
 static Eina_Bool          conformant_reset_done = EINA_FALSE;
+static Eina_Bool          candidate_conformant_reset_done = EINA_FALSE;
 static Eina_Bool          received_will_hide_event = EINA_FALSE;
+static Eina_Bool          received_candidate_will_hide_event = EINA_FALSE;
 static Eina_Bool          will_hide = EINA_FALSE;
 
 static void _send_input_panel_hide_request ();
@@ -90,6 +92,7 @@ static void _candidate_render_post_cb (void *data, Evas *e, void *event_info)
 {
     LOGD ("[%s]\n", __func__);
     evas_event_callback_del_full (e, EVAS_CALLBACK_RENDER_POST, _candidate_render_post_cb, NULL);
+    candidate_conformant_reset_done = EINA_TRUE;
     isf_imf_context_input_panel_send_candidate_will_hide_ack (get_using_ic (ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_SHOW));
 }
 
@@ -130,6 +133,8 @@ static Eina_Bool _prop_change (void *data, int ev_type, void *ev)
             sx = sy = sw = sh = 0;
 
         if (state == ECORE_X_VIRTUAL_KEYBOARD_STATE_OFF) {
+            conformant_reset_done = EINA_FALSE;
+            candidate_conformant_reset_done = EINA_FALSE;
             if (active_context_canvas && _conformant_get ()) {
                 evas_event_callback_add (active_context_canvas, EVAS_CALLBACK_RENDER_POST, _render_post_cb, NULL);
             }
@@ -138,6 +143,10 @@ static Eina_Bool _prop_change (void *data, int ev_type, void *ev)
         }
         else if (state == ECORE_X_VIRTUAL_KEYBOARD_STATE_ON) {
             conformant_reset_done = EINA_FALSE;
+            candidate_conformant_reset_done = EINA_FALSE;
+            if (active_context_canvas && _conformant_get ()) {
+                evas_event_callback_add (active_context_canvas, EVAS_CALLBACK_RENDER_POST, _candidate_render_post_cb, NULL);
+            }
             LOGD ("[ECORE_X_VIRTUAL_KEYBOARD_STATE_ON] geometry x : %d, y : %d, w : %d, h : %d\n", sx, sy, sw, sh);
         }
     } else {
@@ -245,9 +254,7 @@ static void _event_callback_call (Ecore_IMF_Input_Panel_Event type, int value)
     if (type == ECORE_IMF_CANDIDATE_PANEL_STATE_EVENT &&
         value == ECORE_IMF_CANDIDATE_PANEL_HIDE &&
         notified_state != ECORE_IMF_INPUT_PANEL_STATE_HIDE) {
-        if (active_context_canvas && _conformant_get ())
-            evas_event_callback_add (active_context_canvas, EVAS_CALLBACK_RENDER_POST, _candidate_render_post_cb, NULL);
-        else
+            received_candidate_will_hide_event = TRUE;
             isf_imf_context_input_panel_send_candidate_will_hide_ack (using_ic);
     }
 }
@@ -432,6 +439,7 @@ void isf_imf_input_panel_shutdown (void)
             LOGD ("No hide timer\n");
     }
 
+    candidate_conformant_reset_done = TRUE;
     isf_imf_context_input_panel_send_candidate_will_hide_ack (get_using_ic (ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_SHOW));
 
     if (_prop_change_handler) {
@@ -902,7 +910,17 @@ void isf_imf_context_input_panel_send_candidate_will_hide_ack (Ecore_IMF_Context
     if (IfInitContext == false) {
         _isf_imf_context_init ();
     }
-    _isf_imf_context_input_panel_send_candidate_will_hide_ack (_get_context_id (ctx));
+
+    if (_conformant_get ()) {
+        if (candidate_conformant_reset_done && received_candidate_will_hide_event) {
+            LOGD ("Send candidate will hide ack\n");
+            _isf_imf_context_input_panel_send_candidate_will_hide_ack (_get_context_id (ctx));
+            candidate_conformant_reset_done = EINA_FALSE;
+            received_candidate_will_hide_event = EINA_FALSE;
+        }
+    } else {
+        _isf_imf_context_input_panel_send_candidate_will_hide_ack (_get_context_id (ctx));
+    }
 }
 
 /**
