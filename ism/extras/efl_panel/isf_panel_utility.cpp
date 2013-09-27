@@ -35,6 +35,16 @@
 #include "isf_panel_utility.h"
 #include "isf_query_utility.h"
 #include <unistd.h>
+#include <dlog.h>
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Declaration of macro.
+/////////////////////////////////////////////////////////////////////////////
+#ifdef LOG_TAG
+# undef LOG_TAG
+#endif
+#define LOG_TAG                                         "ISF_PANEL_EFL"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -330,7 +340,7 @@ static bool add_keyboard_ise_module (const String module_name, const ConfigPoint
     String filename = String (USER_ENGINE_FILE_NAME);
     FILE *engine_list_file = fopen (filename.c_str (), "a");
     if (engine_list_file == NULL) {
-        std::cerr << __func__ << " Failed to open(" << filename << ")\n";
+        LOGD ("Failed to open %s!!!\n", filename.c_str ());
         return false;
     }
 
@@ -366,7 +376,7 @@ static bool add_keyboard_ise_module (const String module_name, const ConfigPoint
                     String line = isf_combine_ise_info_string (name, uuid, module_name, language,
                                                                icon, String (mode), String (option), factory->get_locales ());
                     if (fputs (line.c_str (), engine_list_file) < 0) {
-                        std::cerr << "write to ise cache file failed:" << line << "\n";
+                        LOGD ("Failed to write (%s)!!!\n", line.c_str ());
                         break;
                     }
                 }
@@ -376,7 +386,9 @@ static bool add_keyboard_ise_module (const String module_name, const ConfigPoint
         ime_module.unload ();
     }
 
-    fclose (engine_list_file);
+    int ret = fclose (engine_list_file);
+    if (ret != 0)
+        LOGD ("Failed to fclose %s!!!\n", filename.c_str ());
 
     return true;
 }
@@ -399,7 +411,7 @@ static bool add_helper_ise_module (const String module_name)
     String filename = String (USER_ENGINE_FILE_NAME);
     FILE *engine_list_file = fopen (filename.c_str (), "a");
     if (engine_list_file == NULL) {
-        std::cerr << __func__ << " Failed to open(" << filename << ")\n";
+        LOGD ("Failed to open %s!!!\n", filename.c_str ());
         return false;
     }
 
@@ -423,14 +435,16 @@ static bool add_helper_ise_module (const String module_name)
             String line = isf_combine_ise_info_string (helper_info.name, helper_info.uuid, module_name, isf_get_normalized_language (helper_module.get_helper_lang (j)),
                                                        helper_info.icon, String (mode), String (option), String (""));
             if (fputs (line.c_str (), engine_list_file) < 0) {
-                 std::cerr << "write to ise cache file failed:" << line << "\n";
+                 LOGD ("Failed to write (%s)!!!\n", line.c_str ());
                  break;
             }
         }
         helper_module.unload ();
     }
 
-    fclose (engine_list_file);
+    int ret = fclose (engine_list_file);
+    if (ret != 0)
+        LOGD ("Failed to fclose %s!!!\n", filename.c_str ());
 
     return true;
 }

@@ -67,6 +67,14 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <signal.h>
+#include <dlog.h>
+
+
+#ifdef LOG_TAG
+# undef LOG_TAG
+#endif
+#define LOG_TAG                                        "ISF_SOCKET_FRONTEND"
+
 
 #define scim_module_init socket_LTX_scim_module_init
 #define scim_module_exit socket_LTX_scim_module_exit
@@ -75,6 +83,7 @@
 
 #define SCIM_CONFIG_FRONTEND_SOCKET_CONFIG_READONLY    "/FrontEnd/Socket/ConfigReadOnly"
 #define SCIM_CONFIG_FRONTEND_SOCKET_MAXCLIENTS         "/FrontEnd/Socket/MaxClients"
+
 
 using namespace scim;
 
@@ -180,9 +189,10 @@ void SocketFrontEnd::load_helper_modules (const std::vector<String> &load_engine
         }
 
         HelperModule module;
-        std::ofstream engine_list_file (USER_ENGINE_FILE_NAME, std::ios::app);
+        String filename = String (USER_ENGINE_FILE_NAME);
+        FILE *engine_list_file = fopen (filename.c_str (), "a");
         if (!engine_list_file) {
-            std::cerr << __func__ << " Failed to open(" << USER_ENGINE_FILE_NAME << ")\n";
+            LOGD ("Failed to open %s!!!\n", filename.c_str ());
         }
 
         for (size_t i = 0; i < mod_list.size (); ++i) {
@@ -209,14 +219,19 @@ void SocketFrontEnd::load_helper_modules (const std::vector<String> &load_engine
 
                             String line = isf_combine_ise_info_string (info.name, info.uuid, mod_list [i], isf_get_normalized_language (module.get_helper_lang (j)),
                                                                        info.icon, String (mode), String (option), String (""));
-                            engine_list_file << line;
-                            engine_list_file.flush ();
+                            if (fputs (line.c_str (), engine_list_file) < 0)
+                                LOGD ("Failed to write (%s)!!!\n", line.c_str ());
                         }
                     }
                 }
             }
 
             module.unload ();
+        }
+        if (engine_list_file) {
+            int ret = fclose (engine_list_file);
+            if (ret != 0)
+                LOGD ("Failed to fclose %s!!!\n", filename.c_str ());
         }
     }
 }

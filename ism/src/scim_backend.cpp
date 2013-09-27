@@ -42,10 +42,17 @@
 #include <malloc.h>
 #include <string.h>
 #include <unistd.h>
+#include <dlog.h>
 #include "scim_private.h"
 #include "scim.h"
 #include "scim_stl_map.h"
 #include "isf_query_utility.h"
+
+
+#ifdef LOG_TAG
+# undef LOG_TAG
+#endif
+#define LOG_TAG                                         "ISF_BACKEND"
 
 
 namespace scim {
@@ -838,7 +845,7 @@ CommonBackEnd::add_imengine_module_info (const String module_name, const ConfigP
     String filename = String (USER_ENGINE_FILE_NAME);
     FILE *engine_list_file = fopen (filename.c_str (), "a");
     if (engine_list_file == NULL) {
-        std::cerr << __func__ << " Failed to open(" << filename << ")\n";
+        LOGD ("Failed to open %s!!!\n", filename.c_str ());
         return;
     }
 
@@ -866,7 +873,7 @@ CommonBackEnd::add_imengine_module_info (const String module_name, const ConfigP
                 String line = isf_combine_ise_info_string (name, uuid, module_name, language,
                                                            icon, String (mode), String (option), factory->get_locales ());
                 if (fputs (line.c_str (), engine_list_file) < 0) {
-                    std::cerr << "write to ise cache file failed:" << line << "\n";
+                    LOGD ("Failed to write (%s)!!!\n", line.c_str ());
                     break;
                 }
 
@@ -881,7 +888,9 @@ CommonBackEnd::add_imengine_module_info (const String module_name, const ConfigP
     }
 
     ime_module.unload ();
-    fclose (engine_list_file);
+    int ret = fclose (engine_list_file);
+    if (ret != 0)
+        LOGD ("Failed to fclose %s!!!\n", filename.c_str ());
 }
 
 

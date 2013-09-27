@@ -72,11 +72,12 @@ x11_la_LIBADD      = imdkit/libXimd.la \
 
 socket_la_SOURCES  = scim_socket_frontend.cpp
 
-socket_la_CXXFLAGS = @GTK2_CFLAGS@
+socket_la_CXXFLAGS = @GTK2_CFLAGS@ @DLOG_CFLAGS@
 
 socket_la_LDFLAGS  = -avoid-version \
                      -rpath $(moduledir) \
                      -module \
+                     @DLOG_LIBS@ \
                      @LIBTOOL_EXPORT_OPTIONS@
 
 socket_la_LIBADD   = $(top_builddir)/ism/src/libscim@SCIM_EPOCH@.la

@@ -38,12 +38,22 @@
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <dlog.h>
 #include "scim_private.h"
 #include "scim.h"
 #include "isf_query_utility.h"
 
 
 using namespace scim;
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Declaration of macro.
+/////////////////////////////////////////////////////////////////////////////
+#ifdef LOG_TAG
+# undef LOG_TAG
+#endif
+#define LOG_TAG                                         "ISF_QUERY"
 
 
 /**
@@ -135,12 +145,17 @@ EAPI bool isf_read_ise_info_list (const char *filename, std::vector<ISEINFO> &in
 
 EAPI bool isf_write_ise_info_list (const char *filename, std::vector<ISEINFO> &info_list)
 {
+    LOGD ("Enter");
     if (info_list.size () <= 0)
         return false;
 
-    FILE *engine_list_file = fopen (filename, "w+");
+    /* In order to avoid file writing failed, firstly save ISE information to temporary file */
+    bool   bSuccess = true;
+    String strTempFile = String (filename) + String (".tmp");
+
+    FILE *engine_list_file = fopen (strTempFile.c_str (), "w+");
     if (engine_list_file == NULL) {
-        std::cerr << __func__ << " Failed to open(" << filename << ")\n";
+        LOGD ("Failed to open %s!!!\n", strTempFile.c_str ());
         return false;
     }
 
@@ -154,13 +169,27 @@ EAPI bool isf_write_ise_info_list (const char *filename, std::vector<ISEINFO> &i
         String line = isf_combine_ise_info_string (iter->name, iter->uuid, iter->module, iter->language,
                                                    iter->icon, String (mode), String (option), iter->locales);
         if (fputs (line.c_str (), engine_list_file) < 0) {
-            std::cerr << __func__ << " Failed to write(" << line << ")\n";
+            bSuccess = false;
+            LOGD ("Failed to write (%s)!!!\n", line.c_str ());
             break;
         }
     }
 
-    fclose (engine_list_file);
-    return true;
+    int ret = fclose (engine_list_file);
+    if (ret != 0) {
+        bSuccess = false;
+        LOGD ("Failed to fclose %s!!!\n", strTempFile.c_str ());
+    }
+
+    if (bSuccess) {
+        if (rename (strTempFile.c_str (), filename) != 0) {
+            bSuccess = false;
+            LOGD ("Failed to rename %s!!!\n", filename);
+        }
+    }
+
+    LOGD ("Exit");
+    return bSuccess;
 }
 
 static void add_keyboard_info_to_list (std::vector<ISEINFO> &info_list, const char *module_name, const ConfigPointer &config)
