@@ -424,14 +424,14 @@ static struct rectinfo get_ise_geometry ()
             info.pos_x = (int)info.width > win_w ? 0 : (win_w - info.width) / 2;
             if (_panel_agent->get_current_toolbar_mode () == TOOLBAR_KEYBOARD_MODE) {
                 info.pos_x = 0;
-                info.pos_y = win_h;
+                info.pos_y = (win_h > win_w) ? win_h : win_w;
                 info.width = 0;
                 info.height = 0;
             } else {
                 if (_ise_state == WINDOW_STATE_SHOW) {
                     info.pos_y = win_h - info.height;
                 } else {
-                    info.pos_y = win_h;
+                    info.pos_y = (win_h > win_w) ? win_h : win_w;
                     info.width = 0;
                     info.height = 0;
                 }
