@@ -3101,7 +3101,7 @@ static void update_table (int table_type, const LookupTable &table)
     WideString wcs;
 
     AttributeList attrs;
-    int i, x, y, width, height, item_0_width;
+    int i, x, y, width, height, item_0_width = 0;
 
     int nLast      = 0;
     std::vector<uint32> row_items;
