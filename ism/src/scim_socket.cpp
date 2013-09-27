@@ -460,7 +460,12 @@ public:
 
             // Backup the current flag to restore after non-blocking connect() try
             int flags = fcntl (m_id, F_GETFL, 0);
-            fcntl (m_id, F_SETFL, flags | O_NONBLOCK);
+            if (fcntl (m_id, F_SETFL, flags | O_NONBLOCK) == -1) {
+                char buf[256] = {0};
+                snprintf (buf, sizeof (buf), "time:%ld  pid:%d  ppid:%d  %s  %s  fcntl() failed, %d\n",
+                    time (0), getpid (), getppid (), __FILE__, __func__, errno);
+                isf_save_log (buf);
+            }
 
             char buf[256] = {0};
             snprintf (buf, sizeof (buf), "time:%ld  pid:%d  ppid:%d  %s  %s  trying connect() to %s\n",
