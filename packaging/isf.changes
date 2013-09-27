@@ -1,3 +1,28 @@
+* Fri Sep 27 2013 Jihoon Kim <jihoon48.kim@samsung.com> submit/tizen_2.2/20130925.013902@9ea691f
+- [isfsetting] when getting ise info failed, exit the ug
+- Use temporary file when re-write ISE cache file
+- fix prevent issue about uninitialized value
+- Send input panel event to show_request client
+- fr po issue
+- Remove autoperiod menu
+- Fix P130924-00625
+- Change translation about auto punctuate
+- change the word as their language in keyboard selection windows
+- Modified to preserve geometry information provided by ISE
+- Changed set_keyboard_geom interface to support update_ise_geometry
+- Assume ISE still active when settle candidate window even in WILL_HIDE state
+- Fixed some cases that CANDIDATE_WILL_HIDE does not work properly
+- Do not move candidate window if ISE and candidate window are both in WILL_HIDE state
+- Modified to hide candidate window when WILL_HIDE ack received
+- Remove off_prepare_timer when WILL_HIDE_ACK received
+- Added state checking code before transition to WILL_* state
+- Use ISE/candidate state variables instead of state-specific flags
+- Clarified the usage of keyboard geometry related functions
+- Fixed the candidate window being displayed improperly by hide timer
+- Register render_flush callback for candidate window when KEYBOARD_STATE changes
+- Fixed prevent defects
+- Modified the scim_socket to connect in nonblocking way
+
 * Wed Sep 25 2013 Jihoon Kim <jihoon48.kim@samsung.com> submit/tizen_2.2/20130924.051447@0b43651
 - fix flicker problem in setting
 - fix bug H/W keyboard selection is enabled after disconnecting H/W keyboard

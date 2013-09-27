@@ -1,3 +1,29 @@
+ISF 2.4.6927 :
+ 1. [isfsetting] when getting ise info failed, exit the ug
+ 2. Use temporary file when re-write ISE cache file
+ 3. fix prevent issue about uninitialized value
+ 4. Send input panel event to show_request client
+ 5. fr po issue
+ 6. Remove autoperiod menu
+ 7. Fix P130924-00625
+ 8. Change translation about auto punctuate
+ 9. change the word as their language in keyboard selection windows
+10. Modified to preserve geometry information provided by ISE
+11. Changed set_keyboard_geom interface to support update_ise_geometry
+12. Assume ISE still active when settle candidate window even in WILL_HIDE state
+13. Fixed some cases that CANDIDATE_WILL_HIDE does not work properly
+14. Do not move candidate window if ISE and candidate window are both in WILL_HIDE state
+15. Modified to hide candidate window when WILL_HIDE ack received
+16. Remove off_prepare_timer when WILL_HIDE_ACK received
+17. Added state checking code before transition to WILL_* state
+18. Use ISE/candidate state variables instead of state-specific flags
+19. Clarified the usage of keyboard geometry related functions
+20. Fixed the candidate window being displayed improperly by hide timer
+21. Register render_flush callback for candidate window when KEYBOARD_STATE changes
+22. Fixed prevent defects
+23. Modified the scim_socket to connect in nonblocking way
+
+
 ISF 2.4.6925 :
  1. fix flicker problem in setting
  2. fix bug H/W keyboard selection is enabled after disconnecting H/W keyboard
