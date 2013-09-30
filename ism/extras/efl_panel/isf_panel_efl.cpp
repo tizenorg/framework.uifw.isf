@@ -84,7 +84,7 @@ using namespace scim;
 #define ISF_SYSTEM_APPSERVICE_READY_STATE               1
 #define ISF_SYSTEM_WM_WAIT_COUNT                        200
 #define ISF_SYSTEM_WAIT_DELAY                           100 * 1000
-#define ISF_CANDIDATE_DESTROY_DELAY                     0.2
+#define ISF_CANDIDATE_DESTROY_DELAY                     3
 
 #define ISF_PREEDIT_BORDER                              16
 
@@ -1201,13 +1201,20 @@ static void delete_candidate_hide_timer (void)
 
 static void candidate_window_hide (void)
 {
+    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "\n";
+
     delete_candidate_hide_timer ();
     _candidate_state = WINDOW_STATE_HIDE;
 
-    LOGD ("evas_object_hide (_candidate_window, %p)\n", elm_win_xwindow_get ( _candidate_window));
+    LOGD ("evas_object_hide (_candidate_window, %p)\n", elm_win_xwindow_get (_candidate_window));
 
-    if (_candidate_window)
+    if (_candidate_window) {
+        evas_object_hide (_candidate_area_1);
+        evas_object_hide (_more_btn);
+
         evas_object_hide (_candidate_window);
+        SCIM_DEBUG_MAIN (3) << "    Hide candidate window\n";
+    }
 }
 
 /**
@@ -1260,7 +1267,7 @@ static Eina_Bool x_event_window_show_cb (void *data, int ev_type, void *event)
             _candidate_state = WINDOW_STATE_SHOW;
 
             /* Update the geometry information for auto scrolling */
-            set_keyboard_geometry_atom_info(_app_window, get_ise_geometry ());
+            set_keyboard_geometry_atom_info (_app_window, get_ise_geometry ());
             _panel_agent->update_input_panel_event (ECORE_IMF_INPUT_PANEL_GEOMETRY_EVENT, 0);
             _panel_agent->update_input_panel_event (ECORE_IMF_CANDIDATE_PANEL_GEOMETRY_EVENT, 0);
 
@@ -1332,8 +1339,8 @@ static void ui_candidate_show (bool bSetVirtualKbd)
         }
     }
 
-    delete_candidate_show_handler();
-    _candidate_show_handler = ecore_event_handler_add(ECORE_X_EVENT_WINDOW_SHOW, x_event_window_show_cb, NULL);
+    delete_candidate_show_handler ();
+    _candidate_show_handler = ecore_event_handler_add (ECORE_X_EVENT_WINDOW_SHOW, x_event_window_show_cb, NULL);
 
     evas_object_show (_candidate_window);
 }
@@ -1346,7 +1353,7 @@ static void ui_candidate_show (bool bSetVirtualKbd)
  */
 static void ui_candidate_hide (bool bForce, bool bSetVirtualKbd, bool will_hide)
 {
-    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
+    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << " bForce:" << bForce << " bSetVirtualKbd:" << bSetVirtualKbd << " will_hide:" << will_hide << "...\n";
     _candidate_window_pending = false;
     if (!_candidate_window)
         return;
@@ -1366,7 +1373,7 @@ static void ui_candidate_hide (bool bForce, bool bSetVirtualKbd, bool will_hide)
             _candidate_state = WINDOW_STATE_WILL_HIDE;
 
             delete_candidate_hide_timer ();
-            _candidate_hide_timer = ecore_timer_add (1.0, candidate_hide_timer, NULL);
+            _candidate_hide_timer = ecore_timer_add (2.0, candidate_hide_timer, NULL);
         }
 
         _panel_agent->update_candidate_panel_event ((uint32)ECORE_IMF_CANDIDATE_PANEL_STATE_EVENT, (uint32)ECORE_IMF_CANDIDATE_PANEL_HIDE);
@@ -1386,8 +1393,6 @@ static void ui_candidate_hide (bool bForce, bool bSetVirtualKbd, bool will_hide)
                     ((uint32)ECORE_IMF_INPUT_PANEL_STATE_EVENT, (uint32)ECORE_IMF_INPUT_PANEL_STATE_HIDE);
             }
         }
-
-        SCIM_DEBUG_MAIN (3) << "    Hide candidate window\n";
 
         if (!will_hide) {
             /* If we are not in will_hide state, hide the candidate window immediately */
@@ -2183,9 +2188,6 @@ static void ui_settle_candidate_window (void)
             _panel_agent->update_candidate_panel_event ((uint32)ECORE_IMF_CANDIDATE_PANEL_GEOMETRY_EVENT, 0);
         }
     }
-
-    if (_candidate_state != WINDOW_STATE_SHOW && _candidate_state != WINDOW_STATE_WILL_SHOW)
-        ui_candidate_hide (false);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2850,13 +2852,18 @@ static void slot_hide_candidate_table (void)
         return;
     }
 
-    if (!_candidate_area_1)
+    if (!_candidate_area_1 || _candidate_state == WINDOW_STATE_WILL_HIDE)
         return;
 
     if (evas_object_visible_get (_candidate_area_1) || evas_object_visible_get (_candidate_area_2)) {
+        bool bForce = false;
         if (evas_object_visible_get (_candidate_area_1)) {
-            evas_object_hide (_candidate_area_1);
-            evas_object_hide (_more_btn);
+            if (evas_object_visible_get (_aux_area)) {
+                evas_object_hide (_candidate_area_1);
+                evas_object_hide (_more_btn);
+            } else {
+                bForce = true;
+            }
         }
         if (evas_object_visible_get (_candidate_area_2)) {
             evas_object_hide (_candidate_area_2);
@@ -2866,7 +2873,7 @@ static void slot_hide_candidate_table (void)
         }
         ui_candidate_window_adjust ();
 
-        ui_candidate_hide (false, true, true);
+        ui_candidate_hide (bForce, true, true);
         ui_settle_candidate_window ();
     }
 
@@ -3845,6 +3852,8 @@ static void slot_will_hide_ack (void)
 
 static void slot_candidate_will_hide_ack (void)
 {
+    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
+
     LOGD ("candidate_will_hide_ack");
     if (_candidate_state == WINDOW_STATE_WILL_HIDE) {
         candidate_window_hide ();
@@ -3871,9 +3880,12 @@ static void slot_get_ise_state (int &state)
             case WINDOW_STATE_HIDE :
                 state = ECORE_IMF_INPUT_PANEL_STATE_HIDE;
                 break;
+            default :
+                state = ECORE_IMF_INPUT_PANEL_STATE_HIDE;
         };
     }
     LOGD ("state = %d", state);
+    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << " state = " << state << "\n";
 }
 
 //////////////////////////////////////////////////////////////////////
