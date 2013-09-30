@@ -1781,7 +1781,6 @@ static void ui_create_preedit_window (void)
 
         _preedit_text = edje_object_add (evas_object_evas_get (_preedit_window));
         edje_object_file_set (_preedit_text, _candidate_edje_file.c_str (), "preedit_text");
-        edje_object_text_class_set (_preedit_text, "preedit_text_class", _candidate_font_name.c_str (), preedit_font_size);
         evas_object_size_hint_fill_set (_preedit_text, EVAS_HINT_FILL, EVAS_HINT_FILL);
         evas_object_size_hint_weight_set (_preedit_text, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
         elm_win_resize_object_add (_preedit_window, _preedit_text);
@@ -3042,7 +3041,6 @@ static void slot_update_aux_string (const String &str, const AttributeList &attr
         count++;
         aux_edje = edje_object_add (evas);
         edje_object_file_set (aux_edje, _candidate_edje_file.c_str (), "aux");
-        edje_object_text_class_set (aux_edje, "aux_text_class", _candidate_font_name.c_str (), _aux_font_size);
         edje_object_part_text_set (aux_edje, "aux", aux_list [i].c_str ());
         elm_table_pack (_aux_table, aux_edje, 2 * i, 0, 1, 1);
         evas_object_event_callback_add (aux_edje, EVAS_CALLBACK_MOUSE_DOWN, ui_mouse_button_pressed_cb, GINT_TO_POINTER ((i << 8) + ISF_EFL_AUX));
@@ -3179,7 +3177,6 @@ static void update_table (int table_type, const LookupTable &table)
             if (!_candidate_0 [i] && total_width <= scroll_0_width) {
                 _candidate_0 [i] = edje_object_add (evas);
                 edje_object_file_set (_candidate_0 [i], _candidate_edje_file.c_str (), _candidate_name.c_str ());
-                edje_object_text_class_set (_candidate_0 [i], "candidate_text_class", _candidate_font_name.c_str (), _candidate_font_size);
                 evas_object_event_callback_add (_candidate_0 [i], EVAS_CALLBACK_MOUSE_DOWN, ui_mouse_button_pressed_cb, GINT_TO_POINTER ((i << 8) + ISF_EFL_CANDIDATE_0));
                 evas_object_event_callback_add (_candidate_0 [i], EVAS_CALLBACK_MOUSE_UP, ui_mouse_button_released_cb, GINT_TO_POINTER (i));
                 evas_object_event_callback_add (_candidate_0 [i], EVAS_CALLBACK_MOUSE_MOVE, ui_mouse_moved_cb, GINT_TO_POINTER (ISF_EFL_CANDIDATE_0));
@@ -3247,7 +3244,6 @@ static void update_table (int table_type, const LookupTable &table)
             if (!_candidate_items [i]) {
                 _candidate_items [i] = edje_object_add (evas);
                 edje_object_file_set (_candidate_items [i], _candidate_edje_file.c_str (), _candidate_name.c_str ());
-                edje_object_text_class_set (_candidate_items [i], "candidate_text_class", _candidate_font_name.c_str (), _candidate_font_size);
                 evas_object_event_callback_add (_candidate_items [i], EVAS_CALLBACK_MOUSE_DOWN, ui_mouse_button_pressed_cb, GINT_TO_POINTER ((i << 8) + ISF_EFL_CANDIDATE_ITEMS));
                 evas_object_event_callback_add (_candidate_items [i], EVAS_CALLBACK_MOUSE_UP, ui_mouse_button_released_cb, GINT_TO_POINTER (i));
                 evas_object_event_callback_add (_candidate_items [i], EVAS_CALLBACK_MOUSE_MOVE, ui_mouse_moved_cb, GINT_TO_POINTER (ISF_EFL_CANDIDATE_ITEMS));
