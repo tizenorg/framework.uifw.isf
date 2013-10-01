@@ -1,3 +1,10 @@
+ISF 2.4.7001 :
+ 1. fix bug the font of candidate word isn't changed according to the change of system font
+ 2. Prevent fix
+ 3. Make sure the hidden keyboard is located outside of display area
+ 4. Fix candidate window hide issue
+
+
 ISF 2.4.6927 :
  1. [isfsetting] when getting ise info failed, exit the ug
  2. Use temporary file when re-write ISE cache file
