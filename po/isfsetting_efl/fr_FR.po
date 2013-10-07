@@ -54,7 +54,7 @@ msgstr "Clavier logiciel"
 
 #: ism/extras/efl_setting/isf_setting_efl.cpp:998
 msgid "Hardware keyboard"
-msgstr "Clavier phyisique"
+msgstr "Clavier physique"
 
 #: ism/extras/efl_setting/isf_setting_efl.cpp:1079
 msgid "Keyboard"
