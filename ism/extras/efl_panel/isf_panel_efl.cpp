@@ -4164,6 +4164,8 @@ static void check_hardware_keyboard (void)
             _ise_state = WINDOW_STATE_HIDE;
             hw_kbd_mode = true;
         } else {
+            /* When switching back to S/W keyboard mode, let's hide candidate window first */
+            ui_candidate_hide (true, true, true);
             uuid = helper_uuid.length () > 0 ? helper_uuid : _initial_ise_uuid;
             hw_kbd_mode = false;
         }
