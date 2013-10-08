@@ -213,13 +213,17 @@ static Evas_Object       *_line_0 [SCIM_LOOKUP_TABLE_MAX_PAGESIZE];
 static Evas_Object       *_line_items [SCIM_LOOKUP_TABLE_MAX_PAGESIZE];
 static Evas_Object       *_more_btn                         = 0;
 static Evas_Object       *_close_btn                        = 0;
-static bool               _candidate_window_pending         = false;
+static bool               _candidate_show_requested         = false;
 
 static int                _candidate_x                      = 0;
 static int                _candidate_y                      = 0;
 static int                _candidate_width                  = 0;
 static int                _candidate_height                 = 0;
 static int                _candidate_valid_height           = 0;
+
+static bool               _candidate_area_1_visible         = false;
+static bool               _candidate_area_2_visible         = false;
+static bool               _aux_area_visible                 = false;
 
 static ISF_CANDIDATE_MODE_T          _candidate_mode        = FIXED_CANDIDATE_WINDOW;
 static ISF_CANDIDATE_PORTRAIT_LINE_T _candidate_port_line   = ONE_LINE_CANDIDATE;
@@ -847,7 +851,7 @@ static int ui_candidate_get_valid_height (void)
         else
             angle = efl_get_angle_for_app_window ();
 
-        if (evas_object_visible_get (_aux_area) && evas_object_visible_get (_candidate_area_1)) {
+        if (_aux_area_visible && _candidate_area_1_visible) {
             if (angle == 90 || angle == 270)
                 height = _candidate_land_height_min_2;
             else
@@ -953,7 +957,7 @@ static void ui_candidate_window_adjust (void)
                 &x, &y, &width, &height);
     }
 
-    if (evas_object_visible_get (_aux_area) && evas_object_visible_get (_candidate_area_2)) {
+    if (_aux_area_visible && _candidate_area_2_visible) {
         evas_object_show (_aux_line);
         evas_object_move (_candidate_area_1, _candidate_area_1_pos[0], _candidate_area_1_pos[1] + _candidate_port_height_min_2 - _candidate_port_height_min);
         if (_candidate_angle == 90 || _candidate_angle == 270) {
@@ -967,7 +971,7 @@ static void ui_candidate_window_adjust (void)
             evas_object_move (_candidate_area_2, 0, _candidate_port_height_min_2);
             evas_object_move (_scroller_bg, 0, _candidate_port_height_min_2);
         }
-    } else if (evas_object_visible_get (_aux_area) && evas_object_visible_get (_candidate_area_1)) {
+    } else if (_aux_area_visible && _candidate_area_1_visible) {
         evas_object_show (_aux_line);
         evas_object_move (_candidate_area_1, _candidate_area_1_pos[0], _candidate_area_1_pos[1] + _candidate_port_height_min_2 - _candidate_port_height_min);
         if (_candidate_angle == 90 || _candidate_angle == 270) {
@@ -977,10 +981,10 @@ static void ui_candidate_window_adjust (void)
             ui_candidate_window_resize (width, _candidate_port_height_min_2);
             evas_object_move (_more_btn, _more_btn_pos[0], _more_btn_pos[1] + _candidate_port_height_min_2 - _candidate_port_height_min);
         }
-    } else if (evas_object_visible_get (_aux_area)) {
+    } else if (_aux_area_visible) {
         evas_object_hide (_aux_line);
         ui_candidate_window_resize (width, _aux_height + 2);
-    } else if (evas_object_visible_get (_candidate_area_2)) {
+    } else if (_candidate_area_2_visible) {
         evas_object_hide (_aux_line);
         evas_object_move (_candidate_area_1, _candidate_area_1_pos[0], _candidate_area_1_pos[1]);
         if (_candidate_angle == 90 || _candidate_angle == 270) {
@@ -1037,8 +1041,9 @@ static void ui_candidate_window_rotate (int angle)
     }
 
     evas_object_hide (_candidate_area_2);
+    _candidate_area_2_visible = false;
     ui_candidate_window_adjust ();
-    if (evas_object_visible_get (_candidate_area_1)) {
+    if (_candidate_area_1_visible) {
         update_table (ISF_CANDIDATE_TABLE, g_isf_candidate_table);
     }
     flush_memory ();
@@ -1058,9 +1063,7 @@ static bool ui_candidate_can_be_hide (void)
 {
     SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
 
-    if (evas_object_visible_get (_aux_area) ||
-        evas_object_visible_get (_candidate_area_1) ||
-        evas_object_visible_get (_candidate_area_2))
+    if (_aux_area_visible || _candidate_area_1_visible || _candidate_area_2_visible)
         return false;
     else
         return true;
@@ -1209,7 +1212,13 @@ static void candidate_window_hide (void)
     LOGD ("evas_object_hide (_candidate_window, %p)\n", elm_win_xwindow_get (_candidate_window));
 
     if (_candidate_window) {
-        evas_object_hide (_candidate_area_1);
+        /* There are cases that when there are rapid ISE_HIDE and ISE_SHOW requests,
+           candidate window should be displayed but STATE_OFF for the first ISE_HIDE
+           calls this function, so when the candidate window is shown by the following
+           STATE_ON message, a blank area is displayed in candidate window -
+           so we let the _cnadidate_area_1 as the default area that would be displayed */
+        //evas_object_hide (_candidate_area_1);
+        _candidate_area_1_visible = false;
         evas_object_hide (_more_btn);
 
         evas_object_hide (_candidate_window);
@@ -1303,13 +1312,17 @@ static void ui_candidate_show (bool bSetVirtualKbd)
    /* FIXME : SHOULD UNIFY THE METHOD FOR CHECKING THE HW KEYBOARD EXISTENCE */
    /* If the ISE is not visible currently, wait for the ISE to be opened and then show our candidate window */
    if( (hw_kbd_detect == 0 && _ise_state != WINDOW_STATE_SHOW)) {
-        _candidate_window_pending = true;
+        _candidate_show_requested = true;
+        LOGD ("setting _show_can didate_requested to TRUE");
         return;
     }
 
     ui_candidate_window_rotate (_candidate_angle);
 
-    _candidate_state = WINDOW_STATE_WILL_SHOW;
+    /* Change to WILL_SHOW state only when we are not currently in SHOW state */
+    if (_candidate_state != WINDOW_STATE_SHOW) {
+        _candidate_state = WINDOW_STATE_WILL_SHOW;
+    }
 
     if (_candidate_mode == FIXED_CANDIDATE_WINDOW) {
         if (bSetVirtualKbd) {
@@ -1354,13 +1367,14 @@ static void ui_candidate_show (bool bSetVirtualKbd)
 static void ui_candidate_hide (bool bForce, bool bSetVirtualKbd, bool will_hide)
 {
     SCIM_DEBUG_MAIN (3) << __FUNCTION__ << " bForce:" << bForce << " bSetVirtualKbd:" << bSetVirtualKbd << " will_hide:" << will_hide << "...\n";
-    _candidate_window_pending = false;
+
     if (!_candidate_window)
         return;
 
     if (bForce) {
-        if (_candidate_area_2 && evas_object_visible_get (_candidate_area_2)) {
+        if (_candidate_area_2 && _candidate_area_2_visible) {
             evas_object_hide (_candidate_area_2);
+            _candidate_area_2_visible = false;
             evas_object_hide (_scroller_bg);
             evas_object_hide (_close_btn);
             _panel_agent->candidate_more_window_hide ();
@@ -1422,6 +1436,7 @@ static void ui_candidate_window_more_button_cb (void *data, Evas *e, Evas_Object
     }
 
     evas_object_show (_candidate_area_2);
+    _candidate_area_2_visible = true;
     evas_object_show (_scroller_bg);
     evas_object_hide (_more_btn);
     evas_object_show (_close_btn);
@@ -1443,15 +1458,17 @@ static void ui_candidate_window_close_button_cb (void *data, Evas *e, Evas_Objec
 {
     SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
 
-    if (_candidate_area_2 == NULL || !evas_object_visible_get (_candidate_area_2))
+    if (_candidate_area_2 == NULL || !_candidate_area_2_visible)
         return;
 
     evas_object_hide (_candidate_area_2);
+    _candidate_area_2_visible = false;
     evas_object_hide (_scroller_bg);
     evas_object_hide (_close_btn);
     _panel_agent->candidate_more_window_hide ();
 
     evas_object_show (_candidate_area_1);
+    _candidate_area_1_visible = true;
     evas_object_show (_more_btn);
 
     elm_scroller_region_show (_candidate_area_2, 0, 0, _candidate_scroll_width, 100);
@@ -1711,7 +1728,7 @@ static void ui_mouse_over (int mouse_x, int mouse_y)
     }
 
     String strTts = String ("");
-    if (evas_object_visible_get (_candidate_area_2)) {
+    if (_candidate_area_2_visible) {
         evas_object_geometry_get (_close_btn, &x, &y, &width, &height);
         if (mouse_x >= x && mouse_x <= x + width && mouse_y >= y && mouse_y <= y + height)
             strTts = String ("close button");
@@ -1751,7 +1768,7 @@ static void ui_mouse_click (int mouse_x, int mouse_y)
         }
     }
 
-    if (evas_object_visible_get (_candidate_area_2)) {
+    if (_candidate_area_2_visible) {
         evas_object_geometry_get (_close_btn, &x, &y, &width, &height);
         if (mouse_x >= x && mouse_x <= x + width && mouse_y >= y && mouse_y <= y + height) {
             ui_candidate_window_close_button_cb (NULL, NULL, NULL, NULL);
@@ -2025,6 +2042,7 @@ static void ui_destroy_candidate_window (void)
     _aux_seperates.clear ();
     /* Delete candidate window */
     if (_candidate_window) {
+        LOGD ("calling ui_candidate_hide (true)");
         ui_candidate_hide (true);
 
         evas_object_del (_candidate_window);
@@ -2567,7 +2585,7 @@ static void slot_expand_candidate (void)
     if (_candidate_mode == SOFT_CANDIDATE_WINDOW)
         return;
 
-    if (_candidate_area_2 && !evas_object_visible_get (_candidate_area_2))
+    if (_candidate_area_2 && !_candidate_area_2_visible)
         ui_candidate_window_more_button_cb (NULL, NULL, NULL, NULL);
 }
 
@@ -2758,12 +2776,14 @@ static void slot_show_aux_string (void)
     if (_candidate_window == NULL)
         ui_create_candidate_window ();
 
-    if (_aux_area == NULL || evas_object_visible_get (_aux_area))
+    if (_aux_area == NULL || _aux_area_visible)
         return;
 
     evas_object_show (_aux_area);
+    _aux_area_visible = true;
     ui_candidate_window_adjust ();
 
+    LOGD ("calling ui_candidate_show ()");
     ui_candidate_show ();
     ui_settle_candidate_window ();
 }
@@ -2785,14 +2805,16 @@ static void slot_show_candidate_table (void)
         ui_create_candidate_window ();
 
     if (_candidate_state == WINDOW_STATE_SHOW &&
-        (evas_object_visible_get (_candidate_area_1) || evas_object_visible_get (_candidate_area_2))) {
+        (_candidate_area_1_visible || _candidate_area_2_visible)) {
         efl_set_transient_for_app_window (elm_win_xwindow_get (_candidate_window));
         return;
     }
 
     evas_object_show (_candidate_area_1);
+    _candidate_area_1_visible = true;
     ui_candidate_window_adjust ();
 
+    LOGD ("calling ui_candidate_show ()");
     ui_candidate_show ();
     ui_settle_candidate_window ();
 
@@ -2827,15 +2849,22 @@ static void slot_hide_aux_string (void)
 {
     SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
 
-    if (!_aux_area || !evas_object_visible_get (_aux_area))
+    if (!_aux_area || !_aux_area_visible)
         return;
 
     evas_object_hide (_aux_area);
+    _aux_area_visible = false;
     elm_scroller_region_show (_aux_area, 0, 0, 10, 10);
     ui_candidate_window_adjust ();
 
+    LOGD ("calling ui_candidate_hide (false)");
     ui_candidate_hide (false);
     ui_settle_candidate_window ();
+
+    if (ui_candidate_can_be_hide ()) {
+        _candidate_show_requested = false;
+        LOGD ("setting _show_can didate_requested to FALSE");
+    }
 }
 
 /**
@@ -2855,24 +2884,31 @@ static void slot_hide_candidate_table (void)
     if (!_candidate_area_1 || _candidate_state == WINDOW_STATE_WILL_HIDE)
         return;
 
-    if (evas_object_visible_get (_candidate_area_1) || evas_object_visible_get (_candidate_area_2)) {
+    if (_candidate_area_1_visible || _candidate_area_2_visible) {
         bool bForce = false;
-        if (evas_object_visible_get (_candidate_area_1)) {
-            if (evas_object_visible_get (_aux_area)) {
+        if (_candidate_area_1_visible) {
+            if (_aux_area_visible) {
                 evas_object_hide (_candidate_area_1);
+                _candidate_area_1_visible = false;
                 evas_object_hide (_more_btn);
             } else {
+                /* Let's not actually hide the _candidate_area_1 object, for the case that
+                   even if the application replies CANDIDATE_WILL_HIDE_ACK a little late,
+                   it is better to display the previous candidates instead of blank screen */
+                _candidate_area_1_visible = false;
                 bForce = true;
             }
         }
-        if (evas_object_visible_get (_candidate_area_2)) {
+        if (_candidate_area_2_visible) {
             evas_object_hide (_candidate_area_2);
+            _candidate_area_2_visible = false;
             evas_object_hide (_scroller_bg);
             evas_object_hide (_close_btn);
             _panel_agent->candidate_more_window_hide ();
         }
         ui_candidate_window_adjust ();
 
+        LOGD ("calling ui_candidate_hide (%d, true, true)", bForce);
         ui_candidate_hide (bForce, true, true);
         ui_settle_candidate_window ();
     }
@@ -2885,6 +2921,11 @@ static void slot_hide_candidate_table (void)
         LOGW ("Feedback deinitialize fail : %d", feedback_result);
 
     feedback_initialized = false;
+
+    if (ui_candidate_can_be_hide ()) {
+        _candidate_show_requested = false;
+        LOGD ("setting _show_can didate_requested to FALSE");
+    }
 }
 
 /**
@@ -2985,7 +3026,8 @@ static void slot_update_aux_string (const String &str, const AttributeList &attr
     if (!_aux_area || (str.length () <= 0))
         return;
 
-    if (!evas_object_visible_get (_aux_area)) {
+    if (!_aux_area_visible) {
+        LOGD ("calling ui_candidate_show ()");
         ui_candidate_show ();
         slot_show_aux_string ();
     }
@@ -3334,7 +3376,7 @@ static void update_table (int table_type, const LookupTable &table)
         ui_candidate_window_close_button_cb (NULL, NULL, NULL, NULL);
         evas_object_hide (_more_btn);
         evas_object_hide (_close_btn);
-    } else if (!evas_object_visible_get (_candidate_area_2)) {
+    } else if (!_candidate_area_2_visible) {
         evas_object_show (_more_btn);
         evas_object_hide (_close_btn);
     } else {
@@ -3835,6 +3877,7 @@ static void slot_will_hide_ack (void)
     LOGD ("_ecore_x_e_virtual_keyboard_off_prepare_done_send(%x, %x)\n",
             root_window, _control_window);
     if (_panel_agent->get_current_toolbar_mode () == TOOLBAR_HELPER_MODE) {
+        LOGD ("calling ui_candidate_hide (true, false)");
         ui_candidate_hide (true, false);
     }
 
@@ -4169,6 +4212,7 @@ static void check_hardware_keyboard (void)
             hw_kbd_mode = true;
         } else {
             /* When switching back to S/W keyboard mode, let's hide candidate window first */
+            LOGD ("calling ui_candidate_hide (true, true, true)");
             ui_candidate_hide (true, true, true);
             uuid = helper_uuid.length () > 0 ? helper_uuid : _initial_ise_uuid;
             hw_kbd_mode = false;
@@ -4219,12 +4263,14 @@ static Eina_Bool x_event_window_property_cb (void *data, int ev_type, void *even
                     _window_angle = efl_get_angle_for_ise_window ();
                 }
 
-                if (_candidate_window_pending) {
-                    _candidate_window_pending = false;
+                if (_candidate_show_requested) {
+                    LOGD ("calling ui_candidate_show (true)");
                     ui_candidate_show (true);
                 } else {
-                    if (evas_object_visible_get (_candidate_area_1))
+                    if (_candidate_area_1_visible) {
+                        LOGD ("calling ui_candidate_show (false)");
                         ui_candidate_show (false);
+                    }
                 }
 
                 set_keyboard_geometry_atom_info (_app_window, get_ise_geometry ());
@@ -4241,6 +4287,7 @@ static Eina_Bool x_event_window_property_cb (void *data, int ev_type, void *even
                 //    ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_HIDE);
                 _ise_state = WINDOW_STATE_HIDE;
                 if (_panel_agent->get_current_toolbar_mode() == TOOLBAR_HELPER_MODE) {
+                    LOGD ("calling ui_candidate_hide (true, false)");
                     ui_candidate_hide (true, false);
                 } else {
                     ui_settle_candidate_window();
