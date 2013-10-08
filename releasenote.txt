@@ -1,3 +1,9 @@
+ISF 2.4.7008 :
+ 1. Revert "fix bug the font of candidate word isn't changed according to the change of system font"
+ 2. Modified to hide candidate window when switching back to SW keyboard mode
+ 3. modified po file for the wrong word of French
+
+
 ISF 2.4.7001 :
  1. fix bug the font of candidate word isn't changed according to the change of system font
  2. Prevent fix

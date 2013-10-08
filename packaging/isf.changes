@@ -1,3 +1,8 @@
+* Tue Oct 08 2013 Jihoon Kim <jihoon48.kim@samsung.com> submit/tizen_2.2/20131001.072127@842f0e2
+- Revert "fix bug the font of candidate word isn't changed according to the change of system font"
+- Modified to hide candidate window when switching back to SW keyboard mode
+- modified po file for the wrong word of French
+
 * Tue Oct 01 2013 Jihoon Kim <jihoon48.kim@samsung.com> submit/tizen_2.2/20130927.120547@62163bd
 - fix bug the font of candidate word isn't changed according to the change of system font
 - Prevent fix
