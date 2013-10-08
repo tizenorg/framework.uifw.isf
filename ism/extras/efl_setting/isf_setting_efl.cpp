@@ -1259,7 +1259,7 @@ static Evas_Object *create_setting_main_view (ug_data *ugd)
 
 static void update_ise_list (void)
 {
-    // Request ISF to update ISE list, below codes are very important, donot remove
+    // Request ISF to update ISE list, below codes are very important, do not remove
     char **iselist = NULL;
     int count = isf_control_get_ise_list (&iselist);
 
@@ -1556,7 +1556,7 @@ static void *on_create (ui_gadget_h ug, enum ug_mode mode, service_h s, void *pr
             _read_handler = ecore_main_fd_handler_add (fd, ECORE_FD_READ, helper_agent_input_handler, NULL, NULL, NULL);
     }
 
-    //-------------------------- ise infomation ----------------------------
+    //-------------------------- ise information ----------------------------
 
     // Create keyboard setting UI
     ugd->layout_main = create_fullview (parent, ugd);
