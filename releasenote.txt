@@ -1,3 +1,10 @@
+ISF 2.4.7010 :
+ 1. fix bug candidate window disappears late
+ 2. initialize cursor position as -1 in focus-out
+ 3. fix typo in comments
+ 4. Modified to open candidate window whenever ISE is on, unless HIDE is requested explicitly
+
+
 ISF 2.4.7008 :
  1. Revert "fix bug the font of candidate word isn't changed according to the change of system font"
  2. Modified to hide candidate window when switching back to SW keyboard mode

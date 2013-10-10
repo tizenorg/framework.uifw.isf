@@ -1,3 +1,9 @@
+* Thu Oct 10 2013 Jihoon Kim <jihoon48.kim@samsung.com> submit/tizen_2.2/20131008.023024@bf8a29f
+- fix bug candidate window disappears late
+- initialize cursor position as -1 in focus-out
+- fix typo in comments
+- Modified to open candidate window whenever ISE is on, unless HIDE is requested explicitly
+
 * Tue Oct 08 2013 Jihoon Kim <jihoon48.kim@samsung.com> submit/tizen_2.2/20131001.072127@842f0e2
 - Revert "fix bug the font of candidate word isn't changed according to the change of system font"
 - Modified to hide candidate window when switching back to SW keyboard mode
