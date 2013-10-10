@@ -1359,6 +1359,7 @@ isf_imf_context_focus_out (Ecore_IMF_Context *ctx)
 
         context_scim->impl->si->focus_out ();
         context_scim->impl->si->reset ();
+        context_scim->impl->cursor_pos = -1;
 
 //          if (context_scim->impl->shared_si) context_scim->impl->si->reset ();
 
