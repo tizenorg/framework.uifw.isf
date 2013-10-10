@@ -3864,6 +3864,12 @@ static void slot_hide_ise (void)
         _ise_state = WINDOW_STATE_WILL_HIDE;
     }
     _window_angle = -1;
+
+    if (_candidate_window) {
+        int hw_kbd_detect = _config->read (ISF_CONFIG_HARDWARE_KEYBOARD_DETECT, 0);
+        if (hw_kbd_detect)
+            ui_candidate_hide (true, true, true);
+    }
 }
 
 static void slot_will_hide_ack (void)

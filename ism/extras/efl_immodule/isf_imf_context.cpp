@@ -1315,6 +1315,9 @@ isf_imf_context_focus_in (Ecore_IMF_Context *ctx)
         ecore_imf_context_input_panel_show (ctx);
     else
         LOGD ("ctx : %p input panel enable : FALSE\n", ctx);
+
+    if (hw_keyboard_num_get () > 0)
+        clear_hide_request ();
 }
 
 /**

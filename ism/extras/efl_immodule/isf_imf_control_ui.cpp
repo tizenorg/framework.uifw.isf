@@ -207,6 +207,14 @@ void save_current_xid (Ecore_IMF_Context *ctx)
     ecore_x_sync ();
 }
 
+void clear_hide_request ()
+{
+    if (_clear_hide_timer ()) {
+        hide_req_ic = NULL;
+    }
+    will_hide = EINA_FALSE;
+}
+
 static void _event_callback_call (Ecore_IMF_Input_Panel_Event type, int value)
 {
     Ecore_IMF_Context *using_ic = get_using_ic (type, value);
