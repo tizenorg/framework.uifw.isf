@@ -48,6 +48,7 @@ static Evas_Object *_create_ef_layout (Evas_Object *parent, const char *label, c
     elm_entry_input_panel_return_key_type_set (en, return_key_type);
 
     evas_object_smart_callback_add (en, "cursor,changed", _cursor_changed_cb, NULL);
+    evas_object_smart_callback_add (en, "focused", _cursor_changed_cb, NULL);
 
     return ef;
 }
