@@ -1311,8 +1311,8 @@ static void ui_candidate_show (bool bSetVirtualKbd)
 
    /* FIXME : SHOULD UNIFY THE METHOD FOR CHECKING THE HW KEYBOARD EXISTENCE */
    /* If the ISE is not visible currently, wait for the ISE to be opened and then show our candidate window */
+   _candidate_show_requested = true;
    if( (hw_kbd_detect == 0 && _ise_state != WINDOW_STATE_SHOW)) {
-        _candidate_show_requested = true;
         LOGD ("setting _show_can didate_requested to TRUE");
         return;
     }
