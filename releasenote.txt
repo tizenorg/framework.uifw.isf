@@ -1,3 +1,8 @@
+ISF 2.4.7017 :
+ 1. Modified to set show_requested to TRUE even when candidate is in SHOW state
+ 2. check cursor position to disable return key in case of focus-in event
+
+
 ISF 2.4.7010 :
  1. fix bug candidate window disappears late
  2. initialize cursor position as -1 in focus-out
