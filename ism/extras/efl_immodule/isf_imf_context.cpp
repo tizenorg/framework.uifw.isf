@@ -450,6 +450,15 @@ find_ic (int id)
     return 0;
 }
 
+static bool
+check_valid_ic (EcoreIMFContextISF * ic)
+{
+    if (ic && ic->impl && ic->ctx)
+        return true;
+    else
+        return false;
+}
+
 static Eina_Bool
 _key_down_cb (void *data, int type, void *event)
 {
@@ -2065,7 +2074,8 @@ panel_slot_update_preedit_caret (int context, int caret)
             if (!ic->impl->preedit_started) {
                 ecore_imf_context_preedit_start_event_add (ic->ctx);
                 ecore_imf_context_event_callback_call (ic->ctx, ECORE_IMF_CALLBACK_PREEDIT_START, NULL);
-                ic->impl->preedit_started = true;
+                if (check_valid_ic (ic))
+                    ic->impl->preedit_started = true;
             }
             ecore_imf_context_preedit_changed_event_add (ic->ctx);
             ecore_imf_context_event_callback_call (ic->ctx, ECORE_IMF_CALLBACK_PREEDIT_CHANGED, NULL);
@@ -2278,6 +2288,8 @@ panel_slot_reset_keyboard_ise (int context)
             if (wstr.length ()) {
                 ecore_imf_context_commit_event_add (ic->ctx, utf8_wcstombs (wstr).c_str ());
                 ecore_imf_context_event_callback_call (ic->ctx, ECORE_IMF_CALLBACK_COMMIT, (void *)utf8_wcstombs (wstr).c_str ());
+                if (!check_valid_ic (ic))
+                    return;
             }
         }
         _panel_client.prepare (ic->id);
@@ -2309,8 +2321,10 @@ panel_slot_show_preedit_string (int context)
             if (!ic->impl->preedit_started) {
                 ecore_imf_context_preedit_start_event_add (_focused_ic->ctx);
                 ecore_imf_context_event_callback_call (_focused_ic->ctx, ECORE_IMF_CALLBACK_PREEDIT_START, NULL);
-                ic->impl->preedit_started     = true;
-                ic->impl->need_commit_preedit = true;
+                if (check_valid_ic (ic)) {
+                    ic->impl->preedit_started     = true;
+                    ic->impl->need_commit_preedit = true;
+                }
             }
         } else {
             _panel_client.prepare (ic->id);
@@ -2342,12 +2356,16 @@ _hide_preedit_string (int context, bool update_preedit)
             if (update_preedit && emit) {
                 ecore_imf_context_preedit_changed_event_add (ic->ctx);
                 ecore_imf_context_event_callback_call (ic->ctx, ECORE_IMF_CALLBACK_PREEDIT_CHANGED, NULL);
+                if (!check_valid_ic (ic))
+                    return;
             }
             if (ic->impl->preedit_started) {
                 ecore_imf_context_preedit_end_event_add (ic->ctx);
                 ecore_imf_context_event_callback_call (ic->ctx, ECORE_IMF_CALLBACK_PREEDIT_END, NULL);
-                ic->impl->preedit_started     = false;
-                ic->impl->need_commit_preedit = false;
+                if (check_valid_ic (ic)) {
+                    ic->impl->preedit_started     = false;
+                    ic->impl->need_commit_preedit = false;
+                }
             }
         } else {
             _panel_client.prepare (ic->id);
@@ -2387,6 +2405,9 @@ panel_slot_update_preedit_string (int context,
                 if (!ic->impl->preedit_started) {
                     ecore_imf_context_preedit_start_event_add (ic->ctx);
                     ecore_imf_context_event_callback_call (ic->ctx, ECORE_IMF_CALLBACK_PREEDIT_START, NULL);
+                    if (!check_valid_ic (ic))
+                        return;
+
                     ic->impl->preedit_started = true;
                     ic->impl->need_commit_preedit = true;
                 }
@@ -2397,7 +2418,8 @@ panel_slot_update_preedit_string (int context,
                 ic->impl->preedit_updating = true;
                 ecore_imf_context_preedit_changed_event_add (ic->ctx);
                 ecore_imf_context_event_callback_call (ic->ctx, ECORE_IMF_CALLBACK_PREEDIT_CHANGED, NULL);
-                ic->impl->preedit_updating = false;
+                if (check_valid_ic (ic))
+                    ic->impl->preedit_updating = false;
             } else {
                 _panel_client.prepare (ic->id);
                 _panel_client.update_preedit_string (ic->id, str, attrs, caret);
@@ -2766,9 +2788,14 @@ turn_on_ic (EcoreIMFContextISF *ic)
         if (ic->impl->use_preedit && ic->impl->preedit_string.length ()) {
             ecore_imf_context_preedit_start_event_add (ic->ctx);
             ecore_imf_context_event_callback_call (ic->ctx, ECORE_IMF_CALLBACK_PREEDIT_START, NULL);
+            if (!check_valid_ic (ic))
+                return;
+
             ecore_imf_context_preedit_changed_event_add (ic->ctx);
             ecore_imf_context_event_callback_call (ic->ctx, ECORE_IMF_CALLBACK_PREEDIT_CHANGED, NULL);
-            ic->impl->preedit_started = true;
+
+            if (check_valid_ic (ic))
+                ic->impl->preedit_started = true;
         }
     }
 }
@@ -2797,9 +2824,14 @@ turn_off_ic (EcoreIMFContextISF *ic)
         if (ic->impl->use_preedit && ic->impl->preedit_string.length ()) {
             ecore_imf_context_preedit_changed_event_add (ic->ctx);
             ecore_imf_context_event_callback_call (ic->ctx, ECORE_IMF_CALLBACK_PREEDIT_CHANGED, NULL);
+            if (!check_valid_ic (ic))
+                return;
+
             ecore_imf_context_preedit_end_event_add (ic->ctx);
             ecore_imf_context_event_callback_call (ic->ctx, ECORE_IMF_CALLBACK_PREEDIT_END, NULL);
-            ic->impl->preedit_started = false;
+
+            if (check_valid_ic (ic))
+                ic->impl->preedit_started = false;
         }
     }
 }
@@ -3065,7 +3097,7 @@ open_next_factory (EcoreIMFContextISF *ic)
 static void
 open_previous_factory (EcoreIMFContextISF *ic)
 {
-    if (ic == NULL)
+    if (!check_valid_ic (ic))
         return;
 
     SCIM_DEBUG_FRONTEND(2) << __FUNCTION__ << " context=" << ic->id << "\n";
@@ -3096,7 +3128,7 @@ static void
 open_specific_factory (EcoreIMFContextISF *ic,
                        const String     &uuid)
 {
-    if (ic == NULL)
+    if (!check_valid_ic (ic))
         return;
 
     SCIM_DEBUG_FRONTEND(2) << __FUNCTION__ << " context=" << ic->id << "\n";
@@ -3150,9 +3182,14 @@ open_specific_factory (EcoreIMFContextISF *ic,
             if (ic->impl->use_preedit && ic->impl->preedit_string.length ()) {
                 ecore_imf_context_preedit_changed_event_add (ic->ctx);
                 ecore_imf_context_event_callback_call (ic->ctx, ECORE_IMF_CALLBACK_PREEDIT_CHANGED, NULL);
+                if (!check_valid_ic (ic))
+                    return;
+
                 ecore_imf_context_preedit_end_event_add (ic->ctx);
                 ecore_imf_context_event_callback_call (ic->ctx, ECORE_IMF_CALLBACK_PREEDIT_END, NULL);
-                ic->impl->preedit_started = false;
+
+                if (check_valid_ic (ic))
+                    ic->impl->preedit_started = false;
             }
         }
     }
@@ -3488,7 +3525,8 @@ slot_show_preedit_string (IMEngineInstanceBase *si)
             if (!ic->impl->preedit_started) {
                 ecore_imf_context_preedit_start_event_add (_focused_ic->ctx);
                 ecore_imf_context_event_callback_call (_focused_ic->ctx, ECORE_IMF_CALLBACK_PREEDIT_START, NULL);
-                ic->impl->preedit_started = true;
+                if (check_valid_ic (ic))
+                    ic->impl->preedit_started = true;
             }
             //if (ic->impl->preedit_string.length ())
             //    ecore_imf_context_preedit_changed_event_add (_focused_ic->ctx);
@@ -3540,10 +3578,11 @@ slot_hide_preedit_string (IMEngineInstanceBase *si)
                 ecore_imf_context_preedit_changed_event_add (ic->ctx);
                 ecore_imf_context_event_callback_call (ic->ctx, ECORE_IMF_CALLBACK_PREEDIT_CHANGED, NULL);
             }
-            if (ic->impl->preedit_started) {
+            if (check_valid_ic (ic) && ic->impl->preedit_started) {
                 ecore_imf_context_preedit_end_event_add (ic->ctx);
                 ecore_imf_context_event_callback_call (ic->ctx, ECORE_IMF_CALLBACK_PREEDIT_END, NULL);
-                ic->impl->preedit_started = false;
+                if (check_valid_ic (ic))
+                    ic->impl->preedit_started = false;
             }
         } else {
             _panel_client.hide_preedit_string (ic->id);
@@ -3586,6 +3625,9 @@ slot_update_preedit_caret (IMEngineInstanceBase *si, int caret)
             if (!ic->impl->preedit_started) {
                 ecore_imf_context_preedit_start_event_add (ic->ctx);
                 ecore_imf_context_event_callback_call (ic->ctx, ECORE_IMF_CALLBACK_PREEDIT_START, NULL);
+                if (!check_valid_ic (ic))
+                    return;
+
                 ic->impl->preedit_started = true;
             }
             ecore_imf_context_preedit_changed_event_add (ic->ctx);
@@ -3613,6 +3655,9 @@ slot_update_preedit_string (IMEngineInstanceBase *si,
             if (!ic->impl->preedit_started) {
                 ecore_imf_context_preedit_start_event_add (_focused_ic->ctx);
                 ecore_imf_context_event_callback_call (_focused_ic->ctx, ECORE_IMF_CALLBACK_PREEDIT_START, NULL);
+                if (!check_valid_ic (ic))
+                    return;
+
                 ic->impl->preedit_started = true;
             }
             if (caret >= 0 && caret <= (int)str.length ())
@@ -3622,7 +3667,8 @@ slot_update_preedit_string (IMEngineInstanceBase *si,
             ic->impl->preedit_updating = true;
             ecore_imf_context_preedit_changed_event_add (ic->ctx);
             ecore_imf_context_event_callback_call (ic->ctx, ECORE_IMF_CALLBACK_PREEDIT_CHANGED, NULL);
-            ic->impl->preedit_updating = false;
+            if (check_valid_ic (ic))
+                ic->impl->preedit_updating = false;
         } else {
             _panel_client.update_preedit_string (ic->id, str, attrs, caret);
         }
