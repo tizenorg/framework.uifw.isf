@@ -880,10 +880,12 @@ EAPI void context_scim_imdata_get (Ecore_IMF_Context *ctx, void* data, int* leng
 
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
 
-    if (data && context_scim->impl->imdata)
-        memcpy (data, context_scim->impl->imdata, context_scim->impl->imdata_size);
+    if (context_scim && context_scim->impl) {
+        if (data && context_scim->impl->imdata)
+            memcpy (data, context_scim->impl->imdata, context_scim->impl->imdata_size);
 
-    *length = context_scim->impl->imdata_size;
+        *length = context_scim->impl->imdata_size;
+    }
 }
 
 EAPI void
@@ -1897,7 +1899,7 @@ isf_imf_context_filter_event (Ecore_IMF_Context *ctx, Ecore_IMF_Event_Type type,
             return ret;
         }
 
-        if (!_focused_ic || !_focused_ic->impl->is_on ||
+        if (!_focused_ic || !_focused_ic->impl || !_focused_ic->impl->is_on ||
             !_focused_ic->impl->si->process_key_event (key)) {
             ret = EINA_FALSE;
             if (type == ECORE_IMF_EVENT_KEY_DOWN) {
@@ -2593,7 +2595,8 @@ panel_req_focus_in (EcoreIMFContextISF *ic)
 {
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
 
-    _panel_client.focus_in (ic->id, ic->impl->si->get_factory_uuid ());
+    if (ic && ic->impl && ic->impl->si)
+        _panel_client.focus_in (ic->id, ic->impl->si->get_factory_uuid ());
 }
 
 static void
@@ -2601,7 +2604,8 @@ panel_req_update_spot_location (EcoreIMFContextISF *ic)
 {
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
 
-    _panel_client.update_spot_location (ic->id, ic->impl->cursor_x, ic->impl->cursor_y, ic->impl->cursor_top_y);
+    if (ic && ic->impl)
+        _panel_client.update_spot_location (ic->id, ic->impl->cursor_x, ic->impl->cursor_y, ic->impl->cursor_top_y);
 }
 
 static void
@@ -2609,7 +2613,8 @@ panel_req_update_cursor_position (EcoreIMFContextISF *ic, int cursor_pos)
 {
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
 
-    _panel_client.update_cursor_position (ic->id, cursor_pos);
+    if (ic)
+        _panel_client.update_cursor_position (ic->id, cursor_pos);
 }
 
 static bool
@@ -2618,6 +2623,9 @@ filter_hotkeys (EcoreIMFContextISF *ic, const KeyEvent &key)
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
 
     bool ret = false;
+
+    if (!check_valid_ic (ic))
+        return ret;
 
     _frontend_hotkey_matcher.push_key_event (key);
     _imengine_hotkey_matcher.push_key_event (key);
@@ -2697,9 +2705,11 @@ panel_initialize (void)
 
         EcoreIMFContextISF *context_scim = _ic_list;
         while (context_scim != NULL) {
-            _panel_client.prepare (context_scim->id);
-            _panel_client.register_input_context (context_scim->id, context_scim->impl->si->get_factory_uuid ());
-            _panel_client.send ();
+            if (context_scim->impl && context_scim->impl->si) {
+                _panel_client.prepare (context_scim->id);
+                _panel_client.register_input_context (context_scim->id, context_scim->impl->si->get_factory_uuid ());
+                _panel_client.send ();
+            }
             context_scim = context_scim->next;
         }
 
@@ -3070,6 +3080,9 @@ _display_input_language (EcoreIMFContextISF *ic)
 static void
 open_next_factory (EcoreIMFContextISF *ic)
 {
+    if (!check_valid_ic (ic))
+        return;
+
     SCIM_DEBUG_FRONTEND(2) << __FUNCTION__ << " context=" << ic->id << "\n";
     IMEngineFactoryPointer sf = _backend->get_next_factory ("", "UTF-8", ic->impl->si->get_factory_uuid ());
 
@@ -3822,7 +3835,7 @@ slot_start_helper (IMEngineInstanceBase *si,
 
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << " helper= " << helper_uuid << " context="
                            << (ic != NULL ? ic->id : -1) << " ic=" << ic
-                           << " ic-uuid=" << ((ic != NULL ) ? ic->impl->si->get_factory_uuid () : "") << "...\n";
+                           << " ic-uuid=" << ((ic != NULL && ic->impl != NULL) ? ic->impl->si->get_factory_uuid () : "") << "...\n";
 
     if (ic && ic->impl)
         _panel_client.start_helper (ic->id, helper_uuid);
@@ -3849,7 +3862,7 @@ slot_send_helper_event (IMEngineInstanceBase *si,
 
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << " helper= " << helper_uuid << " context="
                            << (ic != NULL ? ic->id : -1) << " ic=" << ic
-                           << " ic-uuid=" << ((ic != NULL) ? ic->impl->si->get_factory_uuid () : "") << "...\n";
+                           << " ic-uuid=" << ((ic != NULL && ic->impl != NULL) ? ic->impl->si->get_factory_uuid () : "") << "...\n";
 
     if (ic && ic->impl)
         _panel_client.send_helper_event (ic->id, helper_uuid, trans);
