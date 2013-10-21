@@ -884,7 +884,8 @@ EAPI void context_scim_imdata_get (Ecore_IMF_Context *ctx, void* data, int* leng
         if (data && context_scim->impl->imdata)
             memcpy (data, context_scim->impl->imdata, context_scim->impl->imdata_size);
 
-        *length = context_scim->impl->imdata_size;
+        if (length)
+            *length = context_scim->impl->imdata_size;
     }
 }
 
