@@ -296,11 +296,11 @@ scim_string_to_key (KeyEvent &key, const String & str)
                                          it->c_str (),
                                          __KeyNameLessByName ());
 
-        if (p != __scim_keys_by_name + SCIM_NUM_KEY_NAMES && strcmp (p->name, it->c_str ()) == 0) {
+        if (p != __scim_keys_by_name + SCIM_NUM_KEY_NAMES && p && p->name && strcmp (p->name, it->c_str ()) == 0) {
             key.code = p->value;
         } else if (it->length () >= 6 && (*it)[0] == '0' && ((*it)[1] == 'x' || (*it)[1] == 'X')){
             key.code = strtol (it->c_str () + 2, NULL, 16);
-        } else if (strcmp (p->name, "VoidSymbol") == 0) {
+        } else if (p && p->name && strcmp (p->name, "VoidSymbol") == 0) {
             key.code = SCIM_KEY_VoidSymbol;
         }
     }
