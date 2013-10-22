@@ -466,12 +466,11 @@ _key_down_cb (void *data, int type, void *event)
 
     Evas_Event_Key_Down *ev = (Evas_Event_Key_Down *)event;
     Ecore_IMF_Context *active_ctx = get_using_ic (ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_SHOW);
-    if (!ev || !active_ctx) return ECORE_CALLBACK_RENEW;
+    if (!ev || !ev->keyname || !active_ctx) return ECORE_CALLBACK_RENEW;
 
-    if ((hw_keyboard_num_get () == 0) &&
-        !strcmp (ev->keyname, KEY_END) &&
+    if ((!strcmp (ev->keyname, "Escape") || !strcmp (ev->keyname, KEY_END)) &&
         ecore_imf_context_input_panel_state_get (active_ctx) != ECORE_IMF_INPUT_PANEL_STATE_HIDE) {
-        LOGD ("END key is pressed\n");
+        LOGD ("%s key is pressed.\n", ev->keyname);
         return ECORE_CALLBACK_CANCEL;
     }
 
@@ -486,14 +485,13 @@ _key_up_cb (void *data, int type, void *event)
     Ecore_IMF_Context *active_ctx = get_using_ic (ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_SHOW);
 
     Evas_Event_Key_Down *ev = (Evas_Event_Key_Down *)event;
-    if (!ev || !active_ctx) return ECORE_CALLBACK_RENEW;
+    if (!ev || !ev->keyname || !active_ctx) return ECORE_CALLBACK_RENEW;
 
-    if ((hw_keyboard_num_get () == 0) &&
-        !strcmp (ev->keyname, KEY_END) &&
+    if ((!strcmp (ev->keyname, "Escape")  || !strcmp (ev->keyname, KEY_END)) &&
         ecore_imf_context_input_panel_state_get (active_ctx) != ECORE_IMF_INPUT_PANEL_STATE_HIDE) {
-        LOGD ("END key is released\n");
-        isf_imf_context_input_panel_instant_hide (active_ctx);
+        LOGD ("%s key is released.\n", ev->keyname);
         isf_imf_context_reset (active_ctx);
+        isf_imf_context_input_panel_instant_hide (active_ctx);
         return ECORE_CALLBACK_CANCEL;
     }
 
