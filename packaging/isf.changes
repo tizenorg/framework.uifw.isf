@@ -1,3 +1,9 @@
+* Tue Oct 22 2013 Jihoon Kim <jihoon48.kim@samsung.com> submit/tizen_2.2/20131017.075750@d61454d
+- add NULL check of p->name in scim_string_to_key ()
+- check whether length is NULL or not in imdata_get
+- Fix crash issue when ic->impl is equal to NULL in slot_send_helper_event
+- fix crash issue in case ecore_imf_context_del () is called in preedit-changed, commit, and so on callback
+
 * Thu Oct 17 2013 Ji-hoon Lee <dalton.lee@samsung.com> submit/tizen_2.2/20131010.105602@b356188
 - Modified to set show_requested to TRUE even when candidate is in SHOW state
 - check cursor position to disable return key in case of focus-in event
