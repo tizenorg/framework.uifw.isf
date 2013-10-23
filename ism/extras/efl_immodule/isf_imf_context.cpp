@@ -2636,10 +2636,13 @@ filter_hotkeys (EcoreIMFContextISF *ic, const KeyEvent &key)
         if (sf && (sf->get_option () & SCIM_IME_SUPPORT_LANGUAGE_TOGGLE_KEY)) {
             ret = false;
         } else {
-            if (!ic->impl->is_on)
+            if (!ic->impl->is_on) {
                 turn_on_ic (ic);
-            else
+            } else {
                 turn_off_ic (ic);
+                _panel_client.hide_aux_string (ic->id);
+                _panel_client.hide_lookup_table (ic->id);
+            }
 
             _display_input_language (ic);
             ret = true;
