@@ -1,3 +1,7 @@
+* Wed Oct 23 2013 Jihoon Kim <jihoon48.kim@samsung.com> accepted/tizen_2.2/20131022.161008@5321e06
+- Fix more button hide issue
+- Support ESC key to hide IME
+
 * Tue Oct 22 2013 Jihoon Kim <jihoon48.kim@samsung.com> submit/tizen_2.2/20131017.075750@d61454d
 - add NULL check of p->name in scim_string_to_key ()
 - check whether length is NULL or not in imdata_get

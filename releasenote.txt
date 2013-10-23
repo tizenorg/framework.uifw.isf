@@ -1,3 +1,8 @@
+ISF 2.4.7023 :
+ 1. Support ESC key to hide IME
+ 2. Fix more button hide issue
+
+
 ISF 2.4.7022 :
  1. add NULL check of p->name in scim_string_to_key ()
  2. check whether length is NULL or not in imdata_get
