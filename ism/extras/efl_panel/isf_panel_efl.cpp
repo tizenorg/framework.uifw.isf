@@ -1218,8 +1218,8 @@ static void candidate_window_hide (void)
            STATE_ON message, a blank area is displayed in candidate window -
            so we let the _cnadidate_area_1 as the default area that would be displayed */
         //evas_object_hide (_candidate_area_1);
+        //evas_object_hide (_more_btn);
         _candidate_area_1_visible = false;
-        evas_object_hide (_more_btn);
 
         evas_object_hide (_candidate_window);
         SCIM_DEBUG_MAIN (3) << "    Hide candidate window\n";
@@ -4296,7 +4296,7 @@ static Eina_Bool x_event_window_property_cb (void *data, int ev_type, void *even
                     LOGD ("calling ui_candidate_hide (true, false)");
                     ui_candidate_hide (true, false);
                 } else {
-                    ui_settle_candidate_window();
+                    ui_settle_candidate_window ();
                 }
 
                 vconf_set_int (VCONFKEY_ISF_INPUT_PANEL_STATE, VCONFKEY_ISF_INPUT_PANEL_STATE_HIDE);
