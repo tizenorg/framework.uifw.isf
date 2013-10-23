@@ -7,7 +7,7 @@ isf system::vconf_system r
 isf system::vconf_multimedia r
 isf system::vconf_network r
 isf system::homedir arwxt
-isf xorg rw
+isf xorg rwx
 isf system::use_internet r
 isf e17 r
 isf device::app_logging w
