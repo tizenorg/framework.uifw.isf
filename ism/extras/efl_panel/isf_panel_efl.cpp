@@ -4222,6 +4222,7 @@ static void check_hardware_keyboard (void)
             ui_candidate_hide (true, true, true);
             uuid = helper_uuid.length () > 0 ? helper_uuid : _initial_ise_uuid;
             hw_kbd_mode = false;
+            _panel_agent->reset_keyboard_ise ();
         }
 
         set_active_ise (uuid);
