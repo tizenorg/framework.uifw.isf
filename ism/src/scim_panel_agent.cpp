@@ -3142,9 +3142,7 @@ private:
                     if (cmd == SCIM_TRANS_CMD_FOCUS_IN) {
                         SCIM_DEBUG_MAIN(4) << "    SCIM_TRANS_CMD_FOCUS_IN (" << "client:" << client_id << " context:" << context << ")\n";
                         m_signal_focus_in ();
-                        if (TOOLBAR_HELPER_MODE == m_current_toolbar_mode)
-                            focus_in_helper (m_current_helper_uuid, m_panel_client_map[client_id], context);
-
+                        focus_in_helper (m_current_helper_uuid, m_panel_client_map[client_id], context);
                         if (m_recv_trans.get_data (uuid)) {
                             SCIM_DEBUG_MAIN (2) << "PanelAgent::focus_in (" << client_id << "," << "," << context << "," << uuid << ")\n";
                             m_active_client_id = client_id;
@@ -3340,11 +3338,7 @@ private:
                     else if (cmd == SCIM_TRANS_CMD_FOCUS_OUT) {
                         m_signal_focus_out ();
                         lock ();
-                        TOOLBAR_MODE_T mode = m_current_toolbar_mode;
-
-                        if (TOOLBAR_HELPER_MODE == mode)
-                            focus_out_helper (m_current_helper_uuid, m_panel_client_map[client_id], context);
-
+                        focus_out_helper (m_current_helper_uuid, m_panel_client_map[client_id], context);
                         if (m_current_socket_client >= 0) {
                             m_last_socket_client  = m_current_socket_client;
                             m_last_client_context = m_current_client_context;
