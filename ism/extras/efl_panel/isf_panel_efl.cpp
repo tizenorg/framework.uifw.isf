@@ -47,7 +47,6 @@
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 #include <malloc.h>
-#include <feedback.h>
 #include "scim_private.h"
 #include "scim.h"
 #include "scim_stl_map.h"
@@ -60,6 +59,9 @@
 #include <dlog.h>
 #if HAVE_TTS
 #include <tts.h>
+#endif
+#if HAVE_FEEDBACK
+#include <feedback.h>
 #endif
 
 using namespace scim;
@@ -329,7 +331,9 @@ static bool               hw_kbd_mode                       = false;
 static tts_h              _tts                              = NULL;
 #endif
 
+#if HAVE_FEEDBACK
 static bool               feedback_initialized              = false;
+#endif
 
 static Ecore_Event_Handler *_candidate_show_handler         = NULL;
 
@@ -1504,6 +1508,7 @@ static void ui_mouse_button_pressed_cb (void *data, Evas *e, Evas_Object *button
     if (_click_object == ISF_EFL_CANDIDATE_0 || _click_object == ISF_EFL_CANDIDATE_ITEMS) {
         int index = GPOINTER_TO_INT (data) >> 8;
 
+#if HAVE_FEEDBACK
         if (feedback_initialized) {
             int feedback_result = 0;
 
@@ -1521,6 +1526,7 @@ static void ui_mouse_button_pressed_cb (void *data, Evas *e, Evas_Object *button
             else
                 LOGW ("Cannot play feedback vibration : %d", feedback_result);
         }
+#endif
 
         ui_candidate_delete_longpress_timer ();
         _longpress_timer = ecore_timer_add (1.0, ui_candidate_longpress_timeout, (void *)index);
@@ -2818,6 +2824,7 @@ static void slot_show_candidate_table (void)
     ui_candidate_show ();
     ui_settle_candidate_window ();
 
+#if HAVE_FEEDBACK
     feedback_result = feedback_initialize ();
 
     if (FEEDBACK_ERROR_NONE == feedback_result) {
@@ -2827,6 +2834,7 @@ static void slot_show_candidate_table (void)
         LOGW ("Feedback initialize fail : %d",feedback_result);
         feedback_initialized = false;
     }
+#endif
 }
 
 /**
@@ -2913,6 +2921,7 @@ static void slot_hide_candidate_table (void)
         ui_settle_candidate_window ();
     }
 
+#if HAVE_FEEDBACK
     feedback_result = feedback_deinitialize ();
 
     if (FEEDBACK_ERROR_NONE == feedback_result)
@@ -2921,6 +2930,7 @@ static void slot_hide_candidate_table (void)
         LOGW ("Feedback deinitialize fail : %d", feedback_result);
 
     feedback_initialized = false;
+#endif
 
     if (ui_candidate_can_be_hide ()) {
         _candidate_show_requested = false;
