@@ -249,11 +249,9 @@ class PanelAgent::PanelAgentImpl
     uint32                              m_current_client_context;
     String                              m_current_context_uuid;
     TOOLBAR_MODE_T                      m_current_toolbar_mode;
-    String                              m_current_factory_icon;
     String                              m_current_helper_uuid;
     String                              m_last_helper_uuid;
     String                              m_current_ise_name;
-    uint32                              m_current_ise_style;
     int                                 m_pending_active_imcontrol_id;
     int                                 m_show_request_client_id;
     int                                 m_active_client_id;
@@ -290,7 +288,6 @@ class PanelAgent::PanelAgentImpl
     /* Helper ISE */
     ClientContextUUIDRepository         m_client_context_helper;
     UUIDCountRepository                 m_helper_uuid_count;
-    UUIDStateRepository                 m_helper_uuid_state;
 
     HelperManager                       m_helper_manager;
 
@@ -376,7 +373,6 @@ public:
           m_socket_timeout (scim_get_default_socket_timeout ()),
           m_current_socket_client (-1), m_current_client_context (0),
           m_current_toolbar_mode (TOOLBAR_KEYBOARD_MODE),
-          m_current_ise_style (0),
           m_pending_active_imcontrol_id (-1),
           m_active_client_id (-1),
           m_should_shared_ise (false),
@@ -475,11 +471,6 @@ public:
         return m_current_ise_name;
     }
 
-    String get_current_factory_icon () const
-    {
-        return m_current_factory_icon;
-    }
-
     String get_current_helper_uuid () const
     {
         return m_current_helper_uuid;
@@ -504,11 +495,6 @@ public:
     void set_current_ise_name (String &name)
     {
         m_current_ise_name = name;
-    }
-
-    void set_current_ise_style (uint32 &style)
-    {
-        m_current_ise_style = style;
     }
 
     void set_current_toolbar_mode (TOOLBAR_MODE_T mode)
@@ -558,11 +544,6 @@ public:
                 std::cerr << __func__ << " show request client is not existed!!!" << "\n";
             }
         }
-    }
-
-    void set_current_factory_icon (String &icon)
-    {
-        m_current_factory_icon = icon;
     }
 
     bool move_preedit_caret (uint32 position)
@@ -1391,8 +1372,6 @@ public:
         if (it != m_helper_client_index.end ()) {
             Socket client_socket (it->second.id);
 
-            m_helper_uuid_state[uuid] = HELPER_SHOWED;
-
             m_send_trans.clear ();
             m_send_trans.put_command (SCIM_TRANS_CMD_REPLY);
             m_send_trans.put_data (ctx);
@@ -1419,8 +1398,6 @@ public:
             int client;
             uint32 context;
             Socket client_socket (it->second.id);
-
-            m_helper_uuid_state[uuid] = HELPER_HIDED;
 
             if (ctx == 0) {
                 get_focused_context (client, context);
@@ -1857,7 +1834,7 @@ public:
             int cmd;
             if (trans.write_to_socket (client_socket)
                 && trans.read_from_socket (client_socket)
-                && trans.get_command(cmd) && cmd == SCIM_TRANS_CMD_REPLY
+                && trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_REPLY
                 && trans.get_data (imdata, len)) {
                 SCIM_DEBUG_MAIN (1) << "get_helper_imdata success\n";
                 return true;
@@ -5509,12 +5486,6 @@ PanelAgent::get_current_helper_name () const
 }
 
 String
-PanelAgent::get_current_factory_icon () const
-{
-    return m_impl->get_current_factory_icon ();
-}
-
-String
 PanelAgent::get_current_ise_name () const
 {
     return m_impl->get_current_ise_name ();
@@ -5533,12 +5504,6 @@ PanelAgent::set_current_ise_name (String &name)
 }
 
 void
-PanelAgent::set_current_ise_style (uint32 &style)
-{
-    m_impl->set_current_ise_style (style);
-}
-
-void
 PanelAgent::update_candidate_panel_event (uint32 nType, uint32 nValue)
 {
     m_impl->update_panel_event (ISM_TRANS_CMD_UPDATE_ISF_CANDIDATE_PANEL, nType, nValue);
@@ -5548,12 +5513,6 @@ void
 PanelAgent::update_input_panel_event (uint32 nType, uint32 nValue)
 {
     m_impl->update_panel_event (ISM_TRANS_CMD_UPDATE_ISE_INPUT_CONTEXT, nType, nValue);
-}
-
-void
-PanelAgent::set_current_factory_icon (String &icon)
-{
-    m_impl->set_current_factory_icon (icon);
 }
 
 bool

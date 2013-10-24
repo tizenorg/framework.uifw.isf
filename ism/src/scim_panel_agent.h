@@ -306,13 +306,6 @@ public:
     TOOLBAR_MODE_T get_current_toolbar_mode (void) const;
 
     /**
-     * @brief Get current ISE icon.
-     *
-     * @return the current ISE icon.
-     */
-    String get_current_factory_icon (void) const;
-
-    /**
      * @brief Get current helper ISE uuid.
      *
      * @return the current helper ISE uuid.
@@ -334,25 +327,11 @@ public:
     String get_current_ise_name (void) const;
 
     /**
-     * @brief Set current ISE style.
-     *
-     * @param style The current ISE style.
-     */
-    void set_current_ise_style (uint32 &style);
-
-    /**
      * @brief Set current ISE name.
      *
      * @param name The current ISE name.
      */
     void set_current_ise_name (String &name);
-
-    /**
-     * @brief Set current ISE icon.
-     *
-     * @param icon The current ISE icon filepath.
-     */
-    void set_current_factory_icon (String &icon);
 
     /**
      * @brief Set current ISE type.
