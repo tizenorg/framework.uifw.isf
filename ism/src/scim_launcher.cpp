@@ -95,8 +95,6 @@ int main (int argc, char *argv [])
 
     new_argv [new_argc ++] = argv [0];
 
-    set_app_privilege ("isf", NULL, NULL);
-
     while (i < argc) {
         if (++i >= argc) break;
 

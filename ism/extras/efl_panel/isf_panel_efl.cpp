@@ -4704,8 +4704,6 @@ int main (int argc, char *argv [])
     Ecore_Event_Handler *xclient_message_handler  = NULL;
     Ecore_Event_Handler *xwindow_property_handler = NULL;
 
-    set_app_privilege ("isf", NULL, NULL);
-
     check_time ("\nStarting ISF Panel EFL...... ");
     LOGD ("Starting ISF Panel EFL...... \n");
 

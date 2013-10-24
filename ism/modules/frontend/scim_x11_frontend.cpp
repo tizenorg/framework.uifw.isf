@@ -601,7 +601,14 @@ X11FrontEnd::init_ims (void)
         throw FrontEndError (String ("X11 -- XIMS already initialized!"));
        }
 
+    int retry = 0;
     m_display = XOpenDisplay (NULL);
+
+    /* Let's try several more times until X server gets available... */
+    while (!m_display && retry++ < 10) {
+        sleep (1);
+        m_display = XOpenDisplay (NULL);
+    }
 
     if (!m_display)
         throw FrontEndError (String ("X11 -- Cannot open Display!"));

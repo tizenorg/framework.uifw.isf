@@ -19,8 +19,8 @@
 		<filesystem path="/usr/bin/isf-panel-efl" label="_"/>
 		<filesystem path="/usr/bin/isf-log" label="_"/>
 		<filesystem path="/usr/bin/isf-query-engines" label="_"/>
-		<filesystem path="/usr/lib/systemd/user/scim.service" label="_" exec_label="none" />
-		<filesystem path="/usr/lib/systemd/user/multi-user.target.wants/scim.service" label="_" exec_label="none" />
+		<filesystem path="/usr/lib/systemd/system/scim.service" label="_" exec_label="none" />
+		<filesystem path="/usr/lib/systemd/system/graphical.target.wants/scim.service" label="_" exec_label="none" />
 	</assign>
 	<request>
 		<domain name="isf"/>

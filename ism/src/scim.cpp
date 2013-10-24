@@ -98,8 +98,6 @@ int main (int argc, char *argv [])
     int   new_argc = 0;
     char *new_argv [80];
 
-    set_app_privilege ("isf", NULL, NULL);
-
     /* Display version info */
     cout << "Input Service Manager " << ISF_VERSION << "\n\n";
 

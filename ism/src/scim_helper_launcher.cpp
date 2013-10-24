@@ -35,6 +35,7 @@
 #include <stdlib.h>
 #include "scim_private.h"
 #include "scim.h"
+#include "ise_preexec.h"
 #include <privilege-control.h>
 #include <unistd.h>
 
@@ -49,8 +50,6 @@ int main (int argc, char *argv [])
     String helper;
     String uuid;
     bool   daemon = false;
-
-    set_app_privilege ("isf", NULL, NULL);
 
     char *p =  getenv ("DISPLAY");
     if (p) display = String (p);
@@ -158,6 +157,8 @@ int main (int argc, char *argv [])
         std::cerr << "Module name or Helper UUID is missing.\n";
         return -1;
     }
+
+    ise_preexec (helper.c_str ());
 
     HelperModule helper_module (helper);
 

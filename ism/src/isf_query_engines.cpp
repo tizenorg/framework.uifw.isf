@@ -59,8 +59,6 @@ int main (int argc, char *argv[])
     int isetype = 0;
     int uninstall = 0;
 
-    set_app_privilege ("isf", NULL, NULL);
-
     int i = 1;
     while (i < argc) {
         if (String ("-t") == String (argv[i]) || String ("--type") == String (argv[i])) {

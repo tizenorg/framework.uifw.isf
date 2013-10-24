@@ -26,6 +26,7 @@ BuildRequires:  pkgconfig(notification)
 BuildRequires:  pkgconfig(dlog)
 BuildRequires:  pkgconfig(tts)
 BuildRequires:  pkgconfig(feedback)
+BuildRequires:  pkgconfig(ail)
 BuildRequires:  efl-assist-devel
 Requires(post): /sbin/ldconfig /usr/bin/vconftool e17 net-config libmm-sound sys-assert
 Requires(postun): /sbin/ldconfig
@@ -70,9 +71,10 @@ rm -rf %{buildroot}
 mkdir -p %{buildroot}%{_datadir}/license
 install -m0644 %{_builddir}/%{buildsubdir}/COPYING %{buildroot}%{_datadir}/license/%{name}
 
-install -d %{buildroot}%{_libdir}/systemd/user/core-efl.target.wants
-install -m0644 %{SOURCE1} %{buildroot}%{_libdir}/systemd/user/
-ln -sf ../scim.service %{buildroot}%{_libdir}/systemd/user/core-efl.target.wants/scim.service
+install -d %{buildroot}%{_libdir}/systemd/system/graphical.target.wants
+install -d %{buildroot}%{_libdir}/systemd/system
+install -m0644 %{SOURCE1} %{buildroot}%{_libdir}/systemd/system/
+ln -sf ../../system/scim.service %{buildroot}%{_libdir}/systemd/system/graphical.target.wants/scim.service
 
 %post
 /sbin/ldconfig
@@ -94,8 +96,8 @@ mkdir -p /opt/apps/scim/lib/scim-1.0/1.4.0/IMEngine
 %manifest %{name}.manifest
 /etc/smack/accesses.d/%{name}.rule
 %defattr(-,root,root,-)
-%{_libdir}/systemd/user/core-efl.target.wants/scim.service
-%{_libdir}/systemd/user/scim.service
+%{_libdir}/systemd/system/graphical.target.wants/scim.service
+%{_libdir}/systemd/system/scim.service
 %attr(755,root,root) %{_sysconfdir}/profile.d/isf.sh
 %{_sysconfdir}/scim/global
 %{_sysconfdir}/scim/config
