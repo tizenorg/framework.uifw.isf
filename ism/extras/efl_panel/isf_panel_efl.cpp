@@ -4545,6 +4545,101 @@ static void _launch_default_soft_keyboard (void)
 }
 
 /**
+ * @brief Get module names for all 3rd party's IMEs.
+ * @param ops_module_names The list to store module names for all 3rd party's IMEs.
+ * @return module name list size
+ */
+static int scim_get_osp_module_list (std::vector <String> &ops_module_names)
+{
+    char *path = "/opt/apps/scim/lib/scim-1.0/1.4.0/Helper";
+    ops_module_names.clear ();
+
+    DIR *dir = opendir (path);
+    if (dir) {
+        struct dirent *file = readdir (dir);
+        while (file) {
+            struct stat filestat;
+            String absfn = String(path) + String (SCIM_PATH_DELIM_STRING) + file->d_name;
+            stat (absfn.c_str (), &filestat);
+            if (S_ISREG (filestat.st_mode)) {
+                String link_name = String (file->d_name);
+                ops_module_names.push_back (link_name.substr (0, link_name.find_last_of ('.')));
+            }
+
+
+            file = readdir (dir);
+        }
+        closedir (dir);
+    }
+
+    std::sort (ops_module_names.begin (), ops_module_names.end ());
+    ops_module_names.erase (std::unique (ops_module_names.begin (), ops_module_names.end ()), ops_module_names.end ());
+    return ops_module_names.size ();
+}
+
+static void osp_engine_dir_monitor_cb (void *data, Ecore_File_Monitor *em, Ecore_File_Event event, const char *path)
+{
+    if (!data) return;
+    char *osp_module_name = (char *)data;
+
+    String rpath = String ("/opt/apps/") + String (osp_module_name).substr (0, String (osp_module_name).find_first_of ('.'));
+    String osp_ime_name = String (osp_module_name).substr (String (osp_module_name).find_first_of('.') + 1, String (osp_module_name).find_last_of('.'));
+    String exe_path =  rpath + String ("/bin/") + osp_ime_name + String (".exe");
+
+
+    if (event == ECORE_FILE_EVENT_CLOSED) {
+        if (String (path) == exe_path) {
+            LOGD("%s", ecore_file_monitor_path_get (em));
+            LOGD("%s", osp_module_name);
+        }
+    }
+
+
+    return;
+}
+
+static void osp_info_dir_monitor_cb (void *data, Ecore_File_Monitor *em, Ecore_File_Event event, const char *path)
+{
+    if (!data) return;
+    char *osp_module_name = (char *)data;
+
+    String rpath = String ("/opt/apps/") + String (osp_module_name).substr (0, String (osp_module_name).find_first_of ('.'));
+    String osp_ime_name = String (osp_module_name).substr (String (osp_module_name).find_first_of('.') + 1, String (osp_module_name).find_last_of('.'));
+    String manifest_path = rpath + String ("/info/manifest.xml");
+
+    if (event == ECORE_FILE_EVENT_CLOSED) {
+        if (String (path) == manifest_path) {
+            LOGD("%s", ecore_file_monitor_path_get (em));
+            LOGD("%s", osp_module_name);
+        }
+    }
+
+
+    return;
+}
+
+/**
+ * @brief : add monitor for engine file and info file update of 3rd party's IMEs
+ */
+static void add_monitor_for_osp_modules()
+{
+    LOGD ("");
+    std::vector<String> osp_module_list;
+    scim_get_osp_module_list (osp_module_list);
+
+    if (osp_module_list.size() > 0) {
+        for (unsigned int i = 0; i < osp_module_list.size(); i ++) {
+            LOGD ("%s", osp_module_list[i].c_str());
+            String rpath = String ("/opt/apps/") + osp_module_list[i].substr (0, osp_module_list[i].find_first_of ('.'));
+            String exe_path =  rpath + String ("/bin");
+            String manifest_path = rpath + String ("/info");
+            ecore_file_monitor_add (exe_path.c_str (), osp_engine_dir_monitor_cb, (void *)(strdup(osp_module_list[i].c_str())));
+            ecore_file_monitor_add (manifest_path.c_str (), osp_info_dir_monitor_cb, (void *)(strdup (osp_module_list[i].c_str())));
+        }
+    }
+}
+
+/**
  * @brief : Launches default soft keyboard for performance enhancement (It's not mandatory)
  */
 static void launch_default_soft_keyboard (keynode_t *key, void* data)
