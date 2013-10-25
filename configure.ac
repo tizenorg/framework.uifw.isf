@@ -272,10 +272,16 @@ PKG_CHECK_MODULES(VCONF, [vconf],
                   [ISF_HAS_VCONF=no])
 
 # Check feedback library
-PKG_CHECK_MODULES(FEEDBACK, [feedback])
+PKG_CHECK_MODULES(FEEDBACK, [feedback],
+                  [ISF_HAS_FEEDBACK=yes],
+                  [ISF_HAS_FEEDBACK=no])
 
 if test "$ISF_HAS_VCONF" = "yes"; then
   AC_DEFINE(HAVE_VCONF,1,[Have VConf functions.])
+fi
+
+if test "$ISF_HAS_FEEDBACK" = "yes"; then
+  AC_DEFINE(HAVE_FEEDBACK,1,[Have Feedback functions.])
 fi
 
 # Check GTK2 library
