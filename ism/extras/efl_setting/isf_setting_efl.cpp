@@ -1522,6 +1522,7 @@ static void *on_create (ui_gadget_h ug, enum ug_mode mode, service_h s, void *pr
         return NULL;
 
     load_config_module ();
+    update_ise_list ();
     bool loaded = load_ise_info();
     if (!loaded) {
         ISFUG_ERROR("load_ise_info() fail");
@@ -1537,7 +1538,6 @@ static void *on_create (ui_gadget_h ug, enum ug_mode mode, service_h s, void *pr
 
     load_config_data (_config);
     scim_get_setup_module_list (_setup_modules);
-    update_ise_list ();
     init_hw_keyboard_listener (ugd);
 
     /* Connect PanelAgent by HelperAgent */
