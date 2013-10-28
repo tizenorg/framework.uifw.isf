@@ -1294,6 +1294,10 @@ static Eina_Bool x_event_window_show_cb (void *data, int ev_type, void *event)
                 }
             }
         }
+    } else {
+        if (e->win == elm_win_xwindow_get (_candidate_window)) {
+            LOGD ("Candidate window show callback, but _candidate_state is %d", _candidate_state);
+        }
     }
 
     return ECORE_CALLBACK_CANCEL;
@@ -1323,6 +1327,11 @@ static void ui_candidate_show (bool bSetVirtualKbd)
 
     ui_candidate_window_rotate (_candidate_angle);
 
+    /* If the candidate window was about to hide, turn it back to SHOW state now */
+    if (_candidate_state == WINDOW_STATE_WILL_HIDE) {
+        _candidate_state = WINDOW_STATE_SHOW;
+    }
+
     /* Change to WILL_SHOW state only when we are not currently in SHOW state */
     if (_candidate_state != WINDOW_STATE_SHOW) {
         _candidate_state = WINDOW_STATE_WILL_SHOW;
@@ -1338,7 +1347,6 @@ static void ui_candidate_show (bool bSetVirtualKbd)
     _check_size_timer = ecore_timer_add (0.02, ui_candidate_check_size_timeout, NULL);
 
     SCIM_DEBUG_MAIN (3) << "    Show candidate window\n";
-    LOGD ("evas_object_show (_candidate_window, %p)\n", elm_win_xwindow_get ( _candidate_window));
     efl_set_transient_for_app_window (elm_win_xwindow_get (_candidate_window));
     if (_ise_state == WINDOW_STATE_SHOW) {
         edje_object_file_set (_more_btn, _candidate_edje_file.c_str (), "more_button");
@@ -1351,13 +1359,34 @@ static void ui_candidate_show (bool bSetVirtualKbd)
     /* If we are in hardward keyboard mode, this candidate window is now considered to be a input panel */
     if (_candidate_mode == FIXED_CANDIDATE_WINDOW) {
         if (hw_kbd_mode) {
-            LOGD ("<<CANDIDATE_AUTOSCROLL>> ECORE_IMF_INPUT_PANEL_STATE_WILL_SHOW");
+            LOGD ("sending ECORE_IMF_INPUT_PANEL_STATE_WILL_SHOW");
             _panel_agent->update_input_panel_event ((uint32)ECORE_IMF_INPUT_PANEL_STATE_EVENT, (uint32)ECORE_IMF_INPUT_PANEL_STATE_WILL_SHOW);
         }
     }
 
-    delete_candidate_show_handler ();
-    _candidate_show_handler = ecore_event_handler_add (ECORE_X_EVENT_WINDOW_SHOW, x_event_window_show_cb, NULL);
+    if (_candidate_state != WINDOW_STATE_SHOW) {
+        if (_candidate_show_handler) {
+            LOGD ("Was still waiting for CANDIDATE_WINDOW_SHOW....");
+        } else {
+            delete_candidate_show_handler ();
+            LOGD ("Registering ECORE_X_EVENT_WINDOW_SHOW event, %d", _candidate_state);
+            _candidate_show_handler = ecore_event_handler_add (ECORE_X_EVENT_WINDOW_SHOW, x_event_window_show_cb, NULL);
+        }
+    } else {
+        LOGD ("The candidate window was already in SHOW state, update geometry information");
+        _panel_agent->update_input_panel_event (ECORE_IMF_INPUT_PANEL_GEOMETRY_EVENT, 0);
+        _panel_agent->update_input_panel_event (ECORE_IMF_CANDIDATE_PANEL_GEOMETRY_EVENT, 0);
+
+        /* And the state event */
+        _panel_agent->update_candidate_panel_event ((uint32)ECORE_IMF_CANDIDATE_PANEL_STATE_EVENT, (uint32)ECORE_IMF_CANDIDATE_PANEL_SHOW);
+
+        /* If we are in hardward keyboard mode, this candidate window is now considered to be a input panel */
+        if (_candidate_mode == FIXED_CANDIDATE_WINDOW) {
+            if (hw_kbd_mode) {
+                _panel_agent->update_input_panel_event ((uint32)ECORE_IMF_INPUT_PANEL_STATE_EVENT, (uint32)ECORE_IMF_INPUT_PANEL_STATE_SHOW);
+            }
+        }
+    }
 
     evas_object_show (_candidate_window);
 }
@@ -1388,6 +1417,7 @@ static void ui_candidate_hide (bool bForce, bool bSetVirtualKbd, bool will_hide)
 
     if (bForce || ui_candidate_can_be_hide ()) {
         if (will_hide) {
+            LOGD ("candidate_state = WILL_HIDE");
             _candidate_state = WINDOW_STATE_WILL_HIDE;
 
             delete_candidate_hide_timer ();
