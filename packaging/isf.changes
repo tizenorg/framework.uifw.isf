@@ -1,3 +1,14 @@
+* Tue Oct 29 2013 Ji-hoon Lee <dalton.lee@samsung.com> accepted/tizen_2.2/20131025.075857@88ea5fb
+- [panel] fix indentation
+- OSPIME_Support
+- [isfsetting] N_SE-55842: newly installed ime isn't shown in the 1st time
+- support feedback optionally in build environment
+- Remove unused source codes from PanelAgent class
+- Reset keyboard ISE when hardware keyboard is disconnected.
+- Add executable permission to xorg
+- Request to hide candidate when language is changed to English
+- Update helper focus_ic by focus_in_helper/focus_out_helper even when H/W keyboard is connecting
+
 * Wed Oct 23 2013 Jihoon Kim <jihoon48.kim@samsung.com> accepted/tizen_2.2/20131022.161008@5321e06
 - Fix more button hide issue
 - Support ESC key to hide IME

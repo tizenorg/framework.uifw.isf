@@ -1,3 +1,15 @@
+ISF 2.4.7029 :
+ 1. [panel] fix indentation
+ 2. OSPIME_Support
+ 3. [isfsetting] N_SE-55842: newly installed ime isn't shown in the 1st time
+ 4. support feedback optionally in build environment
+ 5. Remove unused source codes from PanelAgent class
+ 6. Reset keyboard ISE when hardware keyboard is disconnected.
+ 7. Add executable permission to xorg
+ 8. Request to hide candidate when language is changed to English
+ 9. Update helper focus_ic by focus_in_helper/focus_out_helper even when H/W keyboard is connecting
+
+
 ISF 2.4.7023 :
  1. Support ESC key to hide IME
  2. Fix more button hide issue
