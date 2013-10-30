@@ -118,6 +118,8 @@ typedef enum _WINDOW_STATE {
     WINDOW_STATE_ON,
 } WINDOW_STATE;
 
+typedef std::map <String, Ecore_File_Monitor *>  OSPEmRepository;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Declaration of internal functions.
@@ -322,8 +324,12 @@ static Ecore_X_Window     _ise_window                       = 0;
 static Ecore_X_Window     _app_window                       = 0;
 static Ecore_X_Window     _control_window                   = 0;
 
-static Ecore_File_Monitor *_helper_ise_em                   = NULL;
-static Ecore_File_Monitor *_keyboard_ise_em                 = NULL;
+static Ecore_File_Monitor *_inh_helper_ise_em               = NULL;
+static Ecore_File_Monitor *_inh_keyboard_ise_em             = NULL;
+static Ecore_File_Monitor *_osp_helper_ise_em               = NULL;
+static Ecore_File_Monitor *_osp_keyboard_ise_em             = NULL;
+static OSPEmRepository     _osp_bin_em;
+static OSPEmRepository     _osp_info_em;
 
 static bool               hw_kbd_mode                       = false;
 
@@ -547,30 +553,167 @@ static String get_module_file_path (const String &module_name, const String &typ
 
     String strFile;
     if (module_name.substr (0, 1) == String ("/")) {
-        strFile = module_name + ".so";
+        strFile = module_name + String (".so");
         if (access (strFile.c_str (), R_OK) == 0)
-            return strFile.substr (0, strFile.find_last_of ('/') + 1);
+            return strFile;
     }
 
     /* Check inhouse path */
     strFile = String (SCIM_MODULE_PATH) +
               String (SCIM_PATH_DELIM_STRING) + String (SCIM_BINARY_VERSION) +
               String (SCIM_PATH_DELIM_STRING) + type +
-              String (SCIM_PATH_DELIM_STRING) + module_name + ".so";
+              String (SCIM_PATH_DELIM_STRING) + module_name + String (".so");
     if (access (strFile.c_str (), R_OK) == 0)
-        return strFile.substr (0, strFile.find_last_of ('/') + 1);
+        return strFile;
 
     const char *module_path_env = getenv ("SCIM_MODULE_PATH");
     if (module_path_env) {
         strFile = String (module_path_env) +
                   String (SCIM_PATH_DELIM_STRING) + String (SCIM_BINARY_VERSION) +
                   String (SCIM_PATH_DELIM_STRING) + type +
-                  String (SCIM_PATH_DELIM_STRING) + module_name + ".so";
+                  String (SCIM_PATH_DELIM_STRING) + module_name + String (".so");
         if (access (strFile.c_str (), R_OK) == 0)
-            return strFile.substr (0, strFile.find_last_of ('/') + 1);
+            return strFile;
     }
 
     return String ("");
+}
+
+/**
+ * @brief Get module names for all 3rd party's IMEs.
+ * @param ops_module_names The list to store module names for all 3rd party's IMEs.
+ * @return module name list size
+ */
+static int osp_module_list_get (std::vector <String> &ops_module_names)
+{
+    const char *module_path_env = getenv ("SCIM_MODULE_PATH");
+    if (module_path_env) {
+        String path = String (module_path_env) +
+                      String (SCIM_PATH_DELIM_STRING) + String (SCIM_BINARY_VERSION) +
+                      String (SCIM_PATH_DELIM_STRING) + String ("Helper");
+        ops_module_names.clear ();
+
+        DIR *dir = opendir (path.c_str ());
+        if (dir) {
+            struct dirent *file = readdir (dir);
+            while (file) {
+                struct stat filestat;
+                String absfn = path + String (SCIM_PATH_DELIM_STRING) + file->d_name;
+                stat (absfn.c_str (), &filestat);
+                if (S_ISREG (filestat.st_mode)) {
+                    String link_name = String (file->d_name);
+                    ops_module_names.push_back (link_name.substr (0, link_name.find_last_of ('.')));
+                }
+
+                file = readdir (dir);
+            }
+            closedir (dir);
+        }
+    }
+
+    std::sort (ops_module_names.begin (), ops_module_names.end ());
+    ops_module_names.erase (std::unique (ops_module_names.begin (), ops_module_names.end ()), ops_module_names.end ());
+
+    return ops_module_names.size ();
+}
+
+static String osp_module_name_get (const String &path)
+{
+    String pkg_id   = path.substr (path.find_last_of (SCIM_PATH_DELIM) + 1);
+    String ise_name = String ("");
+    String bin_path = path + String ("/bin");
+    DIR *dir = opendir (bin_path.c_str ());
+    if (dir) {
+        struct dirent *file = readdir (dir);
+        while (file) {
+            struct stat filestat;
+            String absfn = bin_path + String (SCIM_PATH_DELIM_STRING) + file->d_name;
+            stat (absfn.c_str (), &filestat);
+            if (S_ISREG (filestat.st_mode)) {
+                String ext = absfn.substr (absfn.length () - 4);
+                if (ext == String (".exe")) {
+                    int begin = absfn.find_last_of (SCIM_PATH_DELIM) + 1;
+                    ise_name = absfn.substr (begin, absfn.find_last_of ('.') - begin);
+                    break;
+                }
+            }
+
+            file = readdir (dir);
+        }
+        closedir (dir);
+    } else {
+        LOGD ("open (%s) is failed!!!", bin_path.c_str ());
+    }
+    String module_name = String ("");
+    if (ise_name.length () > 0)
+        module_name = pkg_id + String (".") + ise_name;
+
+    LOGD ("module name = %s", module_name.c_str ());
+    return module_name;
+}
+
+static void osp_engine_dir_monitor_cb (void *data, Ecore_File_Monitor *em, Ecore_File_Event event, const char *path)
+{
+    String em_path       = String (ecore_file_monitor_path_get (em));
+    String manifest_file = em_path.substr (0, em_path.find_last_of (SCIM_PATH_DELIM)) + String ("/info/manifest.xml");
+    String ext           = String (path).substr (String (path).length () - 4);
+
+    if (event == ECORE_FILE_EVENT_CLOSED) {
+        if (String (path) == manifest_file || ext == String (".exe")) {
+            LOGD ("path = %s, event = %d", path, event);
+            String pkg_path = em_path.substr (0, em_path.find_last_of (SCIM_PATH_DELIM));
+            String module_name = osp_module_name_get (pkg_path);
+            const char *module_path_env = getenv ("SCIM_MODULE_PATH");
+            if (module_path_env && module_name.length () > 0) {
+                String module_path = String (module_path_env) +
+                      String (SCIM_PATH_DELIM_STRING) + String (SCIM_BINARY_VERSION) +
+                      String (SCIM_PATH_DELIM_STRING) + String ("Helper") + String (SCIM_PATH_DELIM_STRING) + module_name + String (".so");
+                isf_update_ise_module (String (module_path), _config);
+                _panel_agent->update_ise_list (_uuids);
+
+                String uuid  = scim_global_config_read (String (SCIM_GLOBAL_CONFIG_DEFAULT_ISE_UUID), _initial_ise_uuid);
+                int    index = get_ise_index (uuid);
+                if (_modes[index] == TOOLBAR_HELPER_MODE) {
+                    String active_module = get_module_file_path (_module_names[index], String ("Helper"));
+                    if (String (module_path) == active_module) {
+                        /* Restart helper ISE */
+                        _panel_agent->hide_helper (uuid);
+                        _panel_agent->stop_helper (uuid);
+                        _panel_agent->start_helper (uuid);
+                    }
+                }
+            }
+        }
+    }
+}
+
+static void add_monitor_for_osp_module (const String &module_name)
+{
+    String rpath         = String ("/opt/apps/") + module_name.substr (0, module_name.find_first_of ('.'));
+    String exe_path      = rpath + String ("/bin");
+    String manifest_path = rpath + String ("/info");
+
+    if (_osp_bin_em.find (module_name) == _osp_bin_em.end () || _osp_bin_em[module_name] == NULL) {
+        _osp_bin_em[module_name] = ecore_file_monitor_add (exe_path.c_str (), osp_engine_dir_monitor_cb, NULL);
+        LOGD ("add %s", module_name.c_str ());
+    }
+    if (_osp_info_em.find (module_name) == _osp_info_em.end () || _osp_info_em[module_name] == NULL) {
+        _osp_info_em[module_name] = ecore_file_monitor_add (manifest_path.c_str (), osp_engine_dir_monitor_cb, NULL);
+    }
+}
+
+/**
+ * @brief : add monitor for engine file and info file update of 3rd party's IMEs
+ */
+static void add_monitor_for_all_osp_modules (void)
+{
+    std::vector<String> osp_module_list;
+    osp_module_list_get (osp_module_list);
+
+    if (osp_module_list.size () > 0) {
+        for (unsigned int i = 0; i < osp_module_list.size (); i++)
+            add_monitor_for_osp_module (osp_module_list[i]);
+    }
 }
 
 /**
@@ -583,25 +726,60 @@ static String get_module_file_path (const String &module_name, const String &typ
  */
 static void ise_file_monitor_cb (void *data, Ecore_File_Monitor *em, Ecore_File_Event event, const char *path)
 {
-    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
+    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << " path=" << path << "\n";
+    LOGD ("path = %s, event = %d", path, event);
 
-    if (event == ECORE_FILE_EVENT_DELETED_FILE || event == ECORE_FILE_EVENT_CLOSED) {
-        int    index   = GPOINTER_TO_INT (data);
-        String strFile = String (ecore_file_monitor_path_get (em)) +
-                         String (SCIM_PATH_DELIM_STRING) + _module_names[index] + String (".so");
+    String directory = String (path);
+    directory = directory.substr (0, 4);
+    if (event == ECORE_FILE_EVENT_DELETED_FILE || event == ECORE_FILE_EVENT_CLOSED ||
+        (event == ECORE_FILE_EVENT_CREATED_FILE && directory == String ("/opt"))) {
+        String file_path = String (path);
+        String file_ext  = file_path.substr (file_path.length () - 3);
+        if (file_ext != String (".so")) {
+            LOGD ("%s is not valid so file!!!", path);
+            return;
+        }
 
-        if (String (path) == strFile) {
-            if (event == ECORE_FILE_EVENT_DELETED_FILE) {
-                /* Update ISE list */
-                std::vector<String> list;
-                slot_get_ise_list (list);
-            } else if (event == ECORE_FILE_EVENT_CLOSED) {
-                if (_modes[index] == TOOLBAR_HELPER_MODE) {
-                    /* Restart helper ISE */
-                    _panel_agent->hide_helper (_uuids[index]);
-                    _panel_agent->stop_helper (_uuids[index]);
-                    _panel_agent->start_helper (_uuids[index]);
-                }
+        int begin = String (path).find_last_of (SCIM_PATH_DELIM) + 1;
+        String module_name = String (path).substr (begin, String (path).find_last_of ('.') - begin);
+
+        if (event == ECORE_FILE_EVENT_DELETED_FILE) {
+            /* Update ISE list */
+            std::vector<String> list;
+            slot_get_ise_list (list);
+
+            /* delete osp monitor */
+            OSPEmRepository::iterator iter = _osp_bin_em.find (module_name);
+            if (iter != _osp_bin_em.end ()) {
+                ecore_file_monitor_del (iter->second);
+                _osp_bin_em.erase (iter);
+                LOGD ("delete %s", module_name.c_str ());
+            }
+            iter = _osp_info_em.find (module_name);
+            if (iter != _osp_info_em.end ()) {
+                ecore_file_monitor_del (iter->second);
+                _osp_info_em.erase (iter);
+            }
+        } else if (event == ECORE_FILE_EVENT_CLOSED || ECORE_FILE_EVENT_CREATED_FILE) {
+            isf_update_ise_module (String (path), _config);
+            _panel_agent->update_ise_list (_uuids);
+
+            String uuid    = scim_global_config_read (String (SCIM_GLOBAL_CONFIG_DEFAULT_ISE_UUID), _initial_ise_uuid);
+            int    index   = get_ise_index (uuid);
+            String strFile = String (ecore_file_monitor_path_get (em)) +
+                             String (SCIM_PATH_DELIM_STRING) + _module_names[index] + String (".so");
+
+            if (String (path) == strFile && _modes[index] == TOOLBAR_HELPER_MODE) {
+                /* Restart helper ISE */
+                _panel_agent->hide_helper (uuid);
+                _panel_agent->stop_helper (uuid);
+                _panel_agent->start_helper (uuid);
+            }
+
+            /* add osp monitor */
+            if (event == ECORE_FILE_EVENT_CREATED_FILE && directory == String ("/opt")) {
+                add_monitor_for_osp_module (module_name);
+                LOGD ("add %s", module_name.c_str ());
             }
         }
     }
@@ -610,36 +788,94 @@ static void ise_file_monitor_cb (void *data, Ecore_File_Monitor *em, Ecore_File_
 /**
  * @brief Delete keyboard ISE file monitor.
  */
-static void delete_keyboard_ise_em (void) {
-    if (_keyboard_ise_em) {
-        ecore_file_monitor_del (_keyboard_ise_em);
-        _keyboard_ise_em = NULL;
+static void delete_ise_directory_em (void) {
+    if (_inh_keyboard_ise_em) {
+        ecore_file_monitor_del (_inh_keyboard_ise_em);
+        _inh_keyboard_ise_em = NULL;
     }
+    if (_inh_helper_ise_em) {
+        ecore_file_monitor_del (_inh_helper_ise_em);
+        _inh_helper_ise_em = NULL;
+    }
+
+    if (_osp_keyboard_ise_em) {
+        ecore_file_monitor_del (_osp_keyboard_ise_em);
+        _osp_keyboard_ise_em = NULL;
+    }
+    if (_osp_helper_ise_em) {
+        ecore_file_monitor_del (_osp_helper_ise_em);
+        _osp_helper_ise_em = NULL;
+    }
+
+    OSPEmRepository::iterator iter;
+    for (iter = _osp_bin_em.begin (); iter != _osp_bin_em.end (); iter++) {
+        if (iter->second) {
+            ecore_file_monitor_del (iter->second);
+            iter->second = NULL;
+        }
+    }
+    for (iter = _osp_info_em.begin (); iter != _osp_info_em.end (); iter++) {
+        if (iter->second) {
+            ecore_file_monitor_del (iter->second);
+            iter->second = NULL;
+        }
+    }
+    _osp_bin_em.clear ();
+    _osp_info_em.clear ();
 }
 
 /**
- * @brief Delete helper ISE file monitor.
+ * @brief Add inhouse ISEs and OSP ISEs directory monitor.
  */
-static void delete_helper_ise_em (void) {
-    if (_helper_ise_em) {
-        ecore_file_monitor_del (_helper_ise_em);
-        _helper_ise_em = NULL;
-    }
-}
-
-/**
- * @brief Add keyboard ISE file monitor.
- *
- * @param module_name The keyboard ISE's module name.
- */
-static void add_keyboard_ise_em (const String &uuid, const String &module_name) {
+static void add_ise_directory_em (void) {
     SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
 
-    String path = get_module_file_path (module_name, "IMEngine");
-    if (path.length () > 0 && access (path.c_str (), R_OK) == 0) {
-        delete_keyboard_ise_em ();
-        _keyboard_ise_em = ecore_file_monitor_add (path.c_str (), ise_file_monitor_cb, GINT_TO_POINTER(get_ise_index (uuid)));
+    // inhouse IMEngine path
+    String path = String (SCIM_MODULE_PATH) +
+                  String (SCIM_PATH_DELIM_STRING) + String (SCIM_BINARY_VERSION) +
+                  String (SCIM_PATH_DELIM_STRING) + String ("IMEngine");
+    if (_inh_keyboard_ise_em == NULL)
+        _inh_keyboard_ise_em = ecore_file_monitor_add (path.c_str (), ise_file_monitor_cb, NULL);
+
+    // inhouse Helper path
+    path = String (SCIM_MODULE_PATH) +
+           String (SCIM_PATH_DELIM_STRING) + String (SCIM_BINARY_VERSION) +
+           String (SCIM_PATH_DELIM_STRING) + String ("Helper");
+    if (_inh_helper_ise_em == NULL)
+        _inh_helper_ise_em = ecore_file_monitor_add (path.c_str (), ise_file_monitor_cb, NULL);
+
+    const char *module_path_env = getenv ("SCIM_MODULE_PATH");
+    if (module_path_env) {
+        // OSP IMEngine path
+        path = String (module_path_env) +
+               String (SCIM_PATH_DELIM_STRING) + String (SCIM_BINARY_VERSION) +
+               String (SCIM_PATH_DELIM_STRING) + String ("IMEngine");
+        if (access (path.c_str (), R_OK) == 0) {
+            if (_osp_keyboard_ise_em == NULL) {
+                _osp_keyboard_ise_em = ecore_file_monitor_add (path.c_str (), ise_file_monitor_cb, NULL);
+                LOGD ("ecore_file_monitor_add path=%s", path.c_str ());
+            }
+        } else {
+            LOGD ("access path=%s is failed!!!", path.c_str ());
+        }
+
+        // OSP Helper path
+        path = String (module_path_env) +
+               String (SCIM_PATH_DELIM_STRING) + String (SCIM_BINARY_VERSION) +
+               String (SCIM_PATH_DELIM_STRING) + String ("Helper");
+        if (access (path.c_str (), R_OK) == 0) {
+            if (_osp_helper_ise_em == NULL) {
+                _osp_helper_ise_em = ecore_file_monitor_add (path.c_str (), ise_file_monitor_cb, NULL);
+                LOGD ("ecore_file_monitor_add path=%s", path.c_str ());
+            }
+        } else {
+            LOGD ("access path=%s is failed!!!", path.c_str ());
+        }
+    } else {
+        LOGD ("getenv (\"SCIM_MODULE_PATH\") is failed!!!");
     }
+
+    add_monitor_for_all_osp_modules ();
 }
 
 /**
@@ -664,23 +900,14 @@ static bool set_keyboard_ise (const String &uuid, const String &module_name)
         uint32 kbd_option = 0;
         String kbd_uuid, kbd_name;
         isf_get_keyboard_ise (_config, kbd_uuid, kbd_name, kbd_option);
-        if (kbd_uuid == uuid) {
-            if (_keyboard_ise_em == NULL) {
-                add_keyboard_ise_em (uuid, module_name);
-                delete_helper_ise_em ();
-            }
+        if (kbd_uuid == uuid)
             return false;
-        }
     }
 
     _panel_agent->change_factory (uuid);
 
     String language = String ("~other");/*scim_get_locale_language (scim_get_current_locale ());*/
     _config->write (String (SCIM_CONFIG_DEFAULT_IMENGINE_FACTORY) + String ("/") + language, uuid);
-
-    /* Add directory monitor for keyboard ISE */
-    add_keyboard_ise_em (uuid, module_name);
-    delete_helper_ise_em ();
 
     return true;
 }
@@ -721,7 +948,6 @@ static bool set_helper_ise (const String &uuid, const String &module_name)
 
         String language = String ("~other");/*scim_get_locale_language (scim_get_current_locale ());*/
         _config->write (String (SCIM_CONFIG_DEFAULT_IMENGINE_FACTORY) + String ("/") + language, kbd_uuid);
-        delete_keyboard_ise_em ();
     }
     char buf[256] = {0};
     snprintf (buf, sizeof (buf), "time:%ld  pid:%d  %s  %s  Start helper(%s)\n",
@@ -730,13 +956,6 @@ static bool set_helper_ise (const String &uuid, const String &module_name)
 
     _panel_agent->start_helper (uuid);
     _config->write (String (SCIM_CONFIG_DEFAULT_HELPER_ISE), uuid);
-
-    /* Add directory monitor for helper ISE */
-    String path = get_module_file_path (module_name, "Helper");
-    if (path.length () > 0 && access (path.c_str (), R_OK) == 0) {
-        delete_helper_ise_em ();
-        _helper_ise_em = ecore_file_monitor_add (path.c_str (), ise_file_monitor_cb, GINT_TO_POINTER(get_ise_index (uuid)));
-    }
 
     return true;
 }
@@ -3611,10 +3830,11 @@ static bool slot_get_ise_list (std::vector<String> &list)
                 _panel_agent->change_factory (active_uuid);
                 _config->write (IMENGINE_KEY, active_uuid);
                 _config->flush ();
-                delete_keyboard_ise_em ();
             }
         }
     }
+
+    add_ise_directory_em ();
     return ret;
 }
 
@@ -3774,12 +3994,8 @@ static void slot_set_keyboard_ise (const String &uuid)
     uint32 ise_option = 0;
     String ise_uuid, ise_name;
     isf_get_keyboard_ise (_config, ise_uuid, ise_name, ise_option);
-    if (ise_uuid == uuid) {
-        if (_keyboard_ise_em == NULL) {
-            add_keyboard_ise_em (uuid, _module_names[get_ise_index (uuid)]);
-        }
+    if (ise_uuid == uuid)
         return;
-    }
 
     String language = String ("~other");/*scim_get_locale_language (scim_get_current_locale ());*/
     _config->write (String (SCIM_CONFIG_DEFAULT_IMENGINE_FACTORY) + String ("/") + language, uuid);
@@ -3788,11 +4004,6 @@ static void slot_set_keyboard_ise (const String &uuid)
 
     _panel_agent->change_factory (uuid);
     _panel_agent->reload_config ();
-
-    /* Add directory monitor for keyboard ISE */
-    if (_keyboard_ise_em == NULL) {
-        add_keyboard_ise_em (uuid, _module_names[get_ise_index (uuid)]);
-    }
 }
 
 /**
@@ -4575,94 +4786,6 @@ static void _launch_default_soft_keyboard (void)
 }
 
 /**
- * @brief Get module names for all 3rd party's IMEs.
- * @param ops_module_names The list to store module names for all 3rd party's IMEs.
- * @return module name list size
- */
-static int scim_get_osp_module_list (std::vector <String> &ops_module_names)
-{
-    char *path = "/opt/apps/scim/lib/scim-1.0/1.4.0/Helper";
-    ops_module_names.clear ();
-
-    DIR *dir = opendir (path);
-    if (dir) {
-        struct dirent *file = readdir (dir);
-        while (file) {
-            struct stat filestat;
-            String absfn = String(path) + String (SCIM_PATH_DELIM_STRING) + file->d_name;
-            stat (absfn.c_str (), &filestat);
-            if (S_ISREG (filestat.st_mode)) {
-                String link_name = String (file->d_name);
-                ops_module_names.push_back (link_name.substr (0, link_name.find_last_of ('.')));
-            }
-
-            file = readdir (dir);
-        }
-        closedir (dir);
-    }
-
-    std::sort (ops_module_names.begin (), ops_module_names.end ());
-    ops_module_names.erase (std::unique (ops_module_names.begin (), ops_module_names.end ()), ops_module_names.end ());
-
-    return ops_module_names.size ();
-}
-
-static void osp_engine_dir_monitor_cb (void *data, Ecore_File_Monitor *em, Ecore_File_Event event, const char *path)
-{
-    if (!data) return;
-    char *osp_module_name = (char *)data;
-
-    String rpath = String ("/opt/apps/") + String (osp_module_name).substr (0, String (osp_module_name).find_first_of ('.'));
-    String osp_ime_name = String (osp_module_name).substr (String (osp_module_name).find_first_of ('.') + 1, String (osp_module_name).find_last_of ('.'));
-    String exe_path =  rpath + String ("/bin/") + osp_ime_name + String (".exe");
-
-    if (event == ECORE_FILE_EVENT_CLOSED) {
-        if (String (path) == exe_path) {
-            LOGD ("%s", ecore_file_monitor_path_get (em));
-            LOGD ("%s", osp_module_name);
-        }
-    }
-}
-
-static void osp_info_dir_monitor_cb (void *data, Ecore_File_Monitor *em, Ecore_File_Event event, const char *path)
-{
-    if (!data) return;
-    char *osp_module_name = (char *)data;
-
-    String rpath = String ("/opt/apps/") + String (osp_module_name).substr (0, String (osp_module_name).find_first_of ('.'));
-    String osp_ime_name = String (osp_module_name).substr (String (osp_module_name).find_first_of('.') + 1, String (osp_module_name).find_last_of('.'));
-    String manifest_path = rpath + String ("/info/manifest.xml");
-
-    if (event == ECORE_FILE_EVENT_CLOSED) {
-        if (String (path) == manifest_path) {
-            LOGD ("%s", ecore_file_monitor_path_get (em));
-            LOGD ("%s", osp_module_name);
-        }
-    }
-}
-
-/**
- * @brief : add monitor for engine file and info file update of 3rd party's IMEs
- */
-static void add_monitor_for_osp_modules ()
-{
-    LOGD ("");
-    std::vector<String> osp_module_list;
-    scim_get_osp_module_list (osp_module_list);
-
-    if (osp_module_list.size () > 0) {
-        for (unsigned int i = 0; i < osp_module_list.size (); i++) {
-            LOGD ("%s", osp_module_list[i].c_str ());
-            String rpath = String ("/opt/apps/") + osp_module_list[i].substr (0, osp_module_list[i].find_first_of ('.'));
-            String exe_path =  rpath + String ("/bin");
-            String manifest_path = rpath + String ("/info");
-            ecore_file_monitor_add (exe_path.c_str (), osp_engine_dir_monitor_cb, (void *)(strdup (osp_module_list[i].c_str ())));
-            ecore_file_monitor_add (manifest_path.c_str (), osp_info_dir_monitor_cb, (void *)(strdup (osp_module_list[i].c_str ())));
-        }
-    }
-}
-
-/**
  * @brief : Launches default soft keyboard for performance enhancement (It's not mandatory)
  */
 static void launch_default_soft_keyboard (keynode_t *key, void* data)
@@ -4979,8 +5102,7 @@ cleanup:
     ui_candidate_delete_check_size_timer ();
     ui_candidate_delete_longpress_timer ();
     ui_candidate_delete_destroy_timer ();
-    delete_keyboard_ise_em ();
-    delete_helper_ise_em ();
+    delete_ise_directory_em ();
     ui_close_tts ();
 
     if (!_config.null ())

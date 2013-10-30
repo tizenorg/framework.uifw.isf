@@ -61,7 +61,7 @@ EAPI bool isf_read_ise_info_list (const char *filename, std::vector<ISEINFO> &in
 EAPI bool isf_write_ise_info_list (const char *filename, std::vector<ISEINFO> &info_list);
 EAPI bool isf_add_keyboard_info_to_file (const char *filename, const char *module_name, const ConfigPointer &config);
 EAPI bool isf_add_helper_info_to_file (const char *filename, const char *module_name);
-EAPI void isf_remove_ise_info_from_file (const char *filename, const char *module_name);
+EAPI bool isf_remove_ise_info_from_file (const char *filename, const char *module_name);
 EAPI void isf_update_ise_info_to_file (const char *filename, const ConfigPointer &config);
 
 #endif /* __ISF_QUERY_UTILITY_H */

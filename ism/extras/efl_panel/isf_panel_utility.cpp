@@ -34,6 +34,7 @@
 #include "scim_stl_map.h"
 #include "isf_panel_utility.h"
 #include "isf_query_utility.h"
+#include <sys/stat.h>
 #include <unistd.h>
 #include <dlog.h>
 
@@ -384,6 +385,10 @@ static bool add_keyboard_ise_module (const String module_name, const ConfigPoint
             }
         }
         ime_module.unload ();
+    } else {
+        LOGD ("Failed to load (%s)!!!", module_name.c_str ());
+        fclose (engine_list_file);
+        return false;
     }
 
     int ret = fclose (engine_list_file);
@@ -440,6 +445,10 @@ static bool add_helper_ise_module (const String module_name)
             }
         }
         helper_module.unload ();
+    } else {
+        LOGD ("Failed to load (%s)!!!", module_name.c_str ());
+        fclose (engine_list_file);
+        return false;
     }
 
     int ret = fclose (engine_list_file);
@@ -499,7 +508,8 @@ bool isf_update_ise_list (LOAD_ISE_TYPE type, const ConfigPointer &config)
             if (std::find (uninstall_modules.begin (), uninstall_modules.end (), _module_names [i]) == uninstall_modules.end ()) {
                 uninstall_modules.push_back (_module_names [i]);
                 String filename = String (USER_ENGINE_FILE_NAME);
-                isf_remove_ise_info_from_file (filename.c_str (), _module_names [i].c_str ());
+                if (isf_remove_ise_info_from_file (filename.c_str (), _module_names [i].c_str ()) == false)
+                    LOGD ("Failed to remove %s from cache file : %s!!!", _module_names [i].c_str (), filename.c_str ());
             }
         }
     }
@@ -536,6 +546,80 @@ bool isf_update_ise_list (LOAD_ISE_TYPE type, const ConfigPointer &config)
 
     /* Update _groups */
     if (ret) {
+        std::vector<String> ise_langs;
+        for (size_t i = 0; i < _uuids.size (); ++i) {
+            scim_split_string_list (ise_langs, _langs[i]);
+            for (size_t j = 0; j < ise_langs.size (); j++) {
+                if (std::find (_groups[ise_langs[j]].begin (), _groups[ise_langs[j]].end (), i) == _groups[ise_langs[j]].end ())
+                    _groups[ise_langs[j]].push_back (i);
+            }
+            ise_langs.clear ();
+        }
+    }
+
+    return ret;
+}
+
+bool isf_remove_ise_module (const String module_name, const ConfigPointer &config)
+{
+    if (std::find (_module_names.begin (), _module_names.end (), module_name) == _module_names.end ()) {
+        LOGD ("Cannot to find %s!!!", module_name.c_str ());
+        return true;
+    }
+
+    String filename = String (USER_ENGINE_FILE_NAME);
+    if (isf_remove_ise_info_from_file (filename.c_str (), module_name.c_str ())) {
+        isf_get_factory_list (ALL_ISE, config, _uuids, _names, _module_names, _langs, _icons, _modes, _options);
+
+        /* Update _groups */
+        _groups.clear ();
+        std::vector<String> ise_langs;
+        for (size_t i = 0; i < _uuids.size (); ++i) {
+            scim_split_string_list (ise_langs, _langs[i]);
+            for (size_t j = 0; j < ise_langs.size (); j++) {
+                if (std::find (_groups[ise_langs[j]].begin (), _groups[ise_langs[j]].end (), i) == _groups[ise_langs[j]].end ())
+                    _groups[ise_langs[j]].push_back (i);
+            }
+            ise_langs.clear ();
+        }
+        return true;
+    } else {
+        LOGD ("Failed to remove %s from cache file : %s!!!", module_name.c_str (), filename.c_str ());
+        return false;
+    }
+}
+
+bool isf_update_ise_module (const String strModulePath, const ConfigPointer &config)
+{
+    bool ret = false;
+    struct stat filestat;
+    stat (strModulePath.c_str (), &filestat);
+    if (!S_ISDIR (filestat.st_mode)) {
+        int begin = strModulePath.find_last_of (SCIM_PATH_DELIM) + 1;
+        String mod_name = strModulePath.substr (begin, strModulePath.find_last_of ('.') - begin);
+        String path     = strModulePath.substr (0, strModulePath.find_last_of (SCIM_PATH_DELIM));
+        LOGD ("module_name = %s, path = %s", mod_name.c_str (), path.c_str ());
+
+        if (mod_name.length () > 0 && path.length () > 1) {
+            if (isf_remove_ise_module (mod_name, config)) {
+                String type = path.substr (path.find_last_of (SCIM_PATH_DELIM) + 1);
+                LOGD ("type = %s", type.c_str ());
+                if (type == String ("Helper")) {
+                    if (add_helper_ise_module (mod_name))
+                        ret = true;
+                } else if (type == String ("IMEngine")) {
+                    if (add_keyboard_ise_module (mod_name, config))
+                        ret = true;
+                }
+            }
+        } else {
+            LOGD ("%s is not valid so file!!!", strModulePath.c_str ());
+        }
+    }
+
+    /* Update _groups */
+    if (ret) {
+        _groups.clear ();
         std::vector<String> ise_langs;
         for (size_t i = 0; i < _uuids.size (); ++i) {
             scim_split_string_list (ise_langs, _langs[i]);

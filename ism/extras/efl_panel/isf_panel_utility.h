@@ -64,6 +64,7 @@ void isf_get_helper_ises_in_languages (const std::vector<String> &lang_list, std
 void isf_save_ise_information (void);
 void isf_load_ise_information (LOAD_ISE_TYPE type, const ConfigPointer &config);
 bool isf_update_ise_list (LOAD_ISE_TYPE type, const ConfigPointer &config);
+bool isf_update_ise_module (const String strModulePath, const ConfigPointer &config);
 
 #endif /* __ISF_PANEL_UTILITY_H */
 

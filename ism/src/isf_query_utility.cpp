@@ -302,15 +302,18 @@ EAPI bool isf_add_helper_info_to_file (const char *filename, const char *module_
     return isf_write_ise_info_list (filename, info_list);
 }
 
-EAPI void isf_remove_ise_info_from_file (const char *filename, const char *module_name)
+EAPI bool isf_remove_ise_info_from_file (const char *filename, const char *module_name)
 {
     std::vector<ISEINFO> info_list;
     std::vector<ISEINFO>::iterator iter;
-    isf_read_ise_info_list (filename, info_list);
 
-    remove_ise_info_from_list (info_list, module_name);
+    if (isf_read_ise_info_list (filename, info_list)) {
 
-    isf_write_ise_info_list (filename, info_list);
+        remove_ise_info_from_list (info_list, module_name);
+
+        return isf_write_ise_info_list (filename, info_list);
+    }
+    return false;
 }
 
 EAPI void isf_update_ise_info_to_file (const char *filename, const ConfigPointer &config)
