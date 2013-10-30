@@ -670,7 +670,8 @@ static void osp_engine_dir_monitor_cb (void *data, Ecore_File_Monitor *em, Ecore
                       String (SCIM_PATH_DELIM_STRING) + String ("Helper") + String (SCIM_PATH_DELIM_STRING) + module_name + String (".so");
                 isf_update_ise_module (String (module_path), _config);
                 _panel_agent->update_ise_list (_uuids);
-
+                _panel_agent->reload_config ();
+#if 0
                 String uuid  = scim_global_config_read (String (SCIM_GLOBAL_CONFIG_DEFAULT_ISE_UUID), _initial_ise_uuid);
                 int    index = get_ise_index (uuid);
                 if (_modes[index] == TOOLBAR_HELPER_MODE) {
@@ -682,6 +683,7 @@ static void osp_engine_dir_monitor_cb (void *data, Ecore_File_Monitor *em, Ecore
                         _panel_agent->start_helper (uuid);
                     }
                 }
+#endif
             }
         }
     }
@@ -760,10 +762,11 @@ static void ise_file_monitor_cb (void *data, Ecore_File_Monitor *em, Ecore_File_
                 ecore_file_monitor_del (iter->second);
                 _osp_info_em.erase (iter);
             }
-        } else if (event == ECORE_FILE_EVENT_CLOSED || ECORE_FILE_EVENT_CREATED_FILE) {
+        } else if (event == ECORE_FILE_EVENT_CLOSED) {
             isf_update_ise_module (String (path), _config);
             _panel_agent->update_ise_list (_uuids);
-
+            _panel_agent->reload_config ();
+#if 0
             String uuid    = scim_global_config_read (String (SCIM_GLOBAL_CONFIG_DEFAULT_ISE_UUID), _initial_ise_uuid);
             int    index   = get_ise_index (uuid);
             String strFile = String (ecore_file_monitor_path_get (em)) +
@@ -781,6 +784,7 @@ static void ise_file_monitor_cb (void *data, Ecore_File_Monitor *em, Ecore_File_
                 add_monitor_for_osp_module (module_name);
                 LOGD ("add %s", module_name.c_str ());
             }
+#endif
         }
     }
 }
