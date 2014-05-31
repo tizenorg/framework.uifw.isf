@@ -1,0 +1,1163 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2014-01-22 15:05+0900\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: ism/src/scim_compose_key.cpp:128 ism/src/scim_imengine.cpp:812
+#: ism/src/scim_panel_agent.cpp:385 ism/src/scim_panel_agent.cpp:4205
+#: ism/src/scim_utility.cpp:784
+#: ism/extras/gtk2_immodule/gtkimcontextscim.cpp:1730
+msgid "English Keyboard"
+msgstr ""
+
+#. return WideString ();
+#: ism/src/scim_compose_key.cpp:147
+msgid "English input service"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:785
+msgid "Amharic"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:786
+msgid "Arabic"
+msgstr "عربي"
+
+#: ism/src/scim_utility.cpp:787
+msgid "Arabic (Egypt)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:788
+msgid "Arabic (Lebanon)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:789
+msgid "Assamese"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:790 ism/src/scim_utility.cpp:946
+msgid "Azerbaijani"
+msgstr "Azərbaycanca"
+
+#: ism/src/scim_utility.cpp:791
+msgid "Belarusian"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:792
+msgid "Bulgarian"
+msgstr "Български"
+
+#: ism/src/scim_utility.cpp:793 ism/src/scim_utility.cpp:794
+msgid "Bengali"
+msgstr "বাংলা"
+
+#: ism/src/scim_utility.cpp:795
+msgid "Bengali (India)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:796
+msgid "Tibetan"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:797
+msgid "Bosnian"
+msgstr "Bosanski"
+
+#: ism/src/scim_utility.cpp:798
+msgid "Catalan"
+msgstr "Català"
+
+#: ism/src/scim_utility.cpp:799 ism/src/scim_keyboard_layout_data.h:4596
+msgid "Czech"
+msgstr "Český"
+
+#: ism/src/scim_utility.cpp:800 ism/src/scim_utility.cpp:948
+msgid "Welsh"
+msgstr "Cymraeg"
+
+#: ism/src/scim_utility.cpp:801 ism/src/scim_keyboard_layout_data.h:4598
+msgid "Danish"
+msgstr "Dansk"
+
+#: ism/src/scim_utility.cpp:802 ism/src/scim_keyboard_layout_data.h:4606
+msgid "German"
+msgstr "Deutsch"
+
+#: ism/src/scim_utility.cpp:803
+msgid "Divehi"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:804 ism/src/scim_keyboard_layout_data.h:4609
+msgid "Greek"
+msgstr "Ελληνικά"
+
+#: ism/src/scim_utility.cpp:805
+msgid "English"
+msgstr "English"
+
+#: ism/src/scim_utility.cpp:806
+msgid "English (Australian)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:807
+msgid "English (Canadian)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:808
+msgid "English (United Kingdom)"
+msgstr "English (United Kingdom)"
+
+#: ism/src/scim_utility.cpp:809
+msgid "English (Ireland)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:810
+msgid "English (United States)"
+msgstr "English (United States)"
+
+#: ism/src/scim_utility.cpp:811
+msgid "Esperanto"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:812 ism/src/scim_utility.cpp:813
+#: ism/src/scim_keyboard_layout_data.h:4622
+msgid "Spanish"
+msgstr "Español"
+
+#: ism/src/scim_utility.cpp:814
+msgid "Spanish (Mexico)"
+msgstr "Español (México)"
+
+#: ism/src/scim_utility.cpp:815
+msgid "Spanish (United States)"
+msgstr "Español (Estados Unidos)"
+
+#: ism/src/scim_utility.cpp:816 ism/src/scim_keyboard_layout_data.h:4601
+msgid "Estonian"
+msgstr "Eesti"
+
+#: ism/src/scim_utility.cpp:817
+msgid "Basque"
+msgstr "Euskara"
+
+#: ism/src/scim_utility.cpp:818
+msgid "Persian"
+msgstr "فارسی"
+
+#: ism/src/scim_utility.cpp:819 ism/src/scim_keyboard_layout_data.h:4602
+msgid "Finnish"
+msgstr "Suomi"
+
+#: ism/src/scim_utility.cpp:820 ism/src/scim_keyboard_layout_data.h:4603
+msgid "French"
+msgstr "Français"
+
+#: ism/src/scim_utility.cpp:821
+msgid "Irish"
+msgstr "Gaeilge"
+
+#: ism/src/scim_utility.cpp:822
+msgid "Galician"
+msgstr "Galego"
+
+#: ism/src/scim_utility.cpp:823
+msgid "Gujarati"
+msgstr "ગુજરાતી"
+
+#: ism/src/scim_utility.cpp:824 ism/src/scim_utility.cpp:833
+msgid "Hebrew"
+msgstr "עברית"
+
+#: ism/src/scim_utility.cpp:825
+msgid "Hindi"
+msgstr "हिन्दी"
+
+#: ism/src/scim_utility.cpp:826 ism/src/scim_keyboard_layout_data.h:4595
+msgid "Croatian"
+msgstr "Hrvatski"
+
+#: ism/src/scim_utility.cpp:827 ism/src/scim_keyboard_layout_data.h:4610
+msgid "Hungarian"
+msgstr "Magyar"
+
+#: ism/src/scim_utility.cpp:828
+msgid "Armenian"
+msgstr "Հայերեն"
+
+#: ism/src/scim_utility.cpp:829
+msgid "Interlingua"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:830
+msgid "Indonesian"
+msgstr "Bahasa Indonesia"
+
+#: ism/src/scim_utility.cpp:831 ism/src/scim_keyboard_layout_data.h:4628
+msgid "Icelandic"
+msgstr "íslenska"
+
+#: ism/src/scim_utility.cpp:832 ism/src/scim_keyboard_layout_data.h:4611
+msgid "Italian"
+msgstr "Italiano"
+
+#: ism/src/scim_utility.cpp:834 ism/src/scim_keyboard_layout_data.h:4612
+msgid "Japanese"
+msgstr "日本語"
+
+#: ism/src/scim_utility.cpp:835
+msgid "Georgian"
+msgstr "ქართული"
+
+#: ism/src/scim_utility.cpp:836
+msgid "Kazakh"
+msgstr "Қазақ"
+
+#: ism/src/scim_utility.cpp:837
+msgid "Cambodian"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:838
+msgid "Kannada"
+msgstr "ಕನ್ನಡ"
+
+#: ism/src/scim_utility.cpp:839
+msgid "Korean"
+msgstr "한국어"
+
+#: ism/src/scim_utility.cpp:840
+msgid "Laothian"
+msgstr "ລາວ"
+
+#: ism/src/scim_utility.cpp:841 ism/src/scim_keyboard_layout_data.h:4629
+msgid "Lithuanian"
+msgstr "Lietuvių"
+
+#: ism/src/scim_utility.cpp:842
+msgid "Latvian"
+msgstr "Latviešu"
+
+#: ism/src/scim_utility.cpp:843
+msgid "Macedonian"
+msgstr "Македонски"
+
+#: ism/src/scim_utility.cpp:844
+msgid "Malayalam"
+msgstr "മലയാളം"
+
+#: ism/src/scim_utility.cpp:845
+msgid "Mongolian"
+msgstr "Монгол"
+
+#: ism/src/scim_utility.cpp:846
+msgid "Marathi"
+msgstr "मराठी"
+
+#: ism/src/scim_utility.cpp:847
+msgid "Malay"
+msgstr "Bahasa Malaysia"
+
+#: ism/src/scim_utility.cpp:848
+msgid "Burmese"
+msgstr "မြန်မာဘာသာ"
+
+#: ism/src/scim_utility.cpp:849
+msgid "Nepali"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:850 ism/src/scim_keyboard_layout_data.h:4599
+msgid "Dutch"
+msgstr "Nederlands"
+
+#: ism/src/scim_utility.cpp:851
+msgid "Norwegian (Nynorsk)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:852
+msgid "Norwegian (Bokmal)"
+msgstr "Norsk (Bokmål)"
+
+#: ism/src/scim_utility.cpp:853
+msgid "Oriya"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:854
+msgid "Punjabi"
+msgstr "ਪੰਜਾਬੀ"
+
+#: ism/src/scim_utility.cpp:855 ism/src/scim_keyboard_layout_data.h:4614
+msgid "Polish"
+msgstr "Polski"
+
+#: ism/src/scim_utility.cpp:856 ism/src/scim_utility.cpp:858
+#: ism/src/scim_keyboard_layout_data.h:4615
+msgid "Portuguese"
+msgstr "Português"
+
+#: ism/src/scim_utility.cpp:857 ism/src/scim_keyboard_layout_data.h:4616
+msgid "Portuguese (Brazil)"
+msgstr "Português (Brasil)"
+
+#: ism/src/scim_utility.cpp:859
+msgid "Romanian"
+msgstr "Română"
+
+#: ism/src/scim_utility.cpp:860 ism/src/scim_keyboard_layout_data.h:4618
+msgid "Russian"
+msgstr "Русский"
+
+#: ism/src/scim_utility.cpp:861 ism/src/scim_utility.cpp:862
+msgid "Sindhi"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:863
+msgid "Sinhala"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:864 ism/src/scim_keyboard_layout_data.h:4619
+msgid "Slovak"
+msgstr "Slovenčina"
+
+#: ism/src/scim_utility.cpp:865 ism/src/scim_keyboard_layout_data.h:4621
+msgid "Slovenian"
+msgstr "Slovenščina"
+
+#: ism/src/scim_utility.cpp:866
+msgid "Albanian"
+msgstr "shqip"
+
+#: ism/src/scim_utility.cpp:867 ism/src/scim_utility.cpp:868
+#: ism/src/scim_utility.cpp:869
+msgid "Serbian"
+msgstr "Srpski"
+
+#: ism/src/scim_utility.cpp:870 ism/src/scim_utility.cpp:872
+#: ism/src/scim_keyboard_layout_data.h:4625
+msgid "Swedish"
+msgstr "Svenska"
+
+#: ism/src/scim_utility.cpp:871
+msgid "Swedish (Finland)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:873
+msgid "Tamil"
+msgstr "தமிழ்"
+
+#: ism/src/scim_utility.cpp:874
+msgid "Telugu"
+msgstr "తెలుగు"
+
+#: ism/src/scim_utility.cpp:875
+msgid "Thai"
+msgstr "ภาษาไทย"
+
+#: ism/src/scim_utility.cpp:876 ism/src/scim_keyboard_layout_data.h:4626
+msgid "Turkish"
+msgstr "Türkçe"
+
+#: ism/src/scim_utility.cpp:877
+msgid "Uighur"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:878 ism/src/scim_keyboard_layout_data.h:4630
+msgid "Ukrainian"
+msgstr "Українська"
+
+#: ism/src/scim_utility.cpp:879
+msgid "Urdu"
+msgstr "اردو"
+
+#: ism/src/scim_utility.cpp:880
+msgid "Uzbek"
+msgstr "o'zbek tili"
+
+#: ism/src/scim_utility.cpp:881
+msgid "Vietnamese"
+msgstr "Tiếng Việt"
+
+#: ism/src/scim_utility.cpp:882
+msgid "Walloon"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:883 ism/src/scim_utility.cpp:884
+msgid "Yiddish"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:885
+msgid "Chinese"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:886 ism/src/scim_utility.cpp:888
+msgid "Chinese (Simplified)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:887
+msgid "Chinese (Hongkong)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:889
+msgid "Chinese (Traditional)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:891
+msgid "Dutch (Belgian)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:892
+msgid "English (New Zealand)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:893
+msgid "English (South Africa)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:894
+msgid "English (Jamaica)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:895
+msgid "English (Belize)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:896
+msgid "English (Trinidad)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:897
+msgid "English (Zimbabwe)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:898
+msgid "English (Philippines)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:899
+msgid "French (Belgian)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:900 ism/src/scim_keyboard_layout_data.h:4604
+msgid "French (Canadian)"
+msgstr "Français (Canada)"
+
+#: ism/src/scim_utility.cpp:901
+msgid "French (Swiss)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:902
+msgid "French (Luxembourg)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:903
+msgid "French (Monaco)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:904 ism/src/scim_keyboard_layout_data.h:4608
+msgid "German (Swiss)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:905
+msgid "German (Austrian)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:906
+msgid "German (Luxembourg)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:907
+msgid "German (Liechtenstein)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:908
+msgid "Italian (Swiss)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:909
+msgid "Spanish (Guatemala)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:910
+msgid "Spanish (Costa Rica)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:911
+msgid "Spanish (Panama)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:912
+msgid "Spanish (Dominican Republic)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:913
+msgid "Spanish (Venezuela)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:914
+msgid "Spanish (Colombia)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:915
+msgid "Spanish (Peru)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:916
+msgid "Spanish (Argentina)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:917
+msgid "Spanish (Ecuador)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:918
+msgid "Spanish (Chile)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:919
+msgid "Spanish (Uruguay)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:920
+msgid "Spanish (Paraguay)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:921
+msgid "Spanish (Bolivia)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:922
+msgid "Spanish (El Salvador)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:923
+msgid "Spanish (Honduras)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:924
+msgid "Spanish (Nicaragua)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:925
+msgid "Spanish (Puerto Rico)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:926 ism/src/scim_utility.cpp:955
+msgid "Afrikaans"
+msgstr "Afrikaans"
+
+#: ism/src/scim_utility.cpp:927
+msgid "Malay (Brunei Darussalam)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:928 ism/src/scim_keyboard_layout_data.h:4613
+msgid "Norwegian"
+msgstr "Norsk"
+
+#: ism/src/scim_utility.cpp:929
+msgid "Serbian (Latin)"
+msgstr "Srpski (latinica)"
+
+#: ism/src/scim_utility.cpp:930
+msgid "Serbian (Cyrillic)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:931
+msgid "Chinese (Macau)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:932
+msgid "Arabic (Saudi Arabia)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:933
+msgid "Arabic (Iraq)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:934
+msgid "Arabic (Libya)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:935
+msgid "Arabic (Algeria)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:936
+msgid "Arabic (Morocco)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:937
+msgid "Arabic (Tunisia)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:938
+msgid "Arabic (Oman)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:939
+msgid "Arabic (Yemen)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:940
+msgid "Arabic (Syria)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:941
+msgid "Arabic (Jordan)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:942
+msgid "Arabic (Kuwait)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:943
+msgid "Arabic (UAE)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:944
+msgid "Arabic (Bahrain)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:945
+msgid "Arabic (Qatar)"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:947
+msgid "Hausa"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:949
+msgid "Xhosa"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:950
+msgid "Yoruba"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:951
+msgid "Zulu"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:952
+msgid "Hinglish"
+msgstr "Hinglish"
+
+#: ism/src/scim_utility.cpp:953
+msgid "Sundanese"
+msgstr "Basa Sunda"
+
+#: ism/src/scim_utility.cpp:954
+msgid "Tagalog"
+msgstr "Tagalog"
+
+#: ism/src/scim_utility.cpp:956
+msgid "Javanese"
+msgstr "Basa Jawa"
+
+#: ism/src/scim_utility.cpp:957
+msgid "Khmer"
+msgstr "ភាសាខ្មែរ"
+
+#: ism/src/scim_utility.cpp:958 ism/src/scim_keyboard_layout_data.h:4624
+msgid "Spanish (Latin America)"
+msgstr "Español (América Latina)"
+
+#: ism/src/scim_utility.cpp:1056
+msgid "Other"
+msgstr ""
+
+#: ism/src/scim_keyboard_layout_data.h:4592
+#: ism/modules/imengine/scim_socket_imengine.cpp:418
+#: ism/modules/imengine/scim_socket_imengine.cpp:477
+#: ism/modules/imengine/scim_socket_imengine.cpp:507
+#: ism/modules/imengine/scim_socket_imengine.cpp:537
+msgid "Unknown"
+msgstr ""
+
+#: ism/src/scim_keyboard_layout_data.h:4593
+msgid "English (US)"
+msgstr ""
+
+#: ism/src/scim_keyboard_layout_data.h:4594
+msgid "Belgian"
+msgstr ""
+
+#: ism/src/scim_keyboard_layout_data.h:4597
+msgid "Czech (qwerty)"
+msgstr ""
+
+#: ism/src/scim_keyboard_layout_data.h:4600
+msgid "Dvorak"
+msgstr ""
+
+#: ism/src/scim_keyboard_layout_data.h:4605
+msgid "French (Switzerland)"
+msgstr ""
+
+#: ism/src/scim_keyboard_layout_data.h:4607
+msgid "German (with deadkeys)"
+msgstr ""
+
+#: ism/src/scim_keyboard_layout_data.h:4617
+msgid "Portuguese (Brazil US accents)"
+msgstr ""
+
+#: ism/src/scim_keyboard_layout_data.h:4620
+msgid "Slovak (qwerty)"
+msgstr ""
+
+#: ism/src/scim_keyboard_layout_data.h:4623
+msgid "Spanish (CP 850)"
+msgstr ""
+
+#: ism/src/scim_keyboard_layout_data.h:4627
+msgid "English (UK)"
+msgstr ""
+
+#: ism/modules/filter/scim_sctc_filter.cpp:57
+msgid "Simplified-Traditional Chinese Conversion"
+msgstr ""
+
+#: ism/modules/filter/scim_sctc_filter.cpp:60
+msgid "Convert between Simplified Chinese and Traditional Chinese"
+msgstr ""
+
+#: ism/modules/filter/scim_sctc_filter.cpp:71
+msgid "SC-TC"
+msgstr ""
+
+#: ism/modules/filter/scim_sctc_filter.cpp:73
+#: ism/modules/filter/scim_sctc_filter.cpp:78
+msgid "Simplified-Traditional Chinese conversion"
+msgstr ""
+
+#: ism/modules/filter/scim_sctc_filter.cpp:76
+msgid "No Conversion"
+msgstr ""
+
+#: ism/modules/filter/scim_sctc_filter.cpp:81
+msgid "Simplified to Traditional"
+msgstr ""
+
+#: ism/modules/filter/scim_sctc_filter.cpp:83
+msgid "Convert Simplified Chinese to Traditional Chinese"
+msgstr ""
+
+#: ism/modules/filter/scim_sctc_filter.cpp:86
+msgid "Traditional to Simplified"
+msgstr ""
+
+#: ism/modules/filter/scim_sctc_filter.cpp:88
+msgid "Convert Traditional Chinese to Simplified Chinese"
+msgstr ""
+
+#: ism/modules/filter/scim_sctc_filter.cpp:300
+msgid "James Su <suzhe@tsinghua.org.cn>"
+msgstr ""
+
+#: ism/modules/filter/scim_sctc_filter.cpp:425
+#: ism/modules/filter/scim_sctc_filter.cpp:555
+#: ism/modules/filter/scim_sctc_filter.cpp:571
+msgid "SC->TC"
+msgstr ""
+
+#: ism/modules/filter/scim_sctc_filter.cpp:431
+#: ism/modules/filter/scim_sctc_filter.cpp:559
+#: ism/modules/filter/scim_sctc_filter.cpp:575
+msgid "TC->SC"
+msgstr ""
+
+#: ism/extras/gtk2_immodule/gtkimcontextscim.cpp:1680
+msgid "Smart Common Input Method platform "
+msgstr ""
+
+#: ism/extras/gtk2_immodule/gtkimcontextscim.cpp:1682
+msgid ""
+"\n"
+"(C) 2002-2005 James Su <suzhe@tsinghua.org.cn>\n"
+"\n"
+msgstr ""
+
+#: ism/extras/gtk2_immodule/gtkimcontextscim.cpp:1688
+msgid ""
+":\n"
+"\n"
+msgstr ""
+
+#: ism/extras/gtk2_immodule/gtkimcontextscim.cpp:1691
+msgid ""
+"\n"
+"\n"
+msgstr ""
+
+#: ism/extras/efl_panel/isf_panel_efl.cpp:679
+#: ism/extras/efl_panel/isf_panel_efl.cpp:5285
+#: ism/extras/efl_panel/isf_panel_efl.cpp:5475
+msgid "Select input method"
+msgstr "Vælg indtastningsmetode"
+
+#: ism/extras/efl_panel/isf_panel_efl.cpp:684
+msgid "Set up input methods"
+msgstr "Konfigurér indtastningsmetoder"
+
+#: ism/extras/efl_panel/isf_panel_efl.cpp:2755
+#: ism/extras/efl_panel/isf_panel_efl.cpp:5753
+msgid "close button"
+msgstr ""
+
+#: ism/extras/efl_panel/isf_panel_efl.cpp:2762
+#: ism/extras/efl_panel/isf_panel_efl.cpp:5750
+msgid "more button"
+msgstr ""
+
+#: ism/extras/efl_panel/isf_panel_efl.cpp:3733
+#, c-format
+msgid "%s selected"
+msgstr "%s valgt"
+
+#: ism/extras/efl_panel/isf_panel_efl.cpp:3736
+#, c-format
+msgid "Only %s is available"
+msgstr "Kun %s tilgængelig"
+
+#: ism/extras/efl_panel/isf_panel_efl.cpp:5278
+#: ism/extras/efl_panel/isf_panel_efl.cpp:5349
+#: ism/extras/efl_panel/isf_panel_efl.cpp:5353
+msgid "Input detected from hardware keyboard"
+msgstr "Input registreret fra hardwaretastatur"
+
+#: ism/extras/efl_panel/isf_panel_efl.cpp:5278
+#: ism/extras/efl_panel/isf_panel_efl.cpp:5349
+msgid "Tap to use virtual keyboard"
+msgstr "Tryk for at bruge virtuelt tastatur"
+
+#: ism/utils/scimstringview.c:201
+msgid "Cursor Position"
+msgstr ""
+
+#: ism/utils/scimstringview.c:202
+msgid "The current position of the insertion cursor in chars."
+msgstr ""
+
+#: ism/utils/scimstringview.c:211
+msgid "Maximum length"
+msgstr ""
+
+#: ism/utils/scimstringview.c:212
+msgid "Maximum number of characters for this string view. Zero if no maximum."
+msgstr ""
+
+#: ism/utils/scimstringview.c:221
+msgid "Maximum width"
+msgstr ""
+
+#: ism/utils/scimstringview.c:222
+msgid "Maximum width of this string view."
+msgstr ""
+
+#: ism/utils/scimstringview.c:231
+msgid "Has Frame"
+msgstr ""
+
+#: ism/utils/scimstringview.c:232
+msgid "FALSE removes outside bevel from string view."
+msgstr ""
+
+#: ism/utils/scimstringview.c:239
+msgid "Draw cursor"
+msgstr ""
+
+#: ism/utils/scimstringview.c:240
+msgid "TRUE draw blinking cursor."
+msgstr ""
+
+#: ism/utils/scimstringview.c:247
+msgid "Auto move cursor"
+msgstr ""
+
+#: ism/utils/scimstringview.c:248
+msgid "TRUE auto move cursor position when mouse clicking."
+msgstr ""
+
+#: ism/utils/scimstringview.c:255
+msgid "Forward button press/release event"
+msgstr ""
+
+#: ism/utils/scimstringview.c:256
+msgid "TRUE forward button press/release event to user program."
+msgstr ""
+
+#: ism/utils/scimstringview.c:263
+msgid "Auto resize the widget to fit the string"
+msgstr ""
+
+#: ism/utils/scimstringview.c:264
+msgid "TRUE Auto resize on."
+msgstr ""
+
+#: ism/utils/scimstringview.c:271
+msgid "Emit move_cursor signal when press/release the string"
+msgstr ""
+
+#: ism/utils/scimstringview.c:272
+msgid "TRUE Emit move_cursor signal when press the string."
+msgstr ""
+
+#: ism/utils/scimstringview.c:279
+msgid "Width in chars"
+msgstr ""
+
+#: ism/utils/scimstringview.c:280
+msgid "Number of characters to leave space for in the string view."
+msgstr ""
+
+#: ism/utils/scimstringview.c:289
+msgid "Scroll offset"
+msgstr ""
+
+#: ism/utils/scimstringview.c:290
+msgid "Number of pixels of the string view scrolled off the screen to the left"
+msgstr ""
+
+#: ism/utils/scimstringview.c:299
+msgid "Text"
+msgstr ""
+
+#: ism/utils/scimstringview.c:300
+msgid "The contents of the string view"
+msgstr ""
+
+#: ism/utils/scimkeyselection.cpp:161
+msgid "Selected _Keys:"
+msgstr ""
+
+#: ism/utils/scimkeyselection.cpp:206
+msgid "Key Code:"
+msgstr ""
+
+#: ism/utils/scimkeyselection.cpp:224
+msgid "....."
+msgstr ""
+
+#: ism/utils/scimkeyselection.cpp:229
+msgid "Modifiers:"
+msgstr ""
+
+#: ism/utils/scimkeyselection.cpp:242
+msgid "_Ctrl"
+msgstr ""
+
+#: ism/utils/scimkeyselection.cpp:246
+msgid "A_lt"
+msgstr ""
+
+#: ism/utils/scimkeyselection.cpp:250
+msgid "_Shift"
+msgstr ""
+
+#: ism/utils/scimkeyselection.cpp:254
+msgid "_Release"
+msgstr ""
+
+#: ism/utils/scimkeyselection.cpp:264
+msgid "_Meta"
+msgstr ""
+
+#: ism/utils/scimkeyselection.cpp:268
+msgid "S_uper"
+msgstr ""
+
+#: ism/utils/scimkeyselection.cpp:272
+msgid "_Hyper"
+msgstr ""
+
+#: ism/utils/scimkeyselection.cpp:337
+msgid "Please enter a Key Code first."
+msgstr ""
+
+#: ism/utils/scimkeyselection.cpp:391
+msgid ""
+"Press a key (or a key combination).\n"
+"This dialog will be closed \n"
+"when the key is released."
+msgstr ""
+
+#: ism/utils/scimkeyselection.cpp:395
+msgid "Grabbing a key."
+msgstr ""
+
+#: ism/utils/scimkeyselection.cpp:686
+msgid "Key Selection"
+msgstr ""
+
+#: ism/utils/scimtrayicon.c:108
+msgid "Orientation"
+msgstr ""
+
+#: ism/utils/scimtrayicon.c:109
+msgid "The orientation of the tray."
+msgstr ""
+
+#. Normal Layout
+#: ism/demos/isf_layout_efl.cpp:212
+msgid "NORMAL LAYOUT"
+msgstr ""
+
+#: ism/demos/isf_layout_efl.cpp:212
+msgid "click to enter TEXT"
+msgstr ""
+
+#. Number Layout
+#: ism/demos/isf_layout_efl.cpp:216
+msgid "NUMBER LAYOUT"
+msgstr ""
+
+#: ism/demos/isf_layout_efl.cpp:216
+msgid "click to enter NUMBER"
+msgstr ""
+
+#. Email Layout
+#: ism/demos/isf_layout_efl.cpp:220
+msgid "EMAIL LAYOUT"
+msgstr ""
+
+#: ism/demos/isf_layout_efl.cpp:220
+msgid "click to enter EMAIL"
+msgstr ""
+
+#. URL Layout
+#: ism/demos/isf_layout_efl.cpp:224
+msgid "URL LAYOUT"
+msgstr ""
+
+#: ism/demos/isf_layout_efl.cpp:224
+msgid "click to enter URL"
+msgstr ""
+
+#. Phonenumber Layout
+#: ism/demos/isf_layout_efl.cpp:228
+msgid "PHONENUMBER LAYOUT"
+msgstr ""
+
+#: ism/demos/isf_layout_efl.cpp:228
+msgid "click to enter PHONENUMBER"
+msgstr ""
+
+#. IP Layout
+#: ism/demos/isf_layout_efl.cpp:232
+msgid "IP LAYOUT"
+msgstr ""
+
+#: ism/demos/isf_layout_efl.cpp:232
+msgid "click to enter IP"
+msgstr ""
+
+#. Month Layout
+#: ism/demos/isf_layout_efl.cpp:236
+msgid "MONTH LAYOUT"
+msgstr ""
+
+#: ism/demos/isf_layout_efl.cpp:236
+msgid "click to enter MONTH"
+msgstr ""
+
+#. Number Only Layout
+#: ism/demos/isf_layout_efl.cpp:240
+msgid "NUMBERONLY LAYOUT"
+msgstr ""
+
+#: ism/demos/isf_layout_efl.cpp:240
+msgid "click to enter NUMBERONLY"
+msgstr ""
+
+#. Number Only with signed Layout
+#: ism/demos/isf_layout_efl.cpp:244
+msgid "NUMBERONLY WITH SIGNED LAYOUT"
+msgstr ""
+
+#: ism/demos/isf_layout_efl.cpp:244
+msgid "click to enter NUMBERONLY WITH SIGNED"
+msgstr ""
+
+#. Number Only with decimal Layout
+#: ism/demos/isf_layout_efl.cpp:248
+msgid "NUMBERONLY WITH DECIMAL LAYOUT"
+msgstr ""
+
+#: ism/demos/isf_layout_efl.cpp:248
+msgid "click to enter NUMBERONLY WITH DECIMAL"
+msgstr ""
+
+#. Number Only with signed and decimal Layout
+#: ism/demos/isf_layout_efl.cpp:252
+msgid "NUMBERONLY WITH SIGNED AND DECIMAL LAYOUT"
+msgstr ""
+
+#: ism/demos/isf_layout_efl.cpp:252
+msgid "click to enter NUMBERONLY WITH SIGNED AND DECIMAL"
+msgstr ""
+
+#. Datetime Layout
+#: ism/demos/isf_layout_efl.cpp:256
+msgid "DATETIME LAYOUT"
+msgstr ""
+
+#: ism/demos/isf_layout_efl.cpp:256
+msgid "click to enter DATETIME"
+msgstr ""
+
+#. Password Layout
+#: ism/demos/isf_layout_efl.cpp:260
+msgid "PASSWORD LAYOUT"
+msgstr ""
+
+#: ism/demos/isf_layout_efl.cpp:260
+msgid "click to enter PASSWORD"
+msgstr ""
+
+#. Terminal Layout
+#: ism/demos/isf_layout_efl.cpp:264
+msgid "TERMINAL LAYOUT"
+msgstr ""
+
+#: ism/demos/isf_layout_efl.cpp:264
+msgid "click to enter TERMINAL"
+msgstr ""
+
+#: ism/demos/isf_layout_efl.cpp:304
+msgid "Layout"
+msgstr ""
+
+#: ism/demos/isf_demo_efl.cpp:171
+msgid "ISF Demo"
+msgstr ""
+
+#: ism/demos/isf_entry_event_efl.cpp:149
+msgid "Entry Event"
+msgstr ""
+
+#: ism/demos/isf_event_efl.cpp:231
+msgid "Label Event"
+msgstr ""
+
+#: ism/demos/isf_event_efl.cpp:260
+msgid "Event"
+msgstr ""
+
+#: ism/demos/isf_imcontrol_efl.cpp:291
+msgid "IM Control"
+msgstr ""
+
+#~ msgid "Virtual keyboard is on"
+#~ msgstr "Virtuelt tastatur aktiveret"
