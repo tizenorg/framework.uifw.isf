@@ -2,7 +2,7 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2000 - 2013 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (c) 2000 - 2014 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact: Haifeng Deng <haifeng.deng@samsung.com>, Hengliang Luo <hl.luo@samsung.com>
  *
@@ -33,7 +33,7 @@
 #include <sys/prctl.h>
 #include <unistd.h>
 #include <dlog.h>
-#include <ail.h>
+#include <pkgmgr-info.h>
 #include <privilege-control.h>
 
 #define Uses_SCIM_HELPER
@@ -43,21 +43,25 @@
 #define LABEL_LEN       23
 #define AUL_PR_NAME     16
 
+#define APP_UID         5000
 #define PREEXEC_FILE "/usr/share/aul/preexec_list.txt"
 
 #define DEFAULT_PACKAGE_TYPE "rpm"
 #define DEFAULT_PACKAGE_NAME "libisf-bin"
 #define DEFAULT_APPLICATION_PATH "/usr/lib/scim-1.0/scim-helper-launcher"
 
-#define _E(fmt, arg...) printf("[%s,%d] "fmt, __FUNCTION__, __LINE__, ##arg)
-#define _D(fmt, arg...) printf("[%s,%d] "fmt, __FUNCTION__, __LINE__, ##arg)
+#define NATIVE_APPLICATION_TYPE "c++app"
+#define NATIVE_PACKAGE_TYPE "tpk"
+
+#define WEB_APPLICATION_TYPE "webapp"
+#define WEB_PACKAGE_TYPE "wgt"
 
 #ifdef LOG_TAG
 # undef LOG_TAG
 #endif
 #define LOG_TAG "ISE_PREEXEC"
 
-/* The broker for launching OSP based IMEs */
+/* The broker for launching OSP or Web based IMEs */
 // {
 
 #include <pwd.h>
@@ -103,9 +107,10 @@ void send_message_to_broker (const char *message)
     exit_handler = ecore_event_handler_add (ECORE_EVENT_SIGNAL_EXIT, sig_exit_cb, NULL);
     data_handler = ecore_event_handler_add (ECORE_IPC_EVENT_SERVER_DATA, handler_server_data, NULL);
 
-    server = ecore_ipc_server_connect (ECORE_IPC_LOCAL_SYSTEM, "scim-helper-broker", 0, NULL);
+    const char *sever_name = "scim-helper-broker";
+    server = ecore_ipc_server_connect (ECORE_IPC_LOCAL_SYSTEM, const_cast<char*>(sever_name), 0, NULL);
 
-    LOGD("connect_broker () : %p\n", server);
+    LOGD ("connect_broker () : %p\n", server);
 
     if (server && message) {
         ecore_ipc_server_send (server, 0, 0, 0, 0, 0, message, strlen (message));
@@ -175,13 +180,13 @@ static inline void __preexec_init ()
 
     preexec_file = fopen (PREEXEC_FILE, "rt");
     if (preexec_file == NULL) {
-        _E("no preexec\n");
+        LOGW ("no preexec\n");
         return;
     }
 
-    _D("preexec start\n");
+    LOGD ("preexec start\n");
 
-    while (fgets (line, MAX_LOCAL_BUFSZ, preexec_file) > 0) {
+    while (fgets (line, MAX_LOCAL_BUFSZ, preexec_file) != NULL) {
         /* Parse each line */
         if (line[0] == '#' || line[0] == '\0')
             continue;
@@ -198,7 +203,7 @@ static inline void __preexec_init ()
 
         type_t = (preexec_list_t *) calloc (1, sizeof (preexec_list_t));
         if (type_t == NULL) {
-            _E("no available memory\n");
+            LOGE ("no available memory\n");
             __preexec_list_free ();
             fclose (preexec_file);
             return;
@@ -209,11 +214,11 @@ static inline void __preexec_init ()
             free (type_t);
             continue;
         }
-        _D("preexec %s %s# - handle : %x\n", type, sopath, type_t->handle);
+        LOGD ("preexec %s %s# - handle : %x\n", type, sopath, type_t->handle);
 
         func = (int (*)(char*, char*))dlsym (type_t->handle, symbol);
         if (func == NULL) {
-            _E("failed to get symbol type:%s path:%s\n",
+            LOGE ("failed to get symbol type:%s path:%s\n",
                type, sopath);
             dlclose (type_t->handle);
             free (type_t);
@@ -222,7 +227,7 @@ static inline void __preexec_init ()
 
         type_t->pkg_type = strdup (type);
         if (type_t->pkg_type == NULL) {
-            _E("no available memory\n");
+            LOGE ("no available memory\n");
             dlclose (type_t->handle);
             free (type_t);
             __preexec_list_free ();
@@ -231,7 +236,7 @@ static inline void __preexec_init ()
         }
         type_t->so_path = strdup (sopath);
         if (type_t->so_path == NULL) {
-            _E("no available memory\n");
+            LOGE ("no available memory\n");
             dlclose (type_t->handle);
             free (type_t->pkg_type);
             free (type_t);
@@ -262,11 +267,11 @@ static inline void __preexec_run (const char *pkg_type, const char *pkg_name,
         if (type_t) {
             if (!strcmp (pkg_type, type_t->pkg_type)) {
                 if (type_t->dl_do_pre_exe != NULL) {
-                    type_t->dl_do_pre_exe ((char *)pkg_name,
-                        (char *)app_path);
-                    _D("called dl_do_pre_exe () type: %s, %s %s\n", pkg_type, pkg_name, app_path);
+                    type_t->dl_do_pre_exe (const_cast<char*>(pkg_name),
+                            const_cast<char*>(app_path));
+                    LOGD ("called dl_do_pre_exe () type: %s, %s %s\n", pkg_type, pkg_name, app_path);
                 } else {
-                    _E("no symbol for this type: %s",
+                    LOGE ("no symbol for this type: %s",
                         pkg_type);
                 }
             }
@@ -291,7 +296,17 @@ static void __set_oom ()
 
 static inline int __set_dac ()
 {
-    return control_privilege ();
+    //Copied from control_privilege () in the libprivilege-control package
+
+    if (getuid () == APP_UID) // current user is 'app'
+        return PC_OPERATION_SUCCESS;
+
+    if (perm_app_set_privilege ("com.samsung.", NULL, NULL) == PC_OPERATION_SUCCESS) {
+        return PC_OPERATION_SUCCESS;
+    } else {
+        LOGW ("perm_app_set_privilege failed (not permitted).");
+        return PC_ERR_NOT_PERMITTED;
+    }
 }
 
 static inline int __set_smack (char* path)
@@ -304,7 +319,7 @@ static inline int __set_smack (char* path)
     int fd = 0;
     int result = -1;
 
-    result = getxattr (path, "security.SMACK64EXEC", label, LABEL_LEN);
+    result = lgetxattr (path, "security.SMACK64EXEC", label, LABEL_LEN);
     if (result < 0)  // fail to get extended attribute
         return 0;   // ignore error
 
@@ -328,40 +343,67 @@ typedef struct {
     std::string app_path;
 } PKGINFO;
 
-static void get_pkginfo (const char *helper, PKGINFO *info)
+static void get_pkginfo (const char *helper, const char *uuid, PKGINFO *info)
 {
-    if (helper && info) {
-        ail_appinfo_h handle;
-        ail_error_e r;
+    if (helper && uuid && info) {
+        pkgmgrinfo_appinfo_h handle;
+        int r;
         char *value;
-        r = ail_get_appinfo (helper, &handle);
-        if (r != AIL_ERROR_OK) {
-            LOGW ("ail_get_appinfo failed %s %d \n", helper, r);
-            /* Let's try with appid once more */
-            r = ail_get_appinfo (helper, &handle);
-            if (r != AIL_ERROR_OK) {
-                LOGW ("ail_get_appinfo failed %s %d \n", helper, r);
-                return;
+        const char *app_id;
+
+        if (!strcmp (helper, "ise-web-helper-agent")) {
+            // Web IME
+            app_id = uuid;
+        }
+        else {
+            app_id = helper;
+        }
+
+        // get ail handle
+        r = pkgmgrinfo_appinfo_get_appinfo (app_id, &handle);
+        if (r != PMINFO_R_OK) {
+            LOGW ("pkgmgrinfo_appinfo_get_appinfo failed %s %d \n", app_id, r);
+            return;
+        }
+
+        // get package name
+        if (!strcmp (helper, "ise-web-helper-agent")) {
+            // Web IME
+            r = pkgmgrinfo_appinfo_get_pkgid (handle, &value);
+            if (r != PMINFO_R_OK) {
+                LOGW ("pkgmgrinfo_appinfo_get_pkgid () failed : %s %d\n", app_id, r);
+            } else {
+                info->package_name = value;
+                LOGD ("[web] app id : %s, package name : %s\n", app_id, info->package_name.c_str ());
             }
         }
-
-        info->package_name = helper;
-
-        r = ail_appinfo_get_str (handle, AIL_PROP_X_SLP_PACKAGETYPE_STR, &value);
-        if (r != AIL_ERROR_OK) {
-            LOGW ("ail_appinfo_get_str () failed : %s %s %d\n", helper, AIL_PROP_X_SLP_PACKAGETYPE_STR, r);
-        } else {
-            info->package_type = value;
+        else {
+            // OSP IME
+            info->package_name = helper;
+            LOGD ("[osp] app id : %s, package name : %s\n", app_id, info->package_name.c_str ());
         }
 
-        r = ail_appinfo_get_str (handle, AIL_PROP_EXEC_STR, &value);
-        if (r != AIL_ERROR_OK) {
-            LOGW ("ail_appinfo_get_str () failed : %s %s %d\n", helper, AIL_PROP_EXEC_STR, r);
+        r = pkgmgrinfo_appinfo_get_apptype (handle, &value);
+        if (r != PMINFO_R_OK) {
+            LOGW ("pkgmgrinfo_appinfo_get_apptype () failed : %s %d\n", helper, r);
+        } else {
+            if (strncmp (value, NATIVE_APPLICATION_TYPE, strlen (NATIVE_APPLICATION_TYPE)) == 0) {
+                info->package_type = NATIVE_PACKAGE_TYPE;
+            } else if (strncmp (value, WEB_APPLICATION_TYPE, strlen (WEB_APPLICATION_TYPE)) == 0) {
+                info->package_type = WEB_PACKAGE_TYPE;
+            }
+            LOGD ("package type : %s\n", info->package_type.c_str ());
+        }
+
+        r = pkgmgrinfo_appinfo_get_exec (handle, &value);
+        if (r != PMINFO_R_OK) {
+            LOGW ("pkgmgrinfo_appinfo_get_exec () failed : %s %d\n", helper, r);
         } else {
             info->app_path = value;
+            LOGD ("app path : %s\n", info->app_path.c_str ());
         }
 
-        ail_destroy_appinfo (handle);
+        pkgmgrinfo_appinfo_destroy_appinfo (handle);
     }
 }
 
@@ -377,11 +419,23 @@ int ise_preexec (const char *helper, const char *uuid)
 
     LOGD ("starting\n");
 
-    get_pkginfo (helper, &info);
+    get_pkginfo (helper, uuid, &info);
 
-    /* In case of OSP IME, request scim process to re-launch this ISE if we are not ROOT! */
-    struct passwd *lpwd;
-    lpwd = getpwuid (getuid ());
+    /* In case of OSP or Web IME, request scim process to re-launch this ISE if we are not ROOT! */
+    struct passwd *lpwd = NULL;
+    long bufsize;
+    char *buf;
+    struct passwd pwbuf, *pw = NULL;
+
+    if ((bufsize = sysconf (_SC_GETPW_R_SIZE_MAX)) <= 0)
+        bufsize = 4096;
+
+    if (!(buf = (char*) malloc (bufsize)))
+        return -1;
+
+    if (getpwuid_r (getuid (), &pwbuf, buf, bufsize, &pw) == 0 && pw)
+        lpwd = pw;
+
     if (lpwd && lpwd->pw_name) {
         if (info.package_type.compare (DEFAULT_PACKAGE_TYPE) != 0) {
             if (strcmp (lpwd->pw_name, "root") != 0) {
@@ -391,13 +445,19 @@ int ise_preexec (const char *helper, const char *uuid)
                 parameter += " ";
                 parameter += uuid;
                 send_message_to_broker (parameter.c_str ());
-
+                if (buf) {
+                    free (buf);
+                }
                 return -1;
             }
         }
 
         LOGD ("%s %s %s %s %s %s\n", lpwd->pw_name, helper, uuid,
              info.package_name.c_str (), info.package_type.c_str (), info.app_path.c_str ());
+    }
+
+    if (buf) {
+        free (buf);
     }
 
     /* Set new session ID & new process group ID*/
@@ -413,11 +473,11 @@ int ise_preexec (const char *helper, const char *uuid)
     __set_oom ();
 
     /* SET SMACK LABEL */
-    __set_smack ((char*)(info.app_path.c_str ()));
+    __set_smack (const_cast<char*>(info.app_path.c_str ()));
 
     /* SET DAC*/
     if (__set_dac () < 0) {
-        _D("fail to set DAC - check your package's credential\n");
+        LOGW ("fail to set DAC - check your package's credential\n");
         return -2;
     }
     /* SET DUMPABLE - for coredump*/
@@ -425,12 +485,12 @@ int ise_preexec (const char *helper, const char *uuid)
 
     /* SET PROCESS NAME*/
     if (info.app_path.empty ()) {
-        _D("app_path should not be NULL - check menu db");
+        LOGW ("app_path should not be NULL - check menu db");
         return -3;
     }
     file_name = strrchr (info.app_path.c_str (), '/') + 1;
     if (file_name == NULL) {
-        _D("can't locate file name to execute");
+        LOGW ("can't locate file name to execute");
         return -4;
     }
     memset (process_name, '\0', AUL_PR_NAME);

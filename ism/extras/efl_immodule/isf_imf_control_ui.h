@@ -2,7 +2,7 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2012-2013 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  * Contact: Jihoon Kim <jihoon48.kim@samsung.com>, Haifeng Deng <haifeng.deng@samsung.com>
  *
@@ -25,14 +25,18 @@
 #ifndef __ISF_IMF_CONTROL_UI_H
 #define __ISF_IMF_CONTROL_UI_H
 
+#define Uses_SCIM_PANEL_CLIENT
+
 #include <Ecore_IMF.h>
+#include "scim.h"
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif /* __cplusplus */
+    Eina_Bool check_focus_out_by_popup_win (Ecore_IMF_Context *ctx);
     void input_panel_event_callback_call (Ecore_IMF_Input_Panel_Event type, int value);
-    Eina_Bool get_hardware_keyboard_mode ();
+    scim::TOOLBAR_MODE_T get_keyboard_mode ();
     bool process_update_input_context (int type, int value);
     Ecore_IMF_Context *get_using_ic (Ecore_IMF_Input_Panel_Event type, int value);
     void save_current_xid (Ecore_IMF_Context *ctx);
@@ -40,6 +44,7 @@ extern "C"
 
     void isf_imf_input_panel_init ();
     void isf_imf_input_panel_shutdown ();
+    void isf_imf_context_input_panel_input_mode_set (Ecore_IMF_Context *ctx, Ecore_IMF_Input_Mode input_mode);
     void isf_imf_context_input_panel_show (Ecore_IMF_Context *ctx);
     void isf_imf_context_input_panel_hide (Ecore_IMF_Context *ctx);
     void isf_imf_context_input_panel_instant_hide (Ecore_IMF_Context *ctx);
@@ -66,7 +71,7 @@ extern "C"
 
     void isf_imf_context_input_panel_send_will_show_ack (Ecore_IMF_Context *ctx);
     void isf_imf_context_input_panel_send_will_hide_ack (Ecore_IMF_Context *ctx);
-    void isf_imf_context_set_hardware_keyboard_mode (Ecore_IMF_Context *ctx);
+    void isf_imf_context_set_keyboard_mode (Ecore_IMF_Context *ctx, scim::TOOLBAR_MODE_T mode);
 
     void isf_imf_context_input_panel_send_candidate_will_hide_ack (Ecore_IMF_Context *ctx);
 

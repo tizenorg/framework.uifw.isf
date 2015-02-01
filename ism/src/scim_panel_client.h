@@ -13,7 +13,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2013 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -54,7 +54,6 @@
 #include <scim_panel_common.h>
 
 namespace scim {
-
 /**
  * @addtogroup Panel
  * @ingroup InputServiceFramework
@@ -239,13 +238,16 @@ public:
     void set_caps_mode          (int mode);
     void send_will_show_ack     (void);
     void send_will_hide_ack     (void);
-    void set_hardware_keyboard_mode (void);
+    void set_keyboard_mode      (int mode);
     void send_candidate_will_hide_ack (void);
     bool get_client_id          (int &client_id);
     void register_client        (int client_id);
     void get_ise_state          (int &ise_state);
     void process_key_event      (KeyEvent& key, int* ret);
     void get_active_helper_option (int* option);
+    void set_input_mode         (int input_mode);
+    void set_input_hint         (int icid, int input_hint);
+    void update_bidi_direction  (int icid, int bidi_direction);
 
     /** @} */
 
@@ -509,6 +511,13 @@ public:
      * slot prototype: void update_isf_candidate_panel (int context, int type, int value);
      */
     Connection signal_connect_update_isf_candidate_panel    (PanelClientSlotIntInt                  *slot);
+
+    /**
+     * @brief Signal: send private command
+     *
+     * slot prototype: void send_private_command (int context, const String & command);
+     */
+    Connection signal_connect_send_private_command          (PanelClientSlotString                  *slot);
 
     /** @} */
 };

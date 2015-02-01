@@ -8,7 +8,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2013 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -74,8 +74,37 @@ public:
             throw Exception ("TransactionHolder::TransactionHolder() Out of memory");
     }
 
+    TransactionHolder (TransactionHolder &other)
+        : m_ref (other.m_ref),
+          m_buffer_size (other.m_buffer_size),
+          m_write_pos (other.m_write_pos),
+          m_buffer ((unsigned char*) malloc (other.m_buffer_size)) {
+        if (!m_buffer)
+            throw Exception ("TransactionHolder::TransactionHolder() Out of memory");
+
+        if (m_buffer_size && m_buffer)
+            memcpy (m_buffer, other.m_buffer, m_buffer_size);
+    }
+
     ~TransactionHolder () {
         free (m_buffer);
+    }
+
+    const TransactionHolder & operator = (const TransactionHolder &other) {
+        m_ref = other.m_ref;
+        m_buffer_size = other.m_buffer_size;
+        m_write_pos = other.m_write_pos;
+        if (m_buffer)
+            free (m_buffer);
+
+        m_buffer = (unsigned char*) malloc (other.m_buffer_size);
+        if (!m_buffer)
+            throw Exception ("TransactionHolder::TransactionHolder() Out of memory");
+
+        if (m_buffer_size && m_buffer)
+            memcpy (m_buffer, other.m_buffer, m_buffer_size);
+
+        return *this;
     }
 
     bool valid () const {
@@ -753,9 +782,13 @@ TransactionReader::TransactionReader (const TransactionReader &reader)
 {
 }
 
-const TransactionReader &
+TransactionReader &
 TransactionReader::operator = (const TransactionReader &reader)
 {
+    if (m_impl)
+        delete (m_impl);
+    m_impl = new TransactionReaderImpl ();
+
     m_impl->attach (reader.m_impl->m_holder);
     m_impl->m_read_pos = reader.m_impl->m_read_pos;
     return *this;
@@ -1425,6 +1458,8 @@ TransactionReader::skip_data ()
                 m_impl->m_read_pos += (len + sizeof (uint32) + 1);
                 return true;
             }
+            default :
+                break;
         }
     }
     return false;

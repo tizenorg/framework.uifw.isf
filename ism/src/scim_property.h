@@ -161,13 +161,13 @@ public:
      *
      * @param active If this property is active.
      */
-    void set_active (bool active) {
-        if (active) m_state |= SCIM_PROPERTY_ACTIVE;
+    void set_active (bool l_active) {
+        if (l_active) m_state |= SCIM_PROPERTY_ACTIVE;
         else m_state &= (~ SCIM_PROPERTY_ACTIVE);
     }
 
-    void show (bool visible = true) {
-        if (visible) m_state |= SCIM_PROPERTY_VISIBLE;
+    void show (bool l_visible = true) {
+        if (l_visible) m_state |= SCIM_PROPERTY_VISIBLE;
         else m_state &= ~SCIM_PROPERTY_VISIBLE;
     }
 

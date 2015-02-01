@@ -104,13 +104,15 @@ endif
 
 lib_LTLIBRARIES 	= libscim@SCIM_EPOCH@.la
 
-libscim@SCIM_EPOCH@_la_SOURCES = scim_backend.cpp \
-		      	  scim_chartraits.cpp \
+libscim@SCIM_EPOCH@_la_SOURCES = \
+			  scim_debug.cpp \
+			  scim_module.cpp \
+			  scim_backend.cpp \
+			  scim_chartraits.cpp \
 			  scim_compose_key.cpp \
 			  scim_config_base.cpp \
 			  scim_config_module.cpp \
 			  scim_connection.cpp \
-			  scim_debug.cpp \
 			  scim_event.cpp \
 			  scim_filter.cpp \
 			  scim_filter_module.cpp \
@@ -126,7 +128,6 @@ libscim@SCIM_EPOCH@_la_SOURCES = scim_backend.cpp \
 			  scim_imengine.cpp \
 			  scim_imengine_module.cpp \
 			  scim_lookup_table.cpp \
-			  scim_module.cpp \
 			  scim_object.cpp \
 			  scim_panel_agent.cpp \
 			  scim_panel_client.cpp \
@@ -141,7 +142,7 @@ libscim@SCIM_EPOCH@_la_SOURCES = scim_backend.cpp \
 			  isf_imcontrol_client.cpp \
 			  isf_query_utility.cpp
 
-libscim@SCIM_EPOCH@_la_CXXFLAGS = @EFL_CFLAGS@ @DLOG_CFLAGS@ @SECURITY_SERVER_CFLAGS@
+libscim@SCIM_EPOCH@_la_CXXFLAGS = @EFL_CFLAGS@ @DLOG_CFLAGS@ @SECURITY_SERVER_CFLAGS@ @VCONF_CFLAGS@
 
 libscim@SCIM_EPOCH@_la_LDFLAGS  = -version-info $(SCIM_CURRENT):$(SCIM_REVISION):$(SCIM_AGE) \
 			  -export-dynamic \
@@ -153,6 +154,7 @@ libscim@SCIM_EPOCH@_la_LDFLAGS  = -version-info $(SCIM_CURRENT):$(SCIM_REVISION)
 			  @LTLIBINTL@ \
 			  @SECURITY_SERVER_LIBS@ \
 			  @EFL_LIBS@ \
+			  @VCONF_LIBS@ \
 			  -lstdc++
 
 libscim@SCIM_EPOCH@_la_LIBADD	= libltdlc.la
@@ -188,9 +190,9 @@ scim_launcher_CXXFLAGS  = @PRIVILEGE_CONTROL_CFLAGS@ @VCONF_CFLAGS@
 scim_launcher_LDFLAGS	= @LTLIBINTL@ @PRIVILEGE_CONTROL_LIBS@ @VCONF_LIBS@
 
 scim_helper_launcher_SOURCES 	= scim_helper_launcher.cpp ise_preexec.cpp
-scim_helper_launcher_CXXFLAGS	= @PRIVILEGE_CONTROL_CFLAGS@ @AIL_CFLAGS@ @EFL_CFLAGS@
+scim_helper_launcher_CXXFLAGS	= @PRIVILEGE_CONTROL_CFLAGS@ @EFL_CFLAGS@ @PKGMGR_INFO_CFLAGS@ @DLOG_CFLAGS@
 scim_helper_launcher_LDADD	= libscim@SCIM_EPOCH@.la
-scim_helper_launcher_LDFLAGS	= @LTLIBINTL@ @PRIVILEGE_CONTROL_LIBS@ @AIL_LIBS@ @EFL_LIBS@
+scim_helper_launcher_LDFLAGS	= @LTLIBINTL@ @PRIVILEGE_CONTROL_LIBS@ @EFL_LIBS@ @PKGMGR_INFO_LIBS@ @DLOG_LIBS@
 
 
 

@@ -8,7 +8,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2013 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -90,7 +90,8 @@ __gethostname (const char *host)
 
     /* Found the host */
     if (!res && hp) {
-        addr = * ((struct in_addr *)hp->h_addr_list [0]);
+        void *pvoid = hp->h_addr_list [0];
+        addr = * ((struct in_addr *) pvoid);
     }
 
     free (tmphstbuf);
@@ -99,8 +100,10 @@ __gethostname (const char *host)
 
     hostinfo = gethostbyname (host);
 
-    if (hostinfo)
-        addr = * ((struct in_addr *) hostinfo->h_addr_list [0]);
+    if (hostinfo){
+        pvoid = hostinfo->h_addr_list [0];
+        addr = * ((struct in_addr *) pvoid);
+    }
 #endif
     return addr;
 }
@@ -132,6 +135,8 @@ public:
                     break;
                 case SCIM_SOCKET_UNKNOWN:
                     break;
+                default :
+                    break;
             }
 
             if (len && m_data) memcpy (m_data, other.m_data, len);
@@ -140,6 +145,33 @@ public:
 
     ~SocketAddressImpl () {
         if (m_data) delete m_data;
+    }
+
+    const SocketAddressImpl & operator = (const SocketAddressImpl &other) {
+        m_family = other.m_family;
+        m_address = other.m_address;
+        if (m_data)
+            delete (m_data);
+
+        if (other.m_data) {
+            size_t len = 0;
+            switch (m_family) {
+                case SCIM_SOCKET_LOCAL:
+                    m_data = (struct sockaddr*) new struct sockaddr_un;
+                    len = sizeof (sockaddr_un);
+                    break;
+                case SCIM_SOCKET_INET:
+                    m_data = (struct sockaddr*) new struct sockaddr_in;
+                    len = sizeof (sockaddr_in);
+                    break;
+                case SCIM_SOCKET_UNKNOWN:
+                    break;
+                default :
+                    break;
+            }
+            if (len && m_data) memcpy (m_data, other.m_data, len);
+        }
+        return *this;
     }
 
     void swap (SocketAddressImpl &other) {
@@ -211,7 +243,7 @@ SocketAddress::SocketAddressImpl::set_address (const String &addr)
 
         un->sun_path[sizeof (un->sun_path) - 1] = '\0';
 
-        SCIM_DEBUG_SOCKET(3) << "  local:" << un->sun_path << "\n";
+        SCIM_DEBUG_SOCKET (3) << "  local:" << un->sun_path << "\n";
 
         new_family = SCIM_SOCKET_LOCAL;
         new_data = (struct sockaddr *) un;
@@ -227,7 +259,7 @@ SocketAddress::SocketAddressImpl::set_address (const String &addr)
             in->sin_family = AF_INET;
             in->sin_port = htons (atoi (varlist [2].c_str ()));
 
-            SCIM_DEBUG_SOCKET(3) << "  inet:"
+            SCIM_DEBUG_SOCKET (3) << "  inet:"
                 << inet_ntoa (in->sin_addr) << ":"
                 << ntohs (in->sin_port) << "\n";
 
@@ -266,7 +298,7 @@ SocketAddress::~SocketAddress ()
     delete m_impl;
 }
 
-const SocketAddress&
+SocketAddress&
 SocketAddress::operator = (const SocketAddress &addr)
 {
     if (this != &addr) {
@@ -291,7 +323,7 @@ SocketAddress::get_family () const
 bool
 SocketAddress::set_address (const String &addr)
 {
-    SCIM_DEBUG_SOCKET(2) << " SocketAddress::set_address (" << addr << ")\n";
+    SCIM_DEBUG_SOCKET (2) << " SocketAddress::set_address (" << addr << ")\n";
     return m_impl->set_address (addr);
 }
 
@@ -429,8 +461,10 @@ public:
     }
 
     String get_error_message () const {
-        if (m_err > 0)
-            return String (strerror (m_err));
+        if (m_err > 0) {
+            char buf_err[256];
+            return String (strerror_r (m_err, buf_err, sizeof (buf_err)));
+        }
         return String ();
     }
 
@@ -443,12 +477,12 @@ public:
 
         int ret;
 
-        ret = ::fcntl(m_id, F_SETFL, O_NONBLOCK);
+        ret = ::fcntl (m_id, F_SETFL, O_NONBLOCK);
         return ret;
     }
 
     bool connect (const SocketAddress &addr) {
-        SCIM_DEBUG_SOCKET(1) << "Socket: Connect to server: "
+        SCIM_DEBUG_SOCKET (1) << "Socket: Connect to server: "
                              << addr.get_address () << " ...\n";
 
         m_err = EBADF;
@@ -456,22 +490,23 @@ public:
         if (m_binded) return false;
 
         if (addr.valid () && m_id >= 0 && m_family == addr.get_family ()) {
-            struct sockaddr * data = (sockaddr *) addr.get_data ();
+            struct sockaddr * data = static_cast<sockaddr*> (const_cast<void*> (addr.get_data ()));
             int len = addr.get_data_length ();
 
             // Backup the current flag to restore after non-blocking connect() try
             int flags = fcntl (m_id, F_GETFL, 0);
             if (fcntl (m_id, F_SETFL, flags | O_NONBLOCK) == -1) {
                 char buf[256] = {0};
+                char buf_err[256];
                 m_err = errno;
                 snprintf (buf, sizeof (buf), "time:%ld  pid:%d  ppid:%d  %s  %s  fcntl() failed, %d %s\n",
-                    time (0), getpid (), getppid (), __FILE__, __func__, m_err, strerror (m_err));
+                    time (0), getpid (), getppid (), __FILE__, __func__, m_err, strerror_r (m_err, buf_err, sizeof (buf_err)));
                 isf_save_log (buf);
             }
 
             char buf[256] = {0};
             char proc_name[17] = {0}; /* the buffer provided shall at least be 16+1 bytes long */
-            if (-1 != prctl(PR_GET_NAME, proc_name, 0, 0, 0)) {
+            if (-1 != prctl (PR_GET_NAME, proc_name, 0, 0, 0)) {
                 snprintf (buf, sizeof (buf), "time:%ld  pid:%d  ppid:%d  %s  %s  trying connect() to %s, %s\n",
                     time (0), getpid (), getppid (), __FILE__, __func__, addr.get_address ().c_str (), proc_name);
                 isf_save_log (buf);
@@ -496,8 +531,8 @@ public:
 
                 fd_set rset, wset;
                 struct timeval tval;
-                FD_ZERO(&rset);
-                FD_SET(m_id, &rset);
+                FD_ZERO (&rset);
+                FD_SET (m_id, &rset);
                 wset = rset;
                 tval.tv_sec = nsec;
                 tval.tv_usec = 0;
@@ -525,9 +560,10 @@ public:
                     return true;
                 }
             } else {
+                char buf_err[256];
                 m_err = errno;
                 snprintf (buf, sizeof (buf), "time:%ld  pid:%d  %s  %s  connect() failed with %d (%s)\n",
-                        time (0), getpid (), __FILE__, __func__, m_err, strerror (m_err));
+                        time (0), getpid (), __FILE__, __func__, m_err, strerror_r (m_err, buf_err, sizeof (buf_err)));
                 isf_save_log (buf);
             }
             if (fcntl (m_id, F_SETFL, flags) == -1) {
@@ -538,7 +574,7 @@ public:
     }
 
     bool bind (const SocketAddress &addr) {
-        SCIM_DEBUG_SOCKET(1) << "Socket: Bind to address: "
+        SCIM_DEBUG_SOCKET (1) << "Socket: Bind to address: "
                              << addr.get_address () << " ...\n";
 
         m_err = EBADF;
@@ -555,7 +591,7 @@ public:
                 data_un = static_cast <const struct sockaddr_un *>(addr.get_data ());
                 // The file is already exist, check if it's broken
                 // by connecting to it.
-                SCIM_DEBUG_SOCKET(2) << "Try to remove the broken socket file: " << data_un->sun_path << "\n";
+                SCIM_DEBUG_SOCKET (2) << "Try to remove the broken socket file: " << data_un->sun_path << "\n";
 
                 if (::access (data_un->sun_path, F_OK) == 0) {
                     SocketClient tmp_socket (addr);
@@ -600,7 +636,7 @@ public:
     bool listen (int queue_length = 5) {
         if (m_id < 0) { m_err = EBADF; return -1; }
 
-        SCIM_DEBUG_SOCKET(1) << "Socket: Listen: "
+        SCIM_DEBUG_SOCKET (1) << "Socket: Listen: "
                              << queue_length << " ...\n";
 
         m_err = 0;
@@ -632,8 +668,11 @@ public:
 
         if (ret < 0 && addrlen > 0)
             m_err = errno;
-
-        SCIM_DEBUG_SOCKET(1) << "Socket: Accept connection, ret: " << ret << "\n";
+        else {
+            int flag = fcntl (ret, F_GETFD, 0);
+            fcntl (ret, F_SETFD, flag|FD_CLOEXEC);
+        }
+        SCIM_DEBUG_SOCKET (1) << "Socket: Accept connection, ret: " << ret << "\n";
 
         return ret;
     }
@@ -657,11 +696,13 @@ public:
             m_err = 0;
             m_family = family;
             m_id = ret;
+            int flag = fcntl (ret, F_GETFD, 0);
+            fcntl (ret, F_SETFD, flag|FD_CLOEXEC);
         } else {
             m_err = errno;
         }
 
-        SCIM_DEBUG_SOCKET(1) << "Socket: Socket created, family: "
+        SCIM_DEBUG_SOCKET (1) << "Socket: Socket created, family: "
                              << family << " ret: " << ret << "\n";
 
         return ret >= 0;
@@ -671,7 +712,7 @@ public:
         if (m_id < 0) return;
 
         if (!m_no_close) {
-            SCIM_DEBUG_SOCKET(2) << "  Closing the socket: " << m_id << " ...\n";
+            SCIM_DEBUG_SOCKET (2) << "  Closing the socket: " << m_id << " ...\n";
             ::close (m_id);
 
             // Unlink the socket file.
@@ -702,7 +743,7 @@ private:
         int ret;
 
         if (*timeout >= 0) {
-            gettimeofday(&begin_tv, 0);
+            gettimeofday (&begin_tv, 0);
             tv.tv_sec = *timeout / 1000;
             tv.tv_usec = (*timeout % 1000) * 1000;
         }
@@ -710,10 +751,10 @@ private:
         m_err = 0;
 
         while (1) {
-            FD_ZERO(&fds);
-            FD_SET(m_id, &fds);
+            FD_ZERO (&fds);
+            FD_SET (m_id, &fds);
 
-            ret = select(m_id + 1, &fds, NULL, NULL, (*timeout >= 0) ? &tv : NULL);
+            ret = select (m_id + 1, &fds, NULL, NULL, (*timeout >= 0) ? &tv : NULL);
             if (*timeout > 0) {
                 int elapsed;
                 struct timeval cur_tv;
@@ -1184,8 +1225,11 @@ SocketServer::get_error_number () const
 String
 SocketServer::get_error_message () const
 {
-    if (m_impl->err)
-        return String (strerror (m_impl->err));
+
+    if (m_impl->err){
+        char buf_err[256];
+        return String (strerror_r (m_impl->err, buf_err, sizeof (buf_err)));
+    }
 
     return Socket::get_error_message ();
 }
@@ -1538,7 +1582,8 @@ scim_socket_accept_connection (uint32       &key,
             trans.get_data (version) && version == String (SCIM_BINARY_VERSION) &&
             trans.get_data (client_type) &&
             (scim_socket_check_type (client_types, client_type) || client_type == "ConnectionTester")) {
-            key = (uint32) rand ();
+            unsigned int seed = (unsigned int)time (NULL);
+            key = (uint32)rand_r (&seed);
             trans.clear ();
             trans.put_command (SCIM_TRANS_CMD_REPLY);
             trans.put_data (server_types);

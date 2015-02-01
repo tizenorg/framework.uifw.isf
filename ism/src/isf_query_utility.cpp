@@ -2,7 +2,7 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2012-2013 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  * Contact: Haifeng Deng <haifeng.deng@samsung.com>, Hengliang Luo <hl.luo@samsung.com>
  *
@@ -274,6 +274,25 @@ static void remove_ise_info_from_list (std::vector<ISEINFO> &info_list, const ch
     }
 }
 
+static void remove_ise_info_from_list_by_uuid (std::vector<ISEINFO> &info_list, const char *uuid)
+{
+    if (uuid == NULL)
+        return;
+
+    std::vector<ISEINFO>::iterator iter;
+    while (info_list.size () > 0) {
+        for (iter = info_list.begin (); iter != info_list.end (); iter++) {
+            if (iter->uuid == uuid)
+                break;
+        }
+
+        if (iter !=  info_list.end ())
+            info_list.erase (iter);
+        else
+            break;
+    }
+}
+
 EAPI bool isf_add_keyboard_info_to_file (const char *filename, const char *module_name, const ConfigPointer &config)
 {
     std::vector<ISEINFO> info_list;
@@ -310,6 +329,20 @@ EAPI bool isf_remove_ise_info_from_file (const char *filename, const char *modul
     if (isf_read_ise_info_list (filename, info_list)) {
 
         remove_ise_info_from_list (info_list, module_name);
+
+        return isf_write_ise_info_list (filename, info_list);
+    }
+    return false;
+}
+
+EAPI bool isf_remove_ise_info_from_file_by_uuid (const char *filename, const char *uuid)
+{
+    std::vector<ISEINFO> info_list;
+    std::vector<ISEINFO>::iterator iter;
+
+    if (isf_read_ise_info_list (filename, info_list)) {
+
+        remove_ise_info_from_list_by_uuid (info_list, uuid);
 
         return isf_write_ise_info_list (filename, info_list);
     }

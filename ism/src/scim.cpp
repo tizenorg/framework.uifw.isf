@@ -43,6 +43,8 @@
 #include <signal.h>
 #include <string.h>
 #include <privilege-control.h>
+#include <sys/resource.h>
+#include <sched.h>
 
 #define WAIT_WM
 #define ISF_SYSTEM_WM_READY_FILE                        "/tmp/.wm_ready"
@@ -193,17 +195,22 @@ static bool check_appservice_ready ()
         time (0), getpid (), __FILE__, __func__, ret, val);
     isf_save_log (buf);
 
-    if (ret == 0 && val >= ISF_SYSTEM_APPSERVICE_READY_STATE) {
-        return true;
-    } else {
-        /* Register a call back function for checking system ready */
-        if (!_appsvc_callback_regist) {
-            if (vconf_notify_key_changed (ISF_SYSTEM_APPSERVICE_READY_VCONF, vconf_appservice_ready_changed, NULL)) {
-                _appsvc_callback_regist = true;
+    if (ret == 0) {
+        if (val >= ISF_SYSTEM_APPSERVICE_READY_STATE)
+            return true;
+        else {
+            /* Register a call back function for checking system ready */
+            if (!_appsvc_callback_regist) {
+                if (vconf_notify_key_changed (ISF_SYSTEM_APPSERVICE_READY_VCONF, vconf_appservice_ready_changed, NULL)) {
+                    _appsvc_callback_regist = true;
+                }
             }
-        }
 
-        return false;
+            return false;
+        }
+    } else {
+        /* No OSP support environment */
+        return true;
     }
 }
 
@@ -237,7 +244,7 @@ static void launch_helper (const char *name, const char *uuid)
             time (0), getpid (), __FILE__, __func__, _ise_name, _ise_uuid);
         isf_save_log (buf);
 
-        execv (SCIM_HELPER_LAUNCHER_PROGRAM, (char **)argv);
+        execv (SCIM_HELPER_LAUNCHER_PROGRAM, const_cast<char **>(argv));
         exit (-1);
     }
 }
@@ -260,14 +267,14 @@ static Eina_Bool handler_client_data (void *data, int ev_type, void *ev)
 
     const char *message = "Done";
     if (ecore_ipc_client_send (e->client, 0, 0, 0, 0, 0, message, strlen (message)) == 0) {
-        char buf[256] = {0};
+        buf[0] = '\0';
         snprintf (buf, sizeof (buf), "time:%ld  pid:%d  %s  %s  ecore_ipc_client_send FAILED!!\n",
             time (0), getpid (), __FILE__, __func__);
         isf_save_log (buf);
     }
 
     char buffer[_POSIX_PATH_MAX + 1] = {0};
-    strncpy (buffer, (char*)(e->data), _POSIX_PATH_MAX);
+    strncpy (buffer, (char*)(e->data), (e->size > _POSIX_PATH_MAX) ? _POSIX_PATH_MAX : e->size);
 
     int blank_index = 0;
     for (int loop = 0; loop < (int)strlen (buffer); loop++) {
@@ -341,6 +348,12 @@ int main (int argc, char *argv [])
     std::vector<String>  all_engine_list;
 
     std::vector<String>::iterator it;
+
+    struct sched_param param;
+    param.sched_priority = 0;
+
+    sched_setscheduler(0, SCHED_OTHER, &param);
+    setpriority (PRIO_PROCESS, getpid (), -11);
 
     String def_frontend ("socket");
     String def_config ("simple");
@@ -566,30 +579,35 @@ int main (int argc, char *argv [])
 
         /* If no Socket FrontEnd is running, then launch one.
            And set manual to false. */
-        if (!check_socket_frontend ()) {
-            cerr << "Launching a daemon with Socket FrontEnd...\n";
-            char *argv [] = { const_cast<char *> ("--stay"), 0 };
-            scim_launch (true,
-                         def_config,
-                         (load_engine_list.size () ? scim_combine_string_list (load_engine_list, ',') : "none"),
-                         "socket",
-                         argv);
-            manual = false;
+        try {
+            if (!check_socket_frontend ()) {
+                cerr << "Launching a daemon with Socket FrontEnd...\n";
+                char *l_argv [] = { const_cast<char *> ("--stay"), 0 };
+                scim_launch (true,
+                            def_config,
+                            (load_engine_list.size () ? scim_combine_string_list (load_engine_list, ',') : "none"),
+                            "socket",
+                            l_argv);
+                manual = false;
+            }
+        } catch (scim::Exception &e) {
         }
 
         /* If there is one Socket FrontEnd running and it's not manual mode,
            then just use this Socket Frontend. */
-        if (!manual) {
-            for (int i = 0; i < 100; ++i) {
-                if (check_socket_frontend ()) {
-                    def_config = "socket";
-                    load_engine_list.clear ();
-                    load_engine_list.push_back ("socket");
-                    break;
+        try {
+            if (!manual) {
+                for (int j = 0; j < 100; ++j) {
+                    if (check_socket_frontend ()) {
+                        def_config = "socket";
+                        load_engine_list.clear ();
+                        load_engine_list.push_back ("socket");
+                        break;
+                    }
+                    scim_usleep (100000);
                 }
-                scim_usleep (100000);
             }
-        }
+        } catch (scim::Exception &e) {}
     }
 
     cerr << "Launching a process with " << def_frontend << " FrontEnd...\n";
@@ -616,13 +634,20 @@ int main (int argc, char *argv [])
         isf_save_log (buf);
 
         /* When finished launching scim-launcher, let's create panel process also, for the default display :0 */
-        if (!check_panel ("")) {
-            cerr << "Launching Panel...\n";
-            snprintf (buf, sizeof (buf), "time:%ld  pid:%d ppid:%d  %s  %s  Launching panel process......%s\n",
-                time (0), getpid (), getppid (), __FILE__, __func__, def_config.c_str ());
-            isf_save_log (buf);
+        try {
+            if (!check_panel ("")) {
+               cerr << "Launching Panel...\n";
+               snprintf (buf, sizeof (buf), "time:%ld  pid:%d ppid:%d  %s  %s  Launching panel process......%s\n",
+                  time (0), getpid (), getppid (), __FILE__, __func__, def_config.c_str ());
+                isf_save_log (buf);
 
-            scim_launch_panel (true, "socket", "", NULL);
+               scim_launch_panel (true, "socket", "", NULL);
+            }
+        } catch (scim::Exception & e) {
+            cerr << e.what () << "\n";
+            snprintf (buf, sizeof (buf), "time:%ld  pid:%d ppid:%d  %s  %s  %s\n",
+            time (0), getpid (), getppid (), __FILE__, __func__, e.what ());
+            isf_save_log (buf);
         }
 
         run_broker (argc, argv);

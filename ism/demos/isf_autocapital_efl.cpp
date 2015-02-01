@@ -2,7 +2,7 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2012-2013 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  * Contact: Shuo Liu <shuo0805.liu@samsung.com>, Jihoon Kim <jihoon48.kim@samsung.com>
  *
@@ -27,8 +27,10 @@
 
 static Evas_Object *_create_ef_layout (Evas_Object *parent, const char *label, const char *guide_text, Elm_Autocapital_Type autocap, Eina_Bool caps_lock_mode)
 {
-    Evas_Object *ef = create_ef (parent, label, guide_text);
-    Evas_Object *en = elm_object_part_content_get (ef, "elm.icon.entry");
+    Evas_Object *en;
+    Evas_Object *ef = create_ef (parent, label, guide_text, &en);
+    if (!ef || !en) return NULL;
+
     elm_entry_autocapital_type_set (en, autocap);
 
     Ecore_IMF_Context *ic = (Ecore_IMF_Context *)elm_entry_imf_context_get (en);

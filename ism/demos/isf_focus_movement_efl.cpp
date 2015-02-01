@@ -2,7 +2,7 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2012-2013 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  * Contact: Shuo Liu <shuo0805.liu@samsung.com>, Jihoon Kim <jihoon48.kim@samsung.com>
  *
@@ -31,20 +31,17 @@ _entry_activated_cb (void *data, Evas_Object *obj, void *event_info)
     elm_object_focus_next (parent, ELM_FOCUS_NEXT);
 }
 
-static Evas_Object *create_entry (Evas_Object *parent, const char *text, Elm_Input_Panel_Layout layout)
+static Evas_Object *_create_ef_layout (Evas_Object *parent, const char *label, const char *guide_text, Elm_Input_Panel_Layout layout, int layout_variation = 0)
 {
     Evas_Object *en;
-    en = elm_entry_add (parent);
-    evas_object_size_hint_weight_set (en, EVAS_HINT_EXPAND, 0.0);
-    evas_object_size_hint_align_set (en, EVAS_HINT_FILL, 0.5);
-    elm_entry_input_panel_layout_set (en, layout);
-    elm_entry_single_line_set (en, EINA_TRUE);
-    elm_entry_input_panel_return_key_type_set (en, ELM_INPUT_PANEL_RETURN_KEY_TYPE_NEXT);
-    elm_object_text_set (en, text);
-    evas_object_smart_callback_add (en, "activated", _entry_activated_cb, parent);
-    evas_object_show (en);
+    Evas_Object *ef = create_ef (parent, label, guide_text, &en);
+    if (!ef || !en) return NULL;
 
-    return en;
+    elm_entry_input_panel_layout_set (en, layout);
+    elm_entry_input_panel_return_key_type_set (en, ELM_INPUT_PANEL_RETURN_KEY_TYPE_NEXT);
+    evas_object_smart_callback_add (en, "activated", _entry_activated_cb, parent);
+
+    return ef;
 }
 
 static Evas_Object * create_inner_layout (void *data)
@@ -52,7 +49,7 @@ static Evas_Object * create_inner_layout (void *data)
     struct appdata *ad = (struct appdata *)data;
     Evas_Object *bx = NULL;
     Evas_Object *parent = ad->naviframe;
-    Evas_Object *en = NULL;
+    Evas_Object *ef = NULL;
 
     bx = elm_box_add (parent);
     evas_object_size_hint_weight_set (bx, EVAS_HINT_EXPAND, 0.0);
@@ -60,28 +57,16 @@ static Evas_Object * create_inner_layout (void *data)
     evas_object_show (bx);
 
     /* First Name */
-    en = create_entry (bx, "James", ELM_INPUT_PANEL_LAYOUT_NORMAL);
-    elm_box_pack_end (bx, en);
+    ef = _create_ef_layout (bx, "First Name", "First Name", ELM_INPUT_PANEL_LAYOUT_NORMAL);
+    elm_box_pack_end (bx, ef);
 
     /* Last Name */
-    en = create_entry (bx, "Bond", ELM_INPUT_PANEL_LAYOUT_NORMAL);
-    elm_box_pack_end (bx, en);
-
-    /* Phonenumber */
-    en = create_entry (bx, "010-1234-5678", ELM_INPUT_PANEL_LAYOUT_PHONENUMBER);
-    elm_box_pack_end (bx, en);
-
-    /* Email */
-    en = create_entry (bx, "hell@hello.com", ELM_INPUT_PANEL_LAYOUT_EMAIL);
-    elm_box_pack_end (bx, en);
-
-    /* Birthday */
-    en = create_entry (bx, "801225", ELM_INPUT_PANEL_LAYOUT_NUMBER);
-    elm_box_pack_end (bx, en);
+    ef = _create_ef_layout (bx, "Last Name", "Last Name", ELM_INPUT_PANEL_LAYOUT_NORMAL);
+    elm_box_pack_end (bx, ef);
 
     /* Homepage */
-    en = create_entry (bx, "hello.com", ELM_INPUT_PANEL_LAYOUT_URL);
-    elm_box_pack_end (bx, en);
+    ef = _create_ef_layout (bx, "Homepage", "URL", ELM_INPUT_PANEL_LAYOUT_URL);
+    elm_box_pack_end (bx, ef);
 
     return bx;
 }

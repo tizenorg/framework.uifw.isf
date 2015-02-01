@@ -2,7 +2,7 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2012-2013 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  * Contact: Jihoon Kim <jihoon48.kim@samsung.com>, Haifeng Deng <haifeng.deng@samsung.com>
  *
@@ -25,7 +25,10 @@
 #ifndef __ISF_IMF_CONTROL_H
 #define __ISF_IMF_CONTROL_H
 
+#define Uses_SCIM_PANEL_CLIENT
+
 #include <Ecore_IMF.h>
+#include "scim.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -57,9 +60,11 @@ extern "C"
     int _isf_imf_context_input_panel_send_will_show_ack (int context);
     int _isf_imf_context_input_panel_send_will_hide_ack (int context);
 
-    int _isf_imf_context_set_hardware_keyboard_mode (int context);
+    int _isf_imf_context_set_keyboard_mode (int context, scim::TOOLBAR_MODE_T mode);
 
     int _isf_imf_context_input_panel_send_candidate_will_hide_ack (int context);
+
+    int _isf_imf_context_input_panel_input_mode_set (int context, Ecore_IMF_Input_Mode input_mode);
 
 #ifdef __cplusplus
 }

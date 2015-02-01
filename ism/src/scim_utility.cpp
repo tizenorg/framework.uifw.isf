@@ -4,7 +4,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2013 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -376,6 +376,20 @@ utf8_wcstombs (const ucs4_t *wstr, int len)
     return str;
 }
 
+static String trim_blank (const String &str)
+{
+    String::size_type begin, len;
+
+    begin = str.find_first_not_of (" \t\n\v");
+
+    if (begin == String::npos)
+        return String ();
+
+    len = str.find_last_not_of (" \t\n\v") - begin + 1;
+
+    return str.substr (begin, len);
+}
+
 EAPI String
 scim_validate_locale (const String& locale)
 {
@@ -461,6 +475,8 @@ scim_split_string_list (std::vector<String>& vec, const String& str, char delim)
 
     vec.clear ();
 
+    if (str.empty ()) return 0;
+
     bg = str.begin ();
     ed = str.begin ();
 
@@ -470,6 +486,7 @@ scim_split_string_list (std::vector<String>& vec, const String& str, char delim)
                 break;
         }
         temp.assign (bg, ed);
+        temp = trim_blank (temp);
         vec.push_back (temp);
         ++count;
 
@@ -782,18 +799,19 @@ struct __Language {
 
 static __Language __languages [] = {
     { "C",        NULL, N_("English Keyboard"), NULL, NULL},
-    { "am_ET",    NULL, N_("Amharic"), NULL, NULL },
-    { "ar",       "ar", N_("Arabic"), "العربية", NULL },
-    { "ar_EG",    NULL, N_("Arabic (Egypt)"), NULL, NULL },
-    { "ar_LB",    NULL, N_("Arabic (Lebanon)"), NULL, NULL },
-    { "as_IN",    NULL, N_("Assamese"), NULL, NULL},
-    { "az_AZ",    NULL, N_("Azerbaijani"), NULL, NULL },
+    { "am_ET",    NULL, N_("Amharic"), "አማርኛ", NULL },
+    { "ar",       "ar", N_("Arabic"), "عربي", NULL },
+    { "ar_EG",    NULL, N_("Arabic (Egypt)"), "العربية (مصر)", NULL },
+    { "ar_LB",    NULL, N_("Arabic (Lebanon)"), "العربية (لبنان)", NULL },
+    { "ar_IL",    NULL, N_("Arabic (Israel)"), "العربية", NULL },
+    { "as_IN",    NULL, N_("Assamese"), "অসমীয়া", NULL},
+    { "az_AZ",    NULL, N_("Azerbaijani"), "Azərbaycan", NULL },
     { "be_BY",    NULL, N_("Belarusian"), "Беларуская мова", NULL },
     { "bg_BG",    NULL, N_("Bulgarian"), "Български", NULL },
     { "bn",    "bn_BD", N_("Bengali"), "বাংলা", NULL },
     { "bn_BD",    NULL, N_("Bengali"), "বাংলা", NULL },
     { "bn_IN",    NULL, N_("Bengali (India)"), "বাংলা", NULL },
-    { "bo",       NULL, N_("Tibetan"), NULL, NULL },
+    { "bo",       NULL, N_("Tibetan"), "པོད་སྐད་", NULL },
     { "bs_BA",    NULL, N_("Bosnian"), "Bosanski", NULL },
     { "ca_ES",    NULL, N_("Catalan"), "Català", "@euro" },
     { "cs_CZ",    NULL, N_("Czech"), "čeština", NULL },
@@ -803,10 +821,10 @@ static __Language __languages [] = {
     { "dv_MV",    NULL, N_("Divehi"), "ދިވެހިބަސް", NULL },
     { "el_GR",    NULL, N_("Greek"), "ελληνικά", NULL },
     { "en"   ,    NULL, N_("English"), "English", NULL },
-    { "en_AU",    NULL, N_("English (Australian)"), "Australian English", NULL },
-    { "en_CA",    NULL, N_("English (Canadian)"), "Canadian English", NULL },
+    { "en_AU",    NULL, N_("English (Australian)"), "English (Australian)", NULL },
+    { "en_CA",    NULL, N_("English (Canadian)"), "English (Canadian)", NULL },
     { "en_GB",    NULL, N_("English (United Kingdom)"), "English (United Kingdom)", ".iso885915" },
-    { "en_IE",    NULL, N_("English (Ireland)"), "Irish English", NULL },
+    { "en_IE",    NULL, N_("English (Ireland)"), "English (Ireland)", NULL },
     { "en_US",    NULL, N_("English (United States)"), "English (United States)", ".iso885915" },
     { "eo",       NULL, N_("Esperanto"), "Esperanto", NULL },
     { "es",    "es_ES", N_("Spanish"), "Español", NULL },
@@ -826,67 +844,69 @@ static __Language __languages [] = {
     { "hr_HR",    NULL, N_("Croatian"), "Hrvatski", NULL },
     { "hu_HU",    NULL, N_("Hungarian"), "Magyar", NULL },
     { "hy_AM",    NULL, N_("Armenian"), "Հայերէն", NULL },
-    { "ia"   ,    NULL, N_("Interlingua"), NULL },
+    { "ia"   ,    NULL, N_("Interlingua"), "Interlingua", NULL },
     { "id_ID",    NULL, N_("Indonesian"), "Bahasa Indonesia", NULL },
-    { "is_IS",    NULL, N_("Icelandic"), NULL, NULL },
+    { "is_IS",    NULL, N_("Icelandic"), "íslenska", NULL },
     { "it_IT",    NULL, N_("Italian"), "Italiano", "@euro" },
     { "iw_IL",    NULL, N_("Hebrew"), "עברית", NULL },
     { "ja_JP",    NULL, N_("Japanese"), "日本語", ".EUC-JP,.SJIS,.eucJP" },
     { "ka_GE",    NULL, N_("Georgian"), "ქართული", NULL },
-    { "kk_KZ",    NULL, N_("Kazakh"), NULL, NULL },
-    { "km",       NULL, N_("Cambodian"), NULL, NULL },
+    { "kk_KZ",    NULL, N_("Kazakh"), "Қазақ", NULL },
+    { "km",       NULL, N_("Cambodian"), "ភាសាខ្មែរ", NULL },
     { "kn_IN",    NULL, N_("Kannada"), "﻿ಕನ್ನಡ", NULL },
     { "ko_KR",    NULL, N_("Korean"), "한국어", ".EUC-KR,.eucKR" },
-    { "lo_LA",    NULL, N_("Laothian"), NULL, NULL },
+    { "lo",       NULL, N_("Lao"), "لاوس", NULL },
+    { "lo_LA",    NULL, N_("Laothian"), "ລາວ", NULL },
     { "lt_LT",    NULL, N_("Lithuanian"), "Lietuvių", NULL },
     { "lv_LV",    NULL, N_("Latvian"), "Latviešu", NULL },
-    { "mk_MK",    NULL, N_("Macedonian"), NULL, NULL },
+    { "mk_MK",    NULL, N_("Macedonian"), "Македонски", NULL },
     { "ml_IN",    NULL, N_("Malayalam"), "മലയാളം", NULL },
     { "mn_MN",    NULL, N_("Mongolian"), "Монгол", NULL },
-    { "mr_IN",    NULL, N_("Marathi"), NULL, NULL },
+    { "mr_IN",    NULL, N_("Marathi"), "मराठी", NULL },
     { "ms_MY",    NULL, N_("Malay"), "Bahasa Melayu", NULL },
-    { "my_MM",    NULL, N_("Burmese"), "", NULL },
-    { "ne_NP",    NULL, N_("Nepali"), NULL, NULL },
+    { "my_MM",    NULL, N_("Burmese"), "မြန်မာဘာသာ", NULL },
+    { "ne_NP",    NULL, N_("Nepali"), "नेपाली", NULL },
     { "nl_NL",    NULL, N_("Dutch"), "Nederlands", "@euro" },
     { "nn_NO",    NULL, N_("Norwegian (Nynorsk)"), "Norsk (Nynorsk)", NULL },
     { "nb_NO",    NULL, N_("Norwegian (Bokmal)"), "Norsk (Bokmål)", NULL },
-    { "or_IN",    NULL, N_("Oriya"), NULL, NULL },
-    { "pa_IN",    NULL, N_("Punjabi"), NULL, NULL },
+    { "or_IN",    NULL, N_("Oriya"), "ଓଡ଼ିଆ", NULL },
+    { "pa_IN",    NULL, N_("Punjabi"), "ਪੰਜਾਬੀ", NULL },
     { "pl_PL",    NULL, N_("Polish"), "Polski", NULL },
     { "pt",    "pt_PT", N_("Portuguese"), "Português", NULL },
-    { "pt_BR",    NULL, N_("Portuguese (Brazil)"), "Português do Brasil", NULL },
+    { "pt_BR",    NULL, N_("Portuguese (Brazil)"), "Português (Brasil)", NULL },
     { "pt_PT",    NULL, N_("Portuguese"), "Português", "@euro" },
     { "ro_RO",    NULL, N_("Romanian"), "Română", NULL },
     { "ru_RU",    NULL, N_("Russian"), "русский", ".koi8r" },
     { "sd",    "sd_IN", N_("Sindhi"), "ﺲﻧڌﻱ", NULL },
     { "sd_IN",    NULL, N_("Sindhi"), "सिन्धी", "@devanagari" },
+    { "si_IN",    NULL, N_("Sinhala"), "සිංහල", NULL },
     { "si_LK",    NULL, N_("Sinhala"), "සිංහල", NULL },
     { "sk_SK",    NULL, N_("Slovak"), "Slovenský", NULL },
     { "sl_SI",    NULL, N_("Slovenian"), "Slovenščina", NULL },
     { "sq_AL",    NULL, N_("Albanian"), "Shqip", NULL },
-    { "sr",    "sr_YU", N_("Serbian"), "српски", NULL },
-    { "sr_CS",    NULL, N_("Serbian"), "српски", NULL },
-    { "sr_YU",    NULL, N_("Serbian"), "српски", "@cyrillic" },
+    { "sr",    "sr_YU", N_("Serbian"), "Srpski", NULL },
+    { "sr_CS",    NULL, N_("Serbian"), "Srpski", NULL },
+    { "sr_YU",    NULL, N_("Serbian"), "Srpski", "@cyrillic" },
     { "sv",    "sv_SE", N_("Swedish"), "Svenska", NULL },
     { "sv_FI",    NULL, N_("Swedish (Finland)"), "Svenska (Finland)", "@euro" },
     { "sv_SE",    NULL, N_("Swedish"), "Svenska", ".iso885915" },
-    { "ta_IN",    NULL, N_("Tamil"), NULL, NULL },
-    { "te_IN",    NULL, N_("Telugu"), NULL, NULL },
-    { "th_TH",    NULL, N_("Thai"), "ไทย", NULL },
+    { "ta_IN",    NULL, N_("Tamil"), "தமிழ்", NULL },
+    { "te_IN",    NULL, N_("Telugu"), "తెలుగు", NULL },
+    { "th_TH",    NULL, N_("Thai"), "ภาษาไทย", NULL },
     { "tr_TR",    NULL, N_("Turkish"), "Türkçe", NULL },
-    { "ug",       NULL, N_("Uighur"), NULL, NULL },
+    { "ug",       NULL, N_("Uighur"), "ئۇيغۇر", NULL },
     { "uk_UA",    NULL, N_("Ukrainian"), "Українська", NULL },
-    { "ur_PK",    NULL, N_("Urdu"), NULL, NULL },
-    { "uz_UZ",    NULL, N_("Uzbek"), NULL, "@cyrillic" },
-    { "vi_VN",    NULL, N_("Vietnamese"), "Việt Nam", ".tcvn" },
+    { "ur_PK",    NULL, N_("Urdu"), "اردو", NULL },
+    { "uz_UZ",    NULL, N_("Uzbek"), "o'zbek tili", "@cyrillic" },
+    { "vi_VN",    NULL, N_("Vietnamese"), "Tiếng Việt", ".tcvn" },
     { "wa_BE",    NULL, N_("Walloon"), "Walon", "@euro" },
     { "yi"   , "yi_US", N_("Yiddish"), "ייִדיש", NULL },
     { "yi_US",    NULL, N_("Yiddish"), "ייִדיש", NULL },
     { "zh",    "zh_CN", N_("Chinese"), "中文", NULL },
     { "zh_CN",    NULL, N_("Chinese (Simplified)"), "中文 (简体)", ".GB18030,.GBK,.GB2312,.eucCN" },
     { "zh_HK", NULL, N_("Chinese (Hongkong)"), "中文 (香港)", NULL },
-    { "zh_SG", "zh_CN", N_("Chinese (Simplified)"), "中文 (简体)", ".GBK" },
-    { "zh_TW",    NULL, N_("Chinese (Traditional)"), "中文 (繁體)", ".eucTW" },
+    { "zh_SG", "zh_CN", N_("Chinese (Singapore)"), "中文 (新加坡)", ".GBK" },
+    { "zh_TW",    NULL, N_("Chinese (Traditional_Taiwan)"), "中文 (台湾)", ".eucTW" },
 
     { "nl_BE",    NULL, N_("Dutch (Belgian)"), "Dutch (Belgian)", NULL },
     { "en_NZ",    NULL, N_("English (New Zealand)"), "English (New Zealand)", NULL },
@@ -896,65 +916,68 @@ static __Language __languages [] = {
     { "en_TT",    NULL, N_("English (Trinidad)"), "English (Trinidad)", NULL },
     { "en_ZW",    NULL, N_("English (Zimbabwe)"), "English (Zimbabwe)", NULL },
     { "en_PH",    NULL, N_("English (Philippines)"), "English (Philippines)", NULL },
-    { "fr_BE",    NULL, N_("French (Belgian)"), "French (Belgian)", NULL },
-    { "fr_CA",    NULL, N_("French (Canadian)"), "French (Canadian)", NULL },
-    { "fr_CH",    NULL, N_("French (Swiss)"), "French (Swiss)", NULL },
-    { "fr_LU",    NULL, N_("French (Luxembourg)"), "French (Luxembourg)", NULL },
-    { "fr_MC",    NULL, N_("French (Monaco)"), "French (Monaco)", NULL },
-    { "de_CH",    NULL, N_("German (Swiss)"), "German (Swiss)", NULL },
-    { "de_AT",    NULL, N_("German (Austrian)"), "German (Austrian)", NULL },
-    { "de_LU",    NULL, N_("German (Luxembourg)"), "German (Luxembourg)", NULL },
-    { "de_LI",    NULL, N_("German (Liechtenstein)"), "German (Liechtenstein)", NULL },
-    { "it_CH",    NULL, N_("Italian (Swiss)"), "Italian (Swiss)", NULL },
-    { "es_GT",    NULL, N_("Spanish (Guatemala)"), "Spanish (Guatemala)", NULL },
-    { "es_CR",    NULL, N_("Spanish (Costa Rica)"), "Spanish (Costa Rica)", NULL },
-    { "es_PA",    NULL, N_("Spanish (Panama)"), "Spanish (Panama)", NULL },
-    { "es_DO",    NULL, N_("Spanish (Dominican Republic)"), "Spanish (Dominican Republic)", NULL },
-    { "es_VE",    NULL, N_("Spanish (Venezuela)"), "Spanish (Venezuela)", NULL },
-    { "es_CO",    NULL, N_("Spanish (Colombia)"), "Spanish (Colombia)", NULL },
-    { "es_PE",    NULL, N_("Spanish (Peru)"), "Spanish (Peru)", NULL },
-    { "es_AR",    NULL, N_("Spanish (Argentina)"), "Spanish (Argentina)", NULL },
-    { "es_EC",    NULL, N_("Spanish (Ecuador)"), "Spanish (Ecuador)", NULL },
-    { "es_CL",    NULL, N_("Spanish (Chile)"), "Spanish (Chile)", NULL },
-    { "es_UY",    NULL, N_("Spanish (Uruguay)"), "Spanish (Uruguay)", NULL },
-    { "es_PY",    NULL, N_("Spanish (Paraguay)"), "Spanish (Paraguay)", NULL },
-    { "es_BO",    NULL, N_("Spanish (Bolivia)"), "Spanish (Bolivia)", NULL },
-    { "es_SV",    NULL, N_("Spanish (El Salvador)"), "Spanish (El Salvador)", NULL },
-    { "es_HN",    NULL, N_("Spanish (Honduras)"), "Spanish (Honduras)", NULL },
-    { "es_NI",    NULL, N_("Spanish (Nicaragua)"), "Spanish (Nicaragua)", NULL },
-    { "es_PR",    NULL, N_("Spanish (Puerto Rico)"), "Spanish (Puerto Rico)", NULL },
+    { "fr_BE",    NULL, N_("French (Belgian)"), "Français (Belgian)", NULL },
+    { "fr_CA",    NULL, N_("French (Canadian)"), "Français (Canada)", NULL },
+    { "fr_CH",    NULL, N_("French (Swiss)"), "Français (Suisse)", NULL },
+    { "fr_LU",    NULL, N_("French (Luxembourg)"), "Français (Luxembourg)", NULL },
+    { "fr_MC",    NULL, N_("French (Monaco)"), "Français (Monaco)", NULL },
+    { "de_CH",    NULL, N_("German (Swiss)"), "Deutsch (Schweiz)", NULL },
+    { "de_AT",    NULL, N_("German (Austrian)"), "Deutsch (Österreich)", NULL },
+    { "de_LU",    NULL, N_("German (Luxembourg)"), "Deutsch (Luxembourg)", NULL },
+    { "de_LI",    NULL, N_("German (Liechtenstein)"), "Deutsch (Liechtenstein)", NULL },
+    { "it_CH",    NULL, N_("Italian (Swiss)"), "italiano (Svizzera)", NULL },
+    { "es_GT",    NULL, N_("Spanish (Guatemala)"), "español (Guatemala)", NULL },
+    { "es_CR",    NULL, N_("Spanish (Costa Rica)"), "español (Costa Rica)", NULL },
+    { "es_PA",    NULL, N_("Spanish (Panama)"), "español (Panamá)", NULL },
+    { "es_DO",    NULL, N_("Spanish (Dominican Republic)"), "español (República Dominicana)", NULL },
+    { "es_VE",    NULL, N_("Spanish (Venezuela)"), "español (Venezuela)", NULL },
+    { "es_CO",    NULL, N_("Spanish (Colombia)"), "español (Colombia)", NULL },
+    { "es_PE",    NULL, N_("Spanish (Peru)"), "español (Perú)", NULL },
+    { "es_AR",    NULL, N_("Spanish (Argentina)"), "español (Argentina)", NULL },
+    { "es_EC",    NULL, N_("Spanish (Ecuador)"), "español (Ecuador)", NULL },
+    { "es_CL",    NULL, N_("Spanish (Chile)"), "español (Chile)", NULL },
+    { "es_UY",    NULL, N_("Spanish (Uruguay)"), "español (Uruguay)", NULL },
+    { "es_PY",    NULL, N_("Spanish (Paraguay)"), "español (Paraguay)", NULL },
+    { "es_BO",    NULL, N_("Spanish (Bolivia)"), "español (Bolivia)", NULL },
+    { "es_SV",    NULL, N_("Spanish (El Salvador)"), "español (El Salvador)", NULL },
+    { "es_HN",    NULL, N_("Spanish (Honduras)"), "español (Honduras)", NULL },
+    { "es_NI",    NULL, N_("Spanish (Nicaragua)"), "español (Nicaragua)", NULL },
+    { "es_PR",    NULL, N_("Spanish (Puerto Rico)"), "español (Puerto Rico)", NULL },
     { "af_AF",    NULL, N_("Afrikaans"), "Afrikaans", NULL },
-    { "ms_BN",    NULL, N_("Malay (Brunei Darussalam)"), "Malay (Brunei Darussalam)", NULL },
-    { "no_NO",    NULL, N_("Norwegian"), "Norwegian", NULL },
-    { "sr_RS",    NULL, N_("Serbian (Latin)"), "Serbian (Latin)", NULL },
-    { "sr_RS",    NULL, N_("Serbian (Cyrillic)"), "Serbian (Cyrillic)", NULL },
+    { "ms_BN",    NULL, N_("Malay (Brunei Darussalam)"), "Bahasa Melayu (Brunei)", NULL },
+    { "no_NO",    NULL, N_("Norwegian"), "Norsk", NULL },
+    { "sr_RS",    NULL, N_("Serbian (Latin)"), "Srpski (latinica)", NULL },
+    { "sr_RS",    NULL, N_("Serbian (Cyrillic)"), "Srpski (ćirilica)", NULL },
     { "zh_MO",    NULL, N_("Chinese (Macau)"), "Chinese (Macau)", NULL },
-    { "ar_SA",    NULL, N_("Arabic (Saudi Arabia)"), "Arabic (Saudi Arabia)", NULL },
-    { "ar_IQ",    NULL, N_("Arabic (Iraq)"), "Arabic (Iraq)", NULL },
-    { "ar_LY",    NULL, N_("Arabic (Libya)"), "Arabic (Libya)", NULL },
-    { "ar_DZ",    NULL, N_("Arabic (Algeria)"), "Arabic (Algeria)", NULL },
-    { "ar_MA",    NULL, N_("Arabic (Morocco)"), "Arabic (Morocco)", NULL },
-    { "ar_TN",    NULL, N_("Arabic (Tunisia)"), "Arabic (Tunisia)", NULL },
-    { "ar_OM",    NULL, N_("Arabic (Oman)"), "Arabic (Oman)", NULL },
-    { "ar_YE",    NULL, N_("Arabic (Yemen)"), "Arabic (Yemen)", NULL },
-    { "ar_SY",    NULL, N_("Arabic (Syria)"), "Arabic (Syria)", NULL },
-    { "ar_JO",    NULL, N_("Arabic (Jordan)"), "Arabic (Jordan)", NULL },
-    { "ar_KW",    NULL, N_("Arabic (Kuwait)"), "Arabic (Kuwait)", NULL },
-    { "ar_AE",    NULL, N_("Arabic (UAE)"), "Arabic (UAE)", NULL },
-    { "ar_BH",    NULL, N_("Arabic (Bahrain)"), "Arabic (Bahrain)", NULL },
-    { "ar_QA",    NULL, N_("Arabic (Qatar)"), "Arabic (Qatar)", NULL },
-    { "az_IR",    NULL, N_("Azerbaijani"), "Azerbaijani", NULL },
+    { "ar_SA",    NULL, N_("Arabic (Saudi Arabia)"), "العربية (المملكة العربية السعودية)", NULL },
+    { "ar_IQ",    NULL, N_("Arabic (Iraq)"), "العربية (العراق)", NULL },
+    { "ar_LY",    NULL, N_("Arabic (Libya)"), "العربية (ليبيا)", NULL },
+    { "ar_DZ",    NULL, N_("Arabic (Algeria)"), "العربية (الجزائر)", NULL },
+    { "ar_MA",    NULL, N_("Arabic (Morocco)"), "العربية (المغرب)", NULL },
+    { "ar_TN",    NULL, N_("Arabic (Tunisia)"), "العربية (تونس)", NULL },
+    { "ar_OM",    NULL, N_("Arabic (Oman)"), "العربية (عُمان)", NULL },
+    { "ar_YE",    NULL, N_("Arabic (Yemen)"), "العربية (اليمن)", NULL },
+    { "ar_SY",    NULL, N_("Arabic (Syria)"), "العربية (سوريا)", NULL },
+    { "ar_JO",    NULL, N_("Arabic (Jordan)"), "العربية (الأردن)", NULL },
+    { "ar_KW",    NULL, N_("Arabic (Kuwait)"), "العربية (الكويت)", NULL },
+    { "ar_AE",    NULL, N_("Arabic (UAE)"), "العربية (الإمارات العربية المتحدة)", NULL },
+    { "ar_BH",    NULL, N_("Arabic (Bahrain)"), "العربية (البحرين)", NULL },
+    { "ar_QA",    NULL, N_("Arabic (Qatar)"), "العربية (قطر)", NULL },
+    { "az_IR",    NULL, N_("Azerbaijani"), "Azərbaycan", NULL },
     { "ha_BJ",    NULL, N_("Hausa"), "Hausa", NULL },
-    { "cy_UK",    NULL, N_("Welsh"), "Welsh", NULL },
-    { "xh_ZA",    NULL, N_("Xhosa"), "Xhosa", NULL },
-    { "yo_NG",    NULL, N_("Yoruba"), "Yoruba", NULL },
-    { "zu_ZA",    NULL, N_("Zulu"), "Zulu", NULL },
+    { "cy_UK",    NULL, N_("Welsh"), "Cymraeg", NULL },
+    { "xh_ZA",    NULL, N_("Xhosa"), "isiXhosa", NULL },
+    { "yo_NG",    NULL, N_("Yoruba"), "Èdè Yorùbá", NULL },
+    { "zu_ZA",    NULL, N_("Zulu"), "isiZulu", NULL },
     { "hg_IN",    NULL, N_("Hinglish"), "Hinglish", NULL },
     { "su_ID",    NULL, N_("Sundanese"), "Basa Sunda", NULL },
     { "tl_PH",    NULL, N_("Tagalog"), "Tagalog", NULL },
     { "af_ZA",    NULL, N_("Afrikaans"), "Afrikaans", NULL },
     { "jv_ID",    NULL, N_("Javanese"), "Basa Jawa", NULL },
-    { "km_KH",    NULL, N_("Khmer"), "ភាសាខ្មែរ", NULL },
+    { "km_KH",    NULL, N_("Khmer"), "ខ្មែរ", NULL },
+    { "fil",    NULL, N_("Filipino"), "Filipino", NULL },
+    { "my",    NULL, N_("Myanmar"), "ماينمار", NULL },
+    { "or",    NULL, N_("Odia"), "ଓଡ଼ିଆ", NULL },
     { "es_LA",    NULL, N_("Spanish (Latin America)"), "Español (América Latina)", NULL },
 
     { "", "", "", NULL, NULL }
@@ -1311,8 +1334,17 @@ scim_usleep (unsigned int usec)
 EAPI void scim_daemon ()
 {
 #if HAVE_DAEMON
+    char buf[256] = {0};
+    snprintf (buf, sizeof (buf), "time:%ld  pid:%d ppid:%d  %s  %s  calling daemon()\n",
+        time (0), getpid (), getppid (), __FILE__, __func__);
+    isf_save_log (buf);
+
     if (daemon (0, 0) == -1)
         std::cerr << "Error to make SCIM into a daemon!\n";
+
+    snprintf (buf, sizeof (buf), "time:%ld  pid:%d ppid:%d  %s  %s  daemon() called\n",
+        time (0), getpid (), getppid (), __FILE__, __func__);
+    isf_save_log (buf);
 
     return;
 #else
@@ -1326,6 +1358,11 @@ EAPI void scim_daemon ()
         _exit (0);
     }
 
+    char buf[256] = {0};
+    snprintf (buf, sizeof (buf), "time:%ld  pid:%d ppid:%d  %s  %s  fork result : %d\n",
+        time (0), getpid (), getppid (), __FILE__, __func__, id);
+    isf_save_log (buf);
+
     id = fork ();
     if (id == -1) {
         std::cerr << "Error to make SCIM into a daemon!\n";
@@ -1334,18 +1371,34 @@ EAPI void scim_daemon ()
         _exit (0);
     }
 
+    char buf[256] = {0};
+    snprintf (buf, sizeof (buf), "time:%ld  pid:%d ppid:%d  %s  %s  fork result : %d\n",
+        time (0), getpid (), getppid (), __FILE__, __func__, id);
+    isf_save_log (buf);
+
     return;
 #endif
 }
 
 EAPI void isf_save_log (const char *str)
 {
-    /*
-    String strLogFile = scim_get_user_data_dir () + String (SCIM_PATH_DELIM_STRING) + String ("isf.log");
-    std::ofstream isf_log_file (strLogFile.c_str (), std::ios::app);
-    isf_log_file << str;
-    isf_log_file.flush ();
-    */
+    const int MAX_LOG_FILE_SIZE = 10 * 1024; /* 10KB */
+
+    static bool size_exceeded = false;
+    static struct stat st;
+    if (!size_exceeded) {
+        String strLogFile = scim_get_user_data_dir () + String (SCIM_PATH_DELIM_STRING) + String ("isf.log");
+        int ret = stat(strLogFile.c_str(), &st);
+        if (ret == 0 || (ret == -1 && errno == ENOENT)) {
+            if (st.st_size < MAX_LOG_FILE_SIZE) {
+                std::ofstream isf_log_file (strLogFile.c_str (), std::ios::app);
+                isf_log_file << str;
+                isf_log_file.flush ();
+            } else {
+                size_exceeded = true;
+            }
+        }
+    }
 
     LOGD ("%s", str);
 }

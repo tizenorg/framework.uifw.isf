@@ -8,7 +8,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2013 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -752,6 +752,38 @@ SocketInstance::set_layout (unsigned int layout)
 }
 
 void
+SocketInstance::set_input_hint (unsigned int input_hint)
+{
+    Transaction trans;
+
+    global->init_transaction (trans);
+
+    SCIM_DEBUG_IMENGINE(1) << __func__<< " (" << m_peer_id << ")\n";
+
+    trans.put_command (ISM_TRANS_CMD_SET_INPUT_HINT);
+    trans.put_data (m_peer_id);
+    trans.put_data (input_hint);
+
+    commit_transaction (trans);
+}
+
+void
+SocketInstance::update_bidi_direction (unsigned int bidi_direction)
+{
+    Transaction trans;
+
+    global->init_transaction (trans);
+
+    SCIM_DEBUG_IMENGINE(1) << __func__<< " (" << m_peer_id << ")\n";
+
+    trans.put_command (ISM_TRANS_CMD_UPDATE_BIDI_DIRECTION);
+    trans.put_data (m_peer_id);
+    trans.put_data (bidi_direction);
+
+    commit_transaction (trans);
+}
+
+void
 SocketInstance::update_candidate_item_layout (const std::vector<unsigned int> &row_items)
 {
     Transaction trans;
@@ -917,6 +949,22 @@ SocketInstance::focus_out ()
 
     trans.put_command (SCIM_TRANS_CMD_FOCUS_OUT);
     trans.put_data (m_peer_id);
+
+    commit_transaction (trans);
+}
+
+void
+SocketInstance::set_autocapital_type (int mode)
+{
+    Transaction trans;
+
+    global->init_transaction (trans);
+
+    SCIM_DEBUG_IMENGINE(1) << __func__<< " (" << m_peer_id << ")\n";
+
+    trans.put_command (SCIM_TRANS_CMD_SET_AUTOCAPITAL_TYPE);
+    trans.put_data (m_peer_id);
+    trans.put_data (mode);
 
     commit_transaction (trans);
 }
@@ -1241,6 +1289,14 @@ SocketInstance::do_transaction (Transaction &trans, bool &ret)
                             std::cerr << "SET_SELECTION: global->send_transaction () is failed!!!\n";
                     }
                     cont = true;
+                    break;
+                }
+                case SCIM_TRANS_CMD_SEND_PRIVATE_COMMAND:
+                {
+                    String command;
+                    if (trans.get_data (command)) {
+                        send_private_command (command);
+                    }
                     break;
                 }
                 case ISM_TRANS_CMD_EXPAND_CANDIDATE:

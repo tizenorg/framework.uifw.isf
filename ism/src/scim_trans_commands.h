@@ -501,7 +501,7 @@ const int ISM_TRANS_CMD_ASSOCIATE_TABLE_PAGE_DOWN         = 115;
 const int ISM_TRANS_CMD_SELECT_AUX                        = 116;
 const int ISM_TRANS_CMD_SET_PREDICTION_ALLOW              = 117;
 const int ISM_TRANS_CMD_UPDATE_CANDIDATE_ITEM_LAYOUT      = 118;
-
+const int SCIM_TRANS_CMD_SET_AUTOCAPITAL_TYPE             = 119;
 
 // Socket FrontEnd to Socket IMEngine
 // FrontEnds to Panel
@@ -531,6 +531,7 @@ const int ISM_TRANS_CMD_UPDATE_ASSOCIATE_TABLE            = 172;
 const int ISM_TRANS_CMD_TRANSACTION_CONTINUE              = 173;
 const int SCIM_TRANS_CMD_GET_SELECTION                    = 174;
 const int SCIM_TRANS_CMD_SET_SELECTION                    = 175;
+const int SCIM_TRANS_CMD_SEND_PRIVATE_COMMAND             = 176;
 
 // Socket IMEngine to Socket FrontEnd
 const int SCIM_TRANS_CMD_NEW_INSTANCE                     = 200;
@@ -608,7 +609,7 @@ const int SCIM_TRANS_CMD_HELPER_MANAGER_STOP_HELPER       = 702;
 const int SCIM_TRANS_CMD_HELPER_MANAGER_SEND_DISPLAY      = 703;
 const int SCIM_TRANS_CMD_HELPER_MANAGER_SEND_ISE_LIST     = 704;
 const int ISM_TRANS_CMD_GET_ACTIVE_ISE_LIST               = 705;
-
+const int ISM_TRANS_CMD_PRELOAD_KEYBOARD_ISE              = 706;
 
 /* IMControl to Panel */
 const int ISM_TRANS_CMD_SHOW_ISE_PANEL                    = 1000;
@@ -646,6 +647,9 @@ const int ISM_TRANS_CMD_SET_RETURN_KEY_TYPE               = 1118;
 const int ISM_TRANS_CMD_GET_RETURN_KEY_TYPE               = 1119;
 const int ISM_TRANS_CMD_SET_RETURN_KEY_DISABLE            = 1120;
 const int ISM_TRANS_CMD_GET_RETURN_KEY_DISABLE            = 1121;
+const int ISM_TRANS_CMD_SET_INPUT_MODE                    = 1122;
+const int ISM_TRANS_CMD_SET_INPUT_HINT                    = 1123;
+const int ISM_TRANS_CMD_UPDATE_BIDI_DIRECTION             = 1124;
 
 /* ISE/Panel to IMControl */
 const int ISM_TRANS_CMD_UPDATE_ISE_INPUT_CONTEXT          = 1151;

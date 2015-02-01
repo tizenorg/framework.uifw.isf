@@ -12,7 +12,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2004-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2013 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -367,7 +367,7 @@ public:
                                  const WideString   &wstr) const;
 
     /**
-     * @brief Commit a WideString to client application directly.
+     * @brief Commit a UTF-8 String to client application directly.
      *
      * @param ic The handle of the client Input Context to receive the commit string.
      *        -1 means the currently focused Input Context.
@@ -448,6 +448,17 @@ public:
                                  const WideString   &wstr,
                                  const AttributeList &attrs) const;
 
+    /**
+     * @brief Update a new UTF-8 string for preedit.
+     *
+     * @param ic The handle of the client Input Context to receive the UTF-8 String.
+     *        -1 means the currently focused Input Context.
+     * @param ic_uuid The UUID of the IMEngine used by the Input Context.
+     *        Empty means don't match.
+     * @param buf The byte array of UTF-8 string to be updated.
+     * @param buflen The buf size in bytes.
+     * @param attrs The attribute list for preedit string.
+     */
     void update_preedit_string  (int                 ic,
                                  const String       &ic_uuid,
                                  const char         *buf,
@@ -471,6 +482,18 @@ public:
                                  const AttributeList &attrs,
                                  int                 caret) const;
 
+    /**
+     * @brief Update a new UTF-8 string and caret for preedit.
+     *
+     * @param ic The handle of the client Input Context to receive the UTF-8 String.
+     *        -1 means the currently focused Input Context.
+     * @param ic_uuid The UUID of the IMEngine used by the Input Context.
+     *        Empty means don't match.
+     * @param buf The byte array of UTF-8 string to be updated.
+     * @param buflen The buf size in bytes.
+     * @param attrs The attribute list for preedit string.
+     * @param caret The caret position in preedit string.
+     */
     void update_preedit_string  (int                 ic,
                                  const String       &ic_uuid,
                                  const char         *buf,
@@ -642,6 +665,13 @@ public:
      * @brief Request to reset keyboard ISE.
      */
     void reset_keyboard_ise       (void) const;
+
+    /**
+     * @brief Send a private command to an application
+     *
+     * @param command The private command sent from IME.
+     */
+    void send_private_command     (const String                &command) const;
 
 public:
     /**
@@ -1176,9 +1206,39 @@ public:
      * @brief Connect a slot to Helper process key event signal.
      *
      * The prototype of the slot is:
-     * void process_key_event (const HelperAgent *, uint32 &ret);
+     * void process_key_event (const HelperAgent *, KeyEvent &key, uint32 &ret);
      */
     Connection signal_connect_process_key_event (HelperAgentSlotKeyEventUint *slot);
+
+    /**
+     * @brief Connect a slot to Helper set input mode signal.
+     *
+     * This signal is used to set Helper ISE input mode.
+     *
+     * The prototype of the slot is:
+     * void set_input_mode (const HelperAgent *agent, uint32 &input_mode);
+     */
+    Connection signal_connect_set_input_mode                        (HelperAgentSlotUintVoid            *slot);
+
+    /**
+     * @brief Connect a slot to Helper set input hint signal.
+     *
+     * This signal is used to set Helper ISE input hint.
+     *
+     * The prototype of the slot is:
+     * void set_input_hint (const HelperAgent *agent, uint32 &input_hint);
+     */
+    Connection signal_connect_set_input_hint                        (HelperAgentSlotUintVoid            *slot);
+
+    /**
+     * @brief Connect a slot to Helper update bidi direction signal.
+     *
+     * This signal is used to update Helper ISE bidi direction.
+     *
+     * The prototype of the slot is:
+     * void update_bidi_direction (const HelperAgent *agent, uint32 &bidi_direction);
+     */
+    Connection signal_connect_update_bidi_direction                 (HelperAgentSlotUintVoid            *slot);
 };
 
 /**  @} */

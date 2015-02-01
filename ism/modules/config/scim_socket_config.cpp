@@ -632,8 +632,8 @@ SocketConfig::open_connection () const
 
     // Connect to SocketFrontEnd.
     if (!m_socket_client.connect (socket_address)) {
-        /* Retry connecting atmost 10 seconds */
-        for (int i = 0; i < 100; ++i) {
+        /* Retry connecting considering the ANR timeout */
+        for (int i = 0; i < 3; ++i) {
             if (m_socket_client.connect (socket_address))
                 break;
             scim_usleep (100000);

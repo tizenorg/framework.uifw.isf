@@ -2,7 +2,7 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2012-2013 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  * Contact: Jihoon Kim <jihoon48.kim@samsung.com>
  *
@@ -22,10 +22,9 @@
  *
  */
 #include "center_popup.h"
+#include "isf_panel_efl.h"
 
 #include <Ecore_X.h>
-#define BASE_WIDTH      (720 * elm_config_scale_get())
-#define BASE_HEIGHT     (1280 * elm_config_scale_get())
 
 typedef struct _Center_Popup_Data Center_Popup_Data;
 struct _Center_Popup_Data
@@ -117,15 +116,17 @@ center_popup_add(Evas_Object *parent, const char *name, const char *title)
 
     // Create Dimming object
     cp_data->block_events = elm_layout_add(cp_data->popup_win);
-    elm_layout_theme_set(cp_data->block_events, "notify", "block_events", "popup");
+    if (!elm_layout_theme_set(cp_data->block_events, "notify", "block_events", "popup"))
+        LOGW ("elm_layout_theme_set failed\n");
+
     evas_object_size_hint_weight_set(cp_data->block_events, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
     elm_win_resize_object_add(cp_data->popup_win, cp_data->block_events);
     evas_object_show(cp_data->block_events);
     evas_object_repeat_events_set(cp_data->block_events, EINA_FALSE);
 
+    // Create popup object
     popup = elm_popup_add(cp_data->popup_win);
     if (!popup) goto error;
-    elm_object_style_set(popup, "center_popup");
 
     elm_popup_allow_events_set(popup, EINA_TRUE);
     evas_object_size_hint_weight_set(popup, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);

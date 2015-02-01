@@ -2,7 +2,7 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2012-2013 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  * Contact: Haifeng Deng <haifeng.deng@samsung.com>, Hengliang Luo <hl.luo@samsung.com>
  *
@@ -66,6 +66,8 @@ void isf_load_ise_information (LOAD_ISE_TYPE type, const ConfigPointer &config);
 bool isf_update_ise_list (LOAD_ISE_TYPE type, const ConfigPointer &config);
 bool isf_update_ise_module (const String strModulePath, const ConfigPointer &config);
 String isf_get_normalized_language (String src_str);
+bool isf_add_helper_ise (HelperInfo helper_info, String module_name);
+bool isf_remove_helper_ise (const char *uuid, const ConfigPointer &config);
 
 #endif /* __ISF_PANEL_UTILITY_H */
 

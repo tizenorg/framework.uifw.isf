@@ -173,9 +173,9 @@ public:
     typedef Slot0<R> SlotType;
     //!< Function signature for handlers connecting the signal.
 
-    Connection connect(SlotType *slot)
+    Connection connect(SlotType *l_slot)
     {
-        return Signal::connect(slot);
+        return Signal::connect(l_slot);
     }
     //!< Connect a slot to the signal.
     //!< @param slot - a slot of type Slot0<R>.
@@ -201,8 +201,8 @@ public:
         {
             if (!(*i)->blocked())
             {
-                SlotType *slot = static_cast<SlotType*>((*i)->slot());
-                if (slot && m.marshal(slot->call()))
+                SlotType *l_slot = static_cast<SlotType*>((*i)->slot());
+                if (l_slot && m.marshal(l_slot->call()))
                     break;
             }
             ++i;
@@ -237,9 +237,9 @@ class Signal0<void, IgnoreMarshal> : public Signal
 public:
     typedef Slot0<void> SlotType;
 
-    Connection connect(SlotType *slot)
+    Connection connect(SlotType *l_slot)
     {
-        return Signal::connect(slot);
+        return Signal::connect(l_slot);
     }
 
     void reset ()
@@ -259,8 +259,8 @@ public:
         {
             if (!(*i)->blocked())
             {
-                SlotType *slot = static_cast<SlotType*>((*i)->slot());
-                if (slot) slot->call();
+                SlotType *l_slot = static_cast<SlotType*>((*i)->slot());
+                if (l_slot) l_slot->call();
             }
             ++i;
         }
@@ -290,9 +290,9 @@ public:
     typedef Slot1<R, P1> SlotType;
     //!< Function signature for handlers connecting to the signal.
 
-    Connection connect(SlotType *slot)
+    Connection connect(SlotType *l_slot)
     {
-        return Signal::connect(slot);
+        return Signal::connect(l_slot);
     }
 
     void reset ()
@@ -323,8 +323,8 @@ public:
         {
             if (!(*i)->blocked())
             {
-                SlotType *slot = static_cast<SlotType*>((*i)->slot());
-                if (slot && m.marshal(slot->call(p1)))
+                SlotType *l_slot = static_cast<SlotType*>((*i)->slot());
+                if (l_slot && m.marshal(l_slot->call(p1)))
                     break;
             }
             ++i;
@@ -360,9 +360,9 @@ class Signal1<void, P1, IgnoreMarshal> : public Signal
 public:
     typedef Slot1<void, P1> SlotType;
 
-    Connection connect(SlotType *slot)
+    Connection connect(SlotType *l_slot)
     {
-        return Signal::connect(slot);
+        return Signal::connect(l_slot);
     }
 
     void reset ()
@@ -382,8 +382,8 @@ public:
         {
             if (!(*i)->blocked())
             {
-                SlotType *slot = static_cast<SlotType*>((*i)->slot());
-                if (slot) slot->call(p1);
+                SlotType *l_slot = static_cast<SlotType*>((*i)->slot());
+                if (l_slot) l_slot->call(p1);
             }
             ++i;
         }
@@ -414,9 +414,9 @@ public:
     typedef Slot2<R, P1, P2> SlotType;
     //!< Function signature for handlers connecting to the signal.
 
-    Connection connect(SlotType *slot)
+    Connection connect(SlotType *l_slot)
     {
-        return Signal::connect(slot);
+        return Signal::connect(l_slot);
     }
 
     void reset ()
@@ -448,8 +448,8 @@ public:
         {
             if (!(*i)->blocked())
             {
-                SlotType *slot = static_cast<SlotType*>((*i)->slot());
-                if (slot && m.marshal(slot->call(p1, p2)))
+                SlotType *l_slot = static_cast<SlotType*>((*i)->slot());
+                if (l_slot && m.marshal(l_slot->call(p1, p2)))
                     break;
             }
             ++i;
@@ -486,9 +486,9 @@ class Signal2<void, P1, P2, IgnoreMarshal> : public Signal
 public:
     typedef Slot2<void, P1, P2> SlotType;
 
-    Connection connect(SlotType *slot)
+    Connection connect(SlotType *l_slot)
     {
-        return Signal::connect(slot);
+        return Signal::connect(l_slot);
     }
 
     void reset ()
@@ -508,8 +508,8 @@ public:
         {
             if (!(*i)->blocked())
             {
-                SlotType *slot = static_cast<SlotType*>((*i)->slot());
-                if (slot) slot->call(p1, p2);
+                SlotType *l_slot = static_cast<SlotType*>((*i)->slot());
+                if (l_slot) l_slot->call(p1, p2);
             }
             ++i;
         }
@@ -540,9 +540,9 @@ public:
     typedef Slot3<R, P1, P2, P3> SlotType;
     //!< Function signature for handlers connecting to the signal.
 
-    Connection connect(SlotType *slot)
+    Connection connect(SlotType *l_slot)
     {
-        return Signal::connect(slot);
+        return Signal::connect(l_slot);
     }
 
     void reset ()
@@ -573,8 +573,8 @@ public:
         {
             if (!(*i)->blocked())
             {
-                SlotType *slot = static_cast<SlotType*>((*i)->slot());
-                if (slot && m.marshal(slot->call(p1, p2, p3)))
+                SlotType *l_slot = static_cast<SlotType*>((*i)->slot());
+                if (l_slot && m.marshal(l_slot->call(p1, p2, p3)))
                     break;
             }
             ++i;
@@ -612,9 +612,9 @@ class Signal3<void, P1, P2, P3, IgnoreMarshal> : public Signal
 public:
     typedef Slot3<void, P1, P2, P3> SlotType;
 
-    Connection connect(SlotType *slot)
+    Connection connect(SlotType *l_slot)
     {
-        return Signal::connect(slot);
+        return Signal::connect(l_slot);
     }
 
     void reset ()
@@ -634,8 +634,8 @@ public:
         {
             if (!(*i)->blocked())
             {
-                SlotType *slot = static_cast<SlotType*>((*i)->slot());
-                if (slot) slot->call(p1, p2, p3);
+                SlotType *l_slot = static_cast<SlotType*>((*i)->slot());
+                if (l_slot) l_slot->call(p1, p2, p3);
             }
             ++i;
         }
@@ -666,9 +666,9 @@ public:
     typedef Slot4<R, P1, P2, P3, P4> SlotType;
     //!< Function signature for handlers connecting to the signal.
 
-    Connection connect(SlotType *slot)
+    Connection connect(SlotType *l_slot)
     {
-        return Signal::connect(slot);
+        return Signal::connect(l_slot);
     }
 
     void reset ()
@@ -699,8 +699,8 @@ public:
         {
             if (!(*i)->blocked())
             {
-                SlotType *slot = static_cast<SlotType*>((*i)->slot());
-                if (slot && m.marshal(slot->call(p1, p2, p3, p4)))
+                SlotType *l_slot = static_cast<SlotType*>((*i)->slot());
+                if (l_slot && m.marshal(l_slot->call(p1, p2, p3, p4)))
                     break;
             }
             ++i;
@@ -739,9 +739,9 @@ class Signal4<void, P1, P2, P3, P4, IgnoreMarshal> : public Signal
 public:
     typedef Slot4<void, P1, P2, P3, P4> SlotType;
 
-    Connection connect(SlotType *slot)
+    Connection connect(SlotType *l_slot)
     {
-        return Signal::connect(slot);
+        return Signal::connect(l_slot);
     }
 
     void reset ()
@@ -761,8 +761,8 @@ public:
         {
             if (!(*i)->blocked())
             {
-                SlotType *slot = static_cast<SlotType*>((*i)->slot());
-                if (slot) slot->call(p1, p2, p3, p4);
+                SlotType *l_slot = static_cast<SlotType*>((*i)->slot());
+                if (l_slot) l_slot->call(p1, p2, p3, p4);
             }
             ++i;
         }
@@ -793,9 +793,9 @@ public:
     typedef Slot5<R, P1, P2, P3, P4, P5> SlotType;
     //!< Function signature for handlers connecting to the signal.
 
-    Connection connect(SlotType *slot)
+    Connection connect(SlotType *l_slot)
     {
-        return Signal::connect(slot);
+        return Signal::connect(l_slot);
     }
 
     void reset ()
@@ -826,8 +826,8 @@ public:
         {
             if (!(*i)->blocked())
             {
-                SlotType *slot = static_cast<SlotType*>((*i)->slot());
-                if (slot && m.marshal(slot->call(p1, p2, p3, p4, p5)))
+                SlotType *l_slot = static_cast<SlotType*>((*i)->slot());
+                if (l_slot && m.marshal(l_slot->call(p1, p2, p3, p4, p5)))
                     break;
             }
             ++i;
@@ -867,9 +867,9 @@ class Signal5<void, P1, P2, P3, P4, P5, IgnoreMarshal> : public Signal
 public:
     typedef Slot5<void, P1, P2, P3, P4, P5> SlotType;
 
-    Connection connect(SlotType *slot)
+    Connection connect(SlotType *l_slot)
     {
-        return Signal::connect(slot);
+        return Signal::connect(l_slot);
     }
 
     void reset ()
@@ -889,8 +889,8 @@ public:
         {
             if (!(*i)->blocked())
             {
-                SlotType *slot = static_cast<SlotType*>((*i)->slot());
-                if (slot) slot->call(p1, p2, p3, p4, p5);
+                SlotType *l_slot = static_cast<SlotType*>((*i)->slot());
+                if (l_slot) l_slot->call(p1, p2, p3, p4, p5);
             }
             ++i;
         }
@@ -921,9 +921,9 @@ public:
     typedef Slot6<R, P1, P2, P3, P4, P5, P6> SlotType;
     //!< Function signature for handlers connecting to the signal.
 
-    Connection connect(SlotType *slot)
+    Connection connect(SlotType *l_slot)
     {
-        return Signal::connect(slot);
+        return Signal::connect(l_slot);
     }
 
     void reset ()
@@ -955,8 +955,8 @@ public:
         {
             if (!(*i)->blocked())
             {
-                SlotType *slot = static_cast<SlotType*>((*i)->slot());
-                if (slot && m.marshal(slot->call(p1, p2, p3, p4, p5, p6)))
+                SlotType *l_slot = static_cast<SlotType*>((*i)->slot());
+                if (l_slot && m.marshal(l_slot->call(p1, p2, p3, p4, p5, p6)))
                     break;
             }
             ++i;
@@ -998,9 +998,9 @@ class Signal6<void, P1, P2, P3, P4, P5, P6, IgnoreMarshal> : public Signal
 public:
     typedef Slot6<void, P1, P2, P3, P4, P5, P6> SlotType;
 
-    Connection connect(SlotType *slot)
+    Connection connect(SlotType *l_slot)
     {
-        return Signal::connect(slot);
+        return Signal::connect(l_slot);
     }
 
     void reset ()
@@ -1020,8 +1020,8 @@ public:
         {
             if (!(*i)->blocked())
             {
-                SlotType *slot = static_cast<SlotType*>((*i)->slot());
-                if (slot) slot->call(p1, p2, p3, p4, p5, p6);
+                SlotType *l_slot = static_cast<SlotType*>((*i)->slot());
+                if (l_slot) l_slot->call(p1, p2, p3, p4, p5, p6);
             }
             ++i;
         }

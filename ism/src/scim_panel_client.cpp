@@ -8,7 +8,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2013 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -131,6 +131,7 @@ class PanelClient::PanelClientImpl
     PanelClientSignalInt                        m_signal_longpress_candidate;
     PanelClientSignalIntInt                     m_signal_update_ise_input_context;
     PanelClientSignalIntInt                     m_signal_update_isf_candidate_panel;
+    PanelClientSignalString                     m_signal_send_private_command;
 
 public:
     PanelClientImpl ()
@@ -159,8 +160,8 @@ public:
                 launch_panel (config, display);
                 std::cerr << " Re-connecting to PanelAgent server.";
                 ISF_LOG (" Re-connecting to PanelAgent server.\n");
-                /* Make sure we are not waiting for more than 10 seconds */
-                for (i = 0; i < 100; ++i) {
+                /* Make sure we are not retrying for more than 5 seconds, in total */
+                for (i = 0; i < 3; ++i) {
                     if (m_socket.connect (addr)) {
                         ret = true;
                         break;
@@ -482,6 +483,13 @@ public:
                         uint32 type, value;
                         if (recv.get_data (type) && recv.get_data (value))
                             m_signal_update_isf_candidate_panel ((int) context, (int)type, (int)value);
+                    }
+                    break;
+                case SCIM_TRANS_CMD_SEND_PRIVATE_COMMAND:
+                    {
+                        String str;
+                        if (recv.get_data (str))
+                            m_signal_send_private_command ((int) context, str);
                     }
                     break;
                 default:
@@ -1018,6 +1026,27 @@ public:
         }
     }
 
+    void set_input_mode (int input_mode) {
+        if (m_send_refcount > 0) {
+            m_send_trans.put_command (ISM_TRANS_CMD_SET_INPUT_MODE);
+            m_send_trans.put_data (input_mode);
+        }
+    }
+
+    void set_input_hint (int icid, int input_hint) {
+        if (m_send_refcount > 0 && m_current_icid == icid) {
+            m_send_trans.put_command (ISM_TRANS_CMD_SET_INPUT_HINT);
+            m_send_trans.put_data (input_hint);
+        }
+    }
+
+    void update_bidi_direction (int icid, int bidi_direction) {
+        if (m_send_refcount > 0 && m_current_icid == icid) {
+            m_send_trans.put_command (ISM_TRANS_CMD_UPDATE_BIDI_DIRECTION);
+            m_send_trans.put_data (bidi_direction);
+        }
+    }
+
     void get_layout (int* layout) {
         if (m_send_refcount > 0) {
             int cmd;
@@ -1084,9 +1113,11 @@ public:
             m_send_trans.put_command (ISM_TRANS_CMD_SEND_WILL_HIDE_ACK);
     }
 
-    void set_hardware_keyboard_mode (void) {
+    void set_keyboard_mode (int mode) {
         if (m_send_refcount > 0)
             m_send_trans.put_command (ISM_TRANS_CMD_SET_HARDWARE_KEYBOARD_MODE);
+            m_send_trans.put_data (mode);
+
     }
 
     void send_candidate_will_hide_ack (void) {
@@ -1217,6 +1248,7 @@ public:
         m_signal_longpress_candidate.reset();
         m_signal_update_ise_input_context.reset();
         m_signal_update_isf_candidate_panel.reset();
+        m_signal_send_private_command.reset();
     }
 
     Connection signal_connect_reload_config                 (PanelClientSlotVoid                    *slot)
@@ -1316,7 +1348,7 @@ public:
         return m_signal_hide_preedit_string.connect (slot);
     }
 
-    Connection signal_connect_update_preedit_string         (PanelClientSlotStringAttrsInt             *slot)
+    Connection signal_connect_update_preedit_string         (PanelClientSlotStringAttrsInt          *slot)
     {
         return m_signal_update_preedit_string.connect (slot);
     }
@@ -1331,7 +1363,7 @@ public:
         return m_signal_delete_surrounding_text.connect (slot);
     }
 
-    Connection signal_connect_get_selection                 (PanelClientSlotVoid                  *slot)
+    Connection signal_connect_get_selection                 (PanelClientSlotVoid                    *slot)
     {
         return m_signal_get_selection.connect (slot);
     }
@@ -1369,6 +1401,11 @@ public:
     Connection signal_connect_update_isf_candidate_panel    (PanelClientSlotIntInt                  *slot)
     {
         return m_signal_update_isf_candidate_panel.connect (slot);
+    }
+
+    Connection signal_connect_send_private_command          (PanelClientSlotString                  *slot)
+    {
+        return m_signal_send_private_command.connect (slot);
     }
 
 private:
@@ -1703,6 +1740,24 @@ PanelClient::get_layout             (int* layout)
 }
 
 void
+PanelClient::set_input_mode         (int input_mode)
+{
+    m_impl->set_input_mode (input_mode);
+}
+
+void
+PanelClient::set_input_hint         (int icid, int input_hint)
+{
+    m_impl->set_input_hint (icid, input_hint);
+}
+
+void
+PanelClient::update_bidi_direction     (int icid, int bidi_direction)
+{
+    m_impl->update_bidi_direction (icid, bidi_direction);
+}
+
+void
 PanelClient::set_ise_language       (int language)
 {
     m_impl->set_ise_language (language);
@@ -1727,9 +1782,9 @@ PanelClient::send_will_hide_ack     (void)
 }
 
 void
-PanelClient::set_hardware_keyboard_mode (void)
+PanelClient::set_keyboard_mode (int mode)
 {
-    m_impl->set_hardware_keyboard_mode ();
+    m_impl->set_keyboard_mode (mode);
 }
 
 void
@@ -1913,7 +1968,7 @@ PanelClient::signal_connect_delete_surrounding_text       (PanelClientSlotIntInt
 }
 
 Connection
-PanelClient::signal_connect_get_selection                 (PanelClientSlotVoid                  *slot)
+PanelClient::signal_connect_get_selection                 (PanelClientSlotVoid                    *slot)
 {
     return m_impl->signal_connect_get_selection (slot);
 }
@@ -1958,6 +2013,12 @@ Connection
 PanelClient::signal_connect_update_isf_candidate_panel    (PanelClientSlotIntInt                  *slot)
 {
     return m_impl->signal_connect_update_isf_candidate_panel (slot);
+}
+
+Connection
+PanelClient::signal_connect_send_private_command          (PanelClientSlotString                  *slot)
+{
+    return m_impl->signal_connect_send_private_command (slot);
 }
 
 } /* namespace scim */

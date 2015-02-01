@@ -1,4 +1,4 @@
-#define MC_BG_COLOR             0 0 0 255
+#define MC_BG_COLOR             0 0 0 0
 
 #define MC_TITLE_TEXT_FONT      "Tizen:style=Regular"
 #define MC_TITLE_TEXT_CLASS     "tizen"
@@ -66,7 +66,7 @@ RESOURCE_IMAGE("noti_icon_keyboard_connected.png");
             description { state: "default" 0.0;
                 rel1 { relative: 0.0 0.0; to: "bg";}
                 rel2 { relative: 0.0 1.0; to: "bg";}
-                min: 14 0;
+                min: 16 0;
                 fixed: 1 0;
                 align: 0.0 0.0;
             }
@@ -79,7 +79,7 @@ RESOURCE_IMAGE("noti_icon_keyboard_connected.png");
             description { state: "default" 0.0;
                 rel1 { relative: 1.0 0.0; to: "bg";}
                 rel2 { relative: 1.0 1.0; to: "bg";}
-                min: 14 0;
+                min: 13 0;
                 fixed: 1 0;
                 align: 1.0 0.0;
             }
@@ -105,7 +105,7 @@ RESOURCE_IMAGE("noti_icon_keyboard_connected.png");
             description { state: "default" 0.0;
                 rel1 { relative: 1.0 0.0; to: "padding_left"; }
                 rel2 { relative: 1.0 1.0; to: "padding_left"; }
-                min: 72 72 ;
+                min: 70 70;
                 fixed: 1 1;
                 align: 0 0.5;
             }
@@ -118,8 +118,8 @@ RESOURCE_IMAGE("noti_icon_keyboard_connected.png");
             description { state: "default" 0.0;
                 rel1 { relative: 0 0; to: "keyboard_icon_area"; }
                 rel2 { relative: 1 1; to: "keyboard_icon_area"; }
-                min: 72 72;
-                max: 72 72;
+                min: 70 70;
+                max: 70 70;
                 fixed: 1 1;
                 align: 0.5 0.5;
                 visible: 1;
@@ -133,7 +133,7 @@ RESOURCE_IMAGE("noti_icon_keyboard_connected.png");
             description { state: "default" 0.0;
                 rel1 { relative: 1.0 0.0; to: "keyboard_icon_area";}
                 rel2 { relative: 1.0 1.0; to: "keyboard_icon_area";}
-                min: 14 0;
+                min: 26 0;
                 fixed: 1 0;
                 align: 0.0 0.0;
             }

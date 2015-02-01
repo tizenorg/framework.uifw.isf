@@ -2,7 +2,7 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2012-2013 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  * Contact: Haifeng Deng <haifeng.deng@samsung.com>, Jihoon Kim <jihoon48.kim@samsung.com>
  *
@@ -52,6 +52,8 @@
 #include "scim_stl_map.h"
 #include "center_popup.h"
 #include "minicontrol.h"
+#include "iseselector.h"
+#include "isf_panel_efl.h"
 #if HAVE_VCONF
 #include <vconf.h>
 #include <vconf-keys.h>
@@ -59,7 +61,9 @@
 #include <privilege-control.h>
 #include "isf_panel_utility.h"
 #include <dlog.h>
+#if HAVE_NOTIFICATION
 #include <notification.h>
+#endif
 #include <efl_assist.h>
 #if HAVE_TTS
 #include <tts.h>
@@ -70,6 +74,10 @@
 #endif
 #if HAVE_BLUETOOTH
 #include <bluetooth.h>
+#endif
+#if HAVE_PKGMGR_INFO
+#include <package_manager.h>
+#include <pkgmgr-info.h>
 #endif
 
 using namespace scim;
@@ -93,6 +101,7 @@ using namespace scim;
 #define ISF_SYSTEM_WM_WAIT_COUNT                        200
 #define ISF_SYSTEM_WAIT_DELAY                           100 * 1000
 #define ISF_CANDIDATE_DESTROY_DELAY                     3
+#define ISF_ISE_HIDE_DELAY                              0.15
 
 #define ISF_PREEDIT_BORDER                              16
 #define ISE_LAUNCH_TIMEOUT                              2.0
@@ -100,11 +109,6 @@ using namespace scim;
 #define ISF_POP_PLAY_ICON_FILE                          "/usr/share/scim/icons/pop_play.png"
 #define ISF_KEYBOARD_ICON_FILE                          "keyboardicon.png"
 #define ISF_ISE_SELECTOR_ICON_FILE                      "noti_icon_keyboard_connected.png"
-
-#ifdef LOG_TAG
-# undef LOG_TAG
-#endif
-#define LOG_TAG                                         "ISF_PANEL_EFL"
 
 #define HOST_BUS_NAME        "org.tizen.usb.host"
 #define HOST_OBJECT_PATH     "/Org/Tizen/Usb/Host"
@@ -141,11 +145,6 @@ typedef enum _WINDOW_STATE {
     WINDOW_STATE_SHOW,
     WINDOW_STATE_ON,
 } WINDOW_STATE;
-
-typedef enum _KEYBOARD_MODE {
-    SOFTWARE_KEYBOARD_MODE = 0,
-    HARDWARE_KEYBOARD_MODE,
-} KEYBOARD_MODE;
 
 typedef std::map <String, Ecore_File_Monitor *>  OSPEmRepository;
 
@@ -223,22 +222,29 @@ static void       slot_hide_ise                        (void);
 static void       slot_will_hide_ack                   (void);
 static void       slot_candidate_will_hide_ack         (void);
 
-static void       slot_set_hardware_keyboard_mode      (void);
+static void       slot_set_keyboard_mode               (int mode);
 static void       slot_get_ise_state                   (int &state);
+static void       slot_start_default_ise               (void);
+static void       slot_stop_default_ise                (void);
+static void       slot_show_ise_selector               (void);
 
 static Eina_Bool  panel_agent_handler                  (void *data, Ecore_Fd_Handler *fd_handler);
 
 static Eina_Bool  efl_create_control_window            (void);
 static Ecore_X_Window efl_get_app_window               (void);
 static Ecore_X_Window efl_get_quickpanel_window        (void);
-static void       check_hardware_keyboard              (KEYBOARD_MODE mode);
+static void       check_hardware_keyboard              (TOOLBAR_MODE_T mode);
 static unsigned int get_ise_index                      (const String uuid);
-static bool       set_active_ise                       (const String &uuid);
-
+static bool       set_active_ise                       (const String &uuid, bool launch_ise);
+static bool       update_ise_list                      (std::vector<String> &list);
+static void       update_ise_locale                    ();
 static void       minictrl_clicked_cb                  (void *data, Evas_Object *o, const char *emission, const char *source);
 #ifdef HAVE_MINICONTROL
 static void       ise_selector_minictrl_clicked_cb     (void *data, Evas_Object *o, const char *emission, const char *source);
 #endif
+static Eina_Bool  ise_launch_timeout                   (void *data);
+static Eina_Bool  delete_ise_launch_timer              ();
+static void       set_language_and_locale              (void);
 
 /////////////////////////////////////////////////////////////////////////////
 // Declaration of internal variables.
@@ -331,8 +337,6 @@ static std::vector<Evas_Object *> _aux_seperates;
 static Evas_Object       *_tmp_preedit_text                 = 0;
 static Evas_Object       *_tmp_aux_text                     = 0;
 static Evas_Object       *_tmp_candidate_text               = 0;
-static Evas_Object       *_ise_selector                     = NULL;
-static Evas_Object       *_ise_selector_radio_grp           = NULL;
 
 static int                _spot_location_x                  = -1;
 static int                _spot_location_y                  = -1;
@@ -363,6 +367,7 @@ static int                _click_down_pos [2]               = {0, 0};
 static int                _click_up_pos [2]                 = {0, 0};
 static bool               _is_click                         = true;
 static String             _initial_ise_uuid                 = String ("");
+static String             _locale_string                    = String ("");
 static ConfigPointer      _config;
 static PanelAgent        *_panel_agent                      = 0;
 static std::vector<Ecore_Fd_Handler *> _read_handler_list;
@@ -375,6 +380,7 @@ static Ecore_Timer       *_destroy_timer                    = NULL;
 static Ecore_Timer       *_off_prepare_done_timer           = NULL;
 static Ecore_Timer       *_candidate_hide_timer             = NULL;
 static Ecore_Timer       *_ise_launch_timer                 = NULL;
+static Ecore_Timer       *_ise_hide_timer                   = NULL;
 
 static Ecore_X_Window     _ise_window                       = 0;
 static Ecore_X_Window     _app_window                       = 0;
@@ -387,6 +393,13 @@ static Ecore_File_Monitor *_osp_helper_ise_em               = NULL;
 static Ecore_File_Monitor *_osp_keyboard_ise_em             = NULL;
 static OSPEmRepository     _osp_bin_em;
 static OSPEmRepository     _osp_info_em;
+#if HAVE_PKGMGR_INFO
+static package_manager_h   pkgmgr                           = NULL;
+#endif
+
+static bool               _launch_ise_on_request            = false;
+static bool               _soft_keyboard_launched           = false;
+static bool               _focus_in                         = false;
 
 static bool               candidate_expanded                = false;
 static int                _candidate_image_count            = 0;
@@ -396,15 +409,14 @@ static int                candidate_image_height            = 38;
 static int                candidate_play_image_width_height = 19;
 
 static const int          CANDIDATE_TEXT_OFFSET             = 2;
-static const unsigned int SELECT_IME_ITEM_HEIGHT            = 114;
-static const unsigned int MAX_SELECT_IME_ITEM               = 4;
+
+static double             _app_scale                        = 1.0;
+static double             _system_scale                     = 1.0;
 
 #ifdef HAVE_MINICONTROL
 static MiniControl        input_detect_minictrl;
 static MiniControl        ise_selector_minictrl;
 #endif
-
-static Elm_Genlist_Item_Class itc;
 
 #if HAVE_TTS
 static tts_h              _tts                              = NULL;
@@ -418,6 +430,8 @@ static E_DBus_Connection     *edbus_conn;
 static E_DBus_Signal_Handler *edbus_handler;
 
 static Ecore_Event_Handler *_candidate_show_handler         = NULL;
+
+static HelperInfo         remove_helper_info;
 
 enum {
     EMOJI_IMAGE_WIDTH = 0,
@@ -441,7 +455,23 @@ struct GeometryCache
     int angle;                 /* For which angle this information is useful */
     struct rectinfo geometry;  /* Geometry information */
 };
-static struct GeometryCache _ise_reported_geometry          = {0};
+static struct GeometryCache _ise_reported_geometry          = {0, 0, {0, 0, 0, 0}};
+
+static void get_input_window (void)
+{
+    int win_ret = -1;
+    Ecore_X_Atom atom = 0;
+
+    if (_input_win == 0) {
+        atom = ecore_x_atom_get (E_PROP_DEVICEMGR_INPUTWIN);
+        win_ret = ecore_x_window_prop_window_get (ecore_x_window_root_first_get (), atom, &_input_win, 1);
+        if (_input_win == 0 || win_ret < 1) {
+            LOGW ("Input window is NULL!\n");
+        } else {
+            ecore_x_event_mask_set (_input_win, ECORE_X_EVENT_MASK_WINDOW_PROPERTY);
+        }
+    }
+}
 
 static void usb_keyboard_signal_cb (void *data, DBusMessage *msg)
 {
@@ -533,23 +563,33 @@ static void minictrl_clicked_cb (void *data, Evas_Object *o, const char *emissio
     input_detect_minictrl.destroy ();
 #endif
 
+    get_input_window ();
     if (_panel_agent->get_current_toolbar_mode () == TOOLBAR_KEYBOARD_MODE) {
         ecore_x_window_prop_card32_set (_input_win, ecore_x_atom_get (PROP_X_EXT_KEYBOARD_EXIST), &val, 1);
     }
 }
 
-static void destroy_ise_selector ()
+static void ise_selected_cb (unsigned int index)
 {
-    if (_ise_selector_radio_grp) {
-         evas_object_del (_ise_selector_radio_grp);
-         _ise_selector_radio_grp = NULL;
-    }
-
-    if (_ise_selector) {
-        evas_object_del (_ise_selector);
-        _ise_selector = NULL;
-    }
+    set_active_ise (_uuids[index], _soft_keyboard_launched);
+    _ise_launch_timer = ecore_timer_add (ISE_LAUNCH_TIMEOUT, ise_launch_timeout, NULL);
 }
+
+static void ise_selector_deleted_cb ()
+{
+    elm_config_scale_set (_app_scale);
+}
+
+#ifdef HAVE_MINICONTROL
+static void ise_selector_minictrl_clicked_cb (void *data, Evas_Object *o, const char *emission, const char *source)
+{
+    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
+
+    elm_config_scale_set (_system_scale);
+
+    ise_selector_create (get_ise_index (_panel_agent->get_current_helper_uuid ()), efl_get_app_window (), ise_selected_cb, ise_selector_deleted_cb);
+}
+#endif
 
 static Eina_Bool delete_ise_launch_timer ()
 {
@@ -568,148 +608,9 @@ static Eina_Bool ise_launch_timeout (void *data)
 
     LOGW ("ISE launching timeout\n");
 
-    destroy_ise_selector ();
+    ise_selector_destroy ();
     return ECORE_CALLBACK_CANCEL;
 }
-
-static char *gl_ise_name_get (void *data, Evas_Object *obj, const char *part)
-{
-    int index = (int) data;
-    if (index < 0 || index >= (int)_names.size ())
-        return NULL;
-
-    return strdup (_names[index].c_str ());
-}
-
-static Evas_Object *gl_icon_get (void *data, Evas_Object *obj, const char *part)
-{
-    unsigned int index = (unsigned int)(data);
-
-    if (index >= _uuids.size ())
-        return NULL;
-
-    Evas_Object *radio = elm_radio_add (obj);
-    elm_radio_state_value_set (radio, index);
-    if (_ise_selector_radio_grp == NULL)
-        _ise_selector_radio_grp = elm_radio_add (obj);
-    elm_radio_group_add (radio, _ise_selector_radio_grp);
-    evas_object_show (radio);
-
-    if (get_ise_index (_panel_agent->get_current_helper_uuid ()) == index)
-        elm_radio_value_set (_ise_selector_radio_grp, index);
-
-    return radio;
-}
-
-static void gl_ise_selected_cb (void *data, Evas_Object *obj, void *event_info)
-{
-    int index = (int)(data);
-
-    if (index < 0 || index >= (int)_uuids.size ())
-        return;
-
-    if (_ise_selector_radio_grp)
-        elm_radio_value_set (_ise_selector_radio_grp, index);
-
-    if (TOOLBAR_HELPER_MODE == _panel_agent->get_current_toolbar_mode ()) {
-        if (_uuids[index] == _panel_agent->get_current_helper_uuid ()) {
-            destroy_ise_selector ();
-            return;
-        }
-    }
-
-    LOGD ("Set active ISE : %s\n", _uuids[index].c_str ());
-
-    set_active_ise (_uuids[index]);
-    _ise_launch_timer = ecore_timer_add (ISE_LAUNCH_TIMEOUT, ise_launch_timeout, NULL);
-}
-
-static void ise_selector_block_clicked_cb (void *data, Evas_Object *obj, void *event_info)
-{
-    destroy_ise_selector ();
-}
-
-static void ise_selector_popup_del_cb (void *data, Evas *evas, Evas_Object *obj, void *event_info)
-{
-    LOGD ("IME Selector is deleted\n");
-
-    if (_ise_selector_radio_grp) {
-         evas_object_del (_ise_selector_radio_grp);
-         _ise_selector_radio_grp = NULL;
-    }
-
-    _ise_selector = NULL;
-}
-
-static void
-ise_selector_focus_out_cb (void *data, Evas *e, void *event_info)
-{
-    LOGD ("ISE selector window focus out\n");
-    destroy_ise_selector ();
-}
-
-#ifdef HAVE_MINICONTROL
-static void ise_selector_minictrl_clicked_cb (void *data, Evas_Object *o, const char *emission, const char *source)
-{
-    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
-
-    unsigned int index;
-    Evas_Object *genlist;
-    Evas_Object *box;
-    int height;
-    unsigned int item_count;
-
-    destroy_ise_selector ();
-
-    /* Create center popup */
-    _ise_selector = center_popup_add (NULL, "IMESelector", "IMESelector");
-    evas_object_event_callback_add (_ise_selector, EVAS_CALLBACK_DEL, ise_selector_popup_del_cb, NULL);
-    ea_object_event_callback_add (_ise_selector, EA_CALLBACK_BACK, ea_popup_back_cb, NULL);
-    evas_object_smart_callback_add (_ise_selector, "block,clicked", ise_selector_block_clicked_cb, NULL);
-    elm_object_part_text_set (_ise_selector, "title,text", _("Select input method"));
-
-    /* Create box for adjusting the height of list */
-    box = elm_box_add (_ise_selector);
-    evas_object_size_hint_weight_set (box, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
-
-    itc.item_style = "1text.1icon/popup";
-    itc.func.text_get = gl_ise_name_get;
-    itc.func.content_get = gl_icon_get;
-    itc.func.state_get = NULL;
-    itc.func.del = NULL;
-
-    genlist = elm_genlist_add (box);
-    evas_object_size_hint_weight_set (genlist, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
-    evas_object_size_hint_align_set (genlist, EVAS_HINT_FILL, EVAS_HINT_FILL);
-
-    for (index = 0; index < _uuids.size (); index++) {
-        if (_modes[index] ==  _panel_agent->get_current_toolbar_mode ())
-            elm_genlist_item_append (genlist, &itc, (void *) index, NULL, ELM_GENLIST_ITEM_NONE, gl_ise_selected_cb, (void *)index);
-    }
-
-    elm_box_pack_end (box, genlist);
-    evas_object_show (genlist);
-
-    /* The height of popup being adjusted by application here based on app requirement */
-    item_count = elm_genlist_items_count (genlist);
-
-    if (item_count > MAX_SELECT_IME_ITEM)
-        height = SELECT_IME_ITEM_HEIGHT * MAX_SELECT_IME_ITEM;
-    else
-        height = SELECT_IME_ITEM_HEIGHT*item_count;
-
-    evas_object_size_hint_min_set (box, 618, height);
-    evas_object_show (box);
-
-    elm_object_content_set (_ise_selector, box);
-    evas_object_show (_ise_selector);
-
-    Evas_Object *center_popup_win = center_popup_win_get (_ise_selector);
-    evas_event_callback_add (evas_object_evas_get (center_popup_win), EVAS_CALLBACK_CANVAS_FOCUS_OUT, ise_selector_focus_out_cb, NULL);
-
-    efl_set_transient_for_app_window (elm_win_xwindow_get (center_popup_win));
-}
-#endif
 
 static bool tokenize_tag (const String& str, struct image *image_token)
 {
@@ -722,6 +623,9 @@ static bool tokenize_tag (const String& str, struct image *image_token)
     char **tag_str = NULL;
     int i = 0;
     tag_str = eina_str_split (str.c_str (), "\u3013", 0);
+
+    if (!tag_str)
+        return false;
 
     for (i = 0; tag_str [i]; i++) {
         if (i == 0) {
@@ -744,12 +648,10 @@ static bool tokenize_tag (const String& str, struct image *image_token)
         }
     }
 
-    if (tag_str) {
-        if (tag_str[0])
-            free (tag_str[0]);
+    if (tag_str[0])
+        free (tag_str[0]);
 
-        free (tag_str);
-    }
+    free (tag_str);
 
     return true;
 }
@@ -790,131 +692,133 @@ static Evas_Object* get_candidate (const String& str, Evas_Object *parent, int *
         button_width = 0;
 
     splited_string = eina_str_split (str.c_str (), "\uE000", 0);
-    for (i = 0; splited_string [i]; i++) {
-        if (candidate_is_long)
-            break;
-        sub_splited_string = eina_str_split (splited_string[i], "\uE001", 0);
-        for (j = 0; sub_splited_string [j]; j++) {
+    if (splited_string) {
+        for (i = 0; splited_string [i]; i++) {
             if (candidate_is_long)
                 break;
-            tokenize_result = tokenize_tag (sub_splited_string[j], &image_data);
-            if (tokenize_result && _candidate_image_count < SCIM_LOOKUP_TABLE_MAX_PAGESIZE) {
-                _candidate_image [_candidate_image_count] = elm_image_add (parent);
-                snprintf (image_key, sizeof (image_key), "%d",_candidate_image_count);
-                elm_image_file_set (_candidate_image [_candidate_image_count], image_data.path.c_str (), image_key);
-                elm_image_animated_set (_candidate_image [_candidate_image_count], EINA_TRUE);
-                elm_image_animated_play_set (_candidate_image [_candidate_image_count], EINA_TRUE);
-                elm_image_object_size_get (_candidate_image [_candidate_image_count], &image_get_width, &image_get_height);
-                LOGD ("image_path=%s, key=%s\n", image_data.path.c_str (), image_key);
+            sub_splited_string = eina_str_split (splited_string [i], "\uE001", 0);
+            if (sub_splited_string) {
+                for (j = 0; sub_splited_string [j]; j++) {
+                    if (candidate_is_long)
+                        break;
+                    tokenize_result = tokenize_tag (sub_splited_string [j], &image_data);
+                    if (tokenize_result && _candidate_image_count < SCIM_LOOKUP_TABLE_MAX_PAGESIZE) {
+                        _candidate_image [_candidate_image_count] = elm_image_add (parent);
+                        snprintf (image_key, sizeof (image_key), "%d",_candidate_image_count);
+                        elm_image_file_set (_candidate_image [_candidate_image_count], image_data.path.c_str (), image_key);
+                        elm_image_animated_set (_candidate_image [_candidate_image_count], EINA_TRUE);
+                        elm_image_animated_play_set (_candidate_image [_candidate_image_count], EINA_TRUE);
+                        elm_image_object_size_get (_candidate_image [_candidate_image_count], &image_get_width, &image_get_height);
+                        LOGD ("image_path=%s, key=%s\n", image_data.path.c_str (), image_key);
 
-                if (image_get_height > image_get_width)
-                    image_rate = ((double)candidate_image_height / (double)image_get_width);
-                else
-                    image_rate = ((double)candidate_image_height / (double)image_get_height);
+                        if (image_get_height > image_get_width)
+                            image_rate = ((double)candidate_image_height / (double)image_get_width);
+                        else
+                            image_rate = ((double)candidate_image_height / (double)image_get_height);
 
-                image_width = (int)((double)image_get_width * image_rate);
-                image_height = candidate_image_height;
+                        image_width = (int)((double)image_get_width * image_rate);
+                        image_height = candidate_image_height;
 
-                if (_candidate_angle == 90 || _candidate_angle == 270)
-                    max_width = _candidate_land_width - (_blank_width + object_width + button_width + (2 * CANDIDATE_TEXT_OFFSET));
-                else
-                    max_width = _candidate_port_width - (_blank_width + object_width + button_width + (2 * CANDIDATE_TEXT_OFFSET));
+                        if (_candidate_angle == 90 || _candidate_angle == 270)
+                            max_width = _candidate_land_width - (_blank_width + object_width + button_width + (2 * CANDIDATE_TEXT_OFFSET));
+                        else
+                            max_width = _candidate_port_width - (_blank_width + object_width + button_width + (2 * CANDIDATE_TEXT_OFFSET));
 
-                if (image_width > max_width) {
-                    Evas_Object *candidate_end = edje_object_add (evas_object_evas_get (parent));
-                    edje_object_file_set (candidate_end, _candidate_edje_file.c_str (), _candidate_name.c_str ());
-                    evas_object_show (candidate_end);
-                    edje_object_part_text_set (candidate_end, "candidate", "...");
-                    edje_object_scale_set (_candidate_text [_candidate_text_count], _height_rate);
+                        if (image_width > max_width) {
+                            Evas_Object *candidate_end = edje_object_add (evas_object_evas_get (parent));
+                            edje_object_file_set (candidate_end, _candidate_edje_file.c_str (), _candidate_name.c_str ());
+                            evas_object_show (candidate_end);
+                            edje_object_part_text_set (candidate_end, "candidate", "...");
+                            edje_object_scale_set (_candidate_text [_candidate_text_count], _height_rate);
 
-                    text_width = max_width;
-                    evas_object_size_hint_min_set (candidate_end, text_width + (2 * CANDIDATE_TEXT_OFFSET), _item_min_height);
-                    if (HighLight || SetBack) {
-                        set_highlight_color (candidate_end, ForeGround, BackGround, SetBack);
+                            text_width = max_width;
+                            evas_object_size_hint_min_set (candidate_end, text_width + (2 * CANDIDATE_TEXT_OFFSET), _item_min_height);
+                            if (HighLight || SetBack) {
+                                set_highlight_color (candidate_end, ForeGround, BackGround, SetBack);
+                            }
+                            elm_table_pack (candidate_object_table, candidate_end, object_width, 0, text_width + (2 * CANDIDATE_TEXT_OFFSET), _candidate_font_size);
+                            object_width += (text_width + (2 * CANDIDATE_TEXT_OFFSET));
+
+                            if (_candidate_image [_candidate_image_count]) {
+                                evas_object_del (_candidate_image [_candidate_image_count]);
+                                _candidate_image [_candidate_image_count] = NULL;
+                            }
+                            candidate_is_long = true;
+                            break;
+                        }
+
+                        evas_object_resize (_candidate_image [_candidate_image_count], image_width, image_height);
+                        evas_object_show (_candidate_image [_candidate_image_count]);
+                        evas_object_size_hint_min_set (_candidate_image [_candidate_image_count], image_width, image_height);
+
+                        elm_table_pack (candidate_object_table, _candidate_image [_candidate_image_count], object_width, 1, image_width, image_height);
+                        object_width += image_width;
+                        _candidate_image_count++;
+
+                        if (image_data.emoji_option [EMOJI_IMAGE_POP_FLAG] == 1 && image_width > 0 &&  _candidate_pop_image_count < SCIM_LOOKUP_TABLE_MAX_PAGESIZE) {
+                            _candidate_pop_image [_candidate_pop_image_count] = elm_image_add (parent);
+                            elm_image_file_set (_candidate_pop_image [_candidate_pop_image_count], ISF_POP_PLAY_ICON_FILE, image_key);
+                            evas_object_resize (_candidate_pop_image [_candidate_pop_image_count], candidate_play_image_width_height, candidate_play_image_width_height);
+                            evas_object_show (_candidate_pop_image [_candidate_pop_image_count]);
+                            evas_object_size_hint_min_set (_candidate_pop_image [_candidate_pop_image_count], candidate_play_image_width_height, candidate_play_image_width_height);
+
+                            elm_table_pack (candidate_object_table, _candidate_pop_image [_candidate_pop_image_count],
+                                    object_width - candidate_play_image_width_height, image_height - candidate_play_image_width_height - 2,
+                                    candidate_play_image_width_height, candidate_play_image_width_height);
+
+                            _candidate_pop_image_count++;
+                        }
+
+                    } else if (strlen (sub_splited_string [j]) > 0 && _candidate_text_count < SCIM_LOOKUP_TABLE_MAX_PAGESIZE) {
+                        _candidate_text [_candidate_text_count] = edje_object_add (evas_object_evas_get (parent));
+                        edje_object_file_set (_candidate_text [_candidate_text_count], _candidate_edje_file.c_str (), _candidate_name.c_str ());
+                        evas_object_show (_candidate_text [_candidate_text_count]);
+                        edje_object_part_text_set (_candidate_text [_candidate_text_count], "candidate", sub_splited_string [j]);
+                        edje_object_text_class_set (_candidate_text [_candidate_text_count], "tizen",
+                                _candidate_font_name.c_str (), _candidate_font_size);
+                        evas_object_text_text_set (_tmp_candidate_text, sub_splited_string [j]);
+                        evas_object_geometry_get (_tmp_candidate_text, NULL, NULL, &text_width, NULL);
+
+                        if (_candidate_angle == 90 || _candidate_angle == 270)
+                            max_width = _candidate_land_width - (_blank_width + object_width + button_width + (2 * CANDIDATE_TEXT_OFFSET));
+                        else
+                            max_width = _candidate_port_width - (_blank_width + object_width + button_width + (2 * CANDIDATE_TEXT_OFFSET));
+
+                        if (text_width > max_width) {
+                            candidate_is_long = true;
+                            /* In order to avoid overlap issue, calculate show_string */
+                            String show_string = String (sub_splited_string [j]);
+                            int    show_length = text_width;
+                            while (show_length > max_width && show_string.length () > 1) {
+                                show_string = show_string.substr (0, show_string.length () - 1);
+                                evas_object_text_text_set (_tmp_candidate_text, (show_string + String ("...")).c_str ());
+                                evas_object_geometry_get (_tmp_candidate_text, NULL, NULL, &show_length, NULL);
+                            }
+                            edje_object_part_text_set (_candidate_text [_candidate_text_count], "candidate", (show_string + String ("...")).c_str ());
+                            text_width = max_width;
+                        }
+
+                        evas_object_size_hint_min_set (_candidate_text [_candidate_text_count], text_width + (2 * CANDIDATE_TEXT_OFFSET), _item_min_height);
+                        if (HighLight || SetBack) {
+                            set_highlight_color (_candidate_text [_candidate_text_count], ForeGround, BackGround, SetBack);
+                        }
+                        elm_table_pack (candidate_object_table, _candidate_text [_candidate_text_count], object_width, 0, text_width + (2 * CANDIDATE_TEXT_OFFSET), _candidate_font_size);
+                        object_width += (text_width + (2 * CANDIDATE_TEXT_OFFSET));
+                        _candidate_text_count++;
                     }
-                    elm_table_pack (candidate_object_table, candidate_end, object_width, 0, text_width + (2 * CANDIDATE_TEXT_OFFSET), _candidate_font_size);
-                    object_width += (text_width + (2 * CANDIDATE_TEXT_OFFSET));
-
-                    if (_candidate_image [_candidate_image_count]) {
-                        evas_object_del (_candidate_image [_candidate_image_count]);
-                        _candidate_image [_candidate_image_count] = NULL;
-                    }
-                    candidate_is_long = true;
-                    break;
                 }
-
-                evas_object_resize (_candidate_image [_candidate_image_count], image_width, image_height);
-                evas_object_show (_candidate_image [_candidate_image_count]);
-                evas_object_size_hint_min_set (_candidate_image [_candidate_image_count], image_width, image_height);
-
-                elm_table_pack (candidate_object_table, _candidate_image [_candidate_image_count], object_width, 1, image_width, image_height);
-                object_width += image_width;
-                _candidate_image_count++;
-
-                if (image_data.emoji_option [EMOJI_IMAGE_POP_FLAG] == 1 && image_width > 0 &&  _candidate_pop_image_count < SCIM_LOOKUP_TABLE_MAX_PAGESIZE) {
-                    _candidate_pop_image [_candidate_pop_image_count] = elm_image_add (parent);
-                    elm_image_file_set (_candidate_pop_image [_candidate_pop_image_count], ISF_POP_PLAY_ICON_FILE, image_key);
-                    evas_object_resize (_candidate_pop_image [_candidate_pop_image_count], candidate_play_image_width_height, candidate_play_image_width_height);
-                    evas_object_show (_candidate_pop_image [_candidate_pop_image_count]);
-                    evas_object_size_hint_min_set (_candidate_pop_image [_candidate_pop_image_count], candidate_play_image_width_height, candidate_play_image_width_height);
-
-                    elm_table_pack (candidate_object_table, _candidate_pop_image [_candidate_pop_image_count],
-                            object_width - candidate_play_image_width_height, image_height - candidate_play_image_width_height - 2,
-                            candidate_play_image_width_height, candidate_play_image_width_height);
-
-                    _candidate_pop_image_count++;
-                }
-
-            } else if (strlen (sub_splited_string [j]) > 0 && _candidate_text_count < SCIM_LOOKUP_TABLE_MAX_PAGESIZE) {
-                _candidate_text [_candidate_text_count] = edje_object_add (evas_object_evas_get (parent));
-                edje_object_file_set (_candidate_text [_candidate_text_count], _candidate_edje_file.c_str (), _candidate_name.c_str ());
-                evas_object_show (_candidate_text [_candidate_text_count]);
-                edje_object_part_text_set (_candidate_text [_candidate_text_count], "candidate", sub_splited_string [j]);
-                edje_object_text_class_set (_candidate_text [_candidate_text_count], "tizen",
-                    _candidate_font_name.c_str (), _candidate_font_size);
-                evas_object_text_text_set (_tmp_candidate_text, sub_splited_string[j]);
-                evas_object_geometry_get (_tmp_candidate_text, NULL, NULL, &text_width, NULL);
-
-                if (_candidate_angle == 90 || _candidate_angle == 270)
-                    max_width = _candidate_land_width - (_blank_width + object_width + button_width + (2 * CANDIDATE_TEXT_OFFSET));
-                else
-                    max_width = _candidate_port_width - (_blank_width + object_width + button_width + (2 * CANDIDATE_TEXT_OFFSET));
-
-                if (text_width > max_width) {
-                    candidate_is_long = true;
-                    /* In order to avoid overlap issue, calculate show_string */
-                    String show_string = String (sub_splited_string [j]);
-                    int    show_length = text_width;
-                    while (show_length > max_width && show_string.length () > 1) {
-                        show_string = show_string.substr (0, show_string.length () - 1);
-                        evas_object_text_text_set (_tmp_candidate_text, (show_string + String ("...")).c_str ());
-                        evas_object_geometry_get (_tmp_candidate_text, NULL, NULL, &show_length, NULL);
-                    }
-                    edje_object_part_text_set (_candidate_text [_candidate_text_count], "candidate", (show_string + String ("...")).c_str ());
-                    text_width = max_width;
-                }
-
-                evas_object_size_hint_min_set (_candidate_text [_candidate_text_count], text_width + (2 * CANDIDATE_TEXT_OFFSET), _item_min_height);
-                if (HighLight || SetBack) {
-                    set_highlight_color (_candidate_text [_candidate_text_count], ForeGround, BackGround, SetBack);
-                }
-                elm_table_pack (candidate_object_table, _candidate_text[_candidate_text_count], object_width, 0, text_width + (2 * CANDIDATE_TEXT_OFFSET), _candidate_font_size);
-                object_width += (text_width + (2 * CANDIDATE_TEXT_OFFSET));
-                _candidate_text_count++;
             }
         }
-    }
 
-    if (splited_string) {
-        if (splited_string[0])
-            free (splited_string[0]);
+        if (splited_string [0])
+            free (splited_string [0]);
 
         free (splited_string);
     }
 
     if (sub_splited_string) {
-        if (sub_splited_string[0])
-            free (sub_splited_string[0]);
+        if (sub_splited_string [0])
+            free (sub_splited_string [0]);
 
         free (sub_splited_string);
     }
@@ -1130,6 +1034,144 @@ static unsigned int get_ise_index (const String uuid)
     return index;
 }
 
+#if HAVE_PKGMGR_INFO
+static bool
+app_info_cb (package_info_app_component_type_e comp_type, const char *app_id, void *user_data)
+{
+    HelperInfo *helper_info = (HelperInfo *)user_data;
+    pkgmgrinfo_appinfo_h appinfo_handle = NULL;
+    bool exist = false;
+    if (!helper_info) return false;
+
+    if (pkgmgrinfo_appinfo_get_appinfo (app_id, &appinfo_handle) != PMINFO_R_OK)
+        return true;
+
+    if (!appinfo_handle)
+        return true;
+
+    pkgmgrinfo_appinfo_is_category_exist (appinfo_handle, "http://tizen.org/category/ime", &exist);
+
+    if (exist) {
+        /* FIXME : need to use generated UUID */
+        helper_info->uuid = String (app_id);
+    }
+
+    pkgmgrinfo_appinfo_destroy_appinfo (appinfo_handle);
+
+    return true;
+}
+
+static bool get_helper_ise_info (const char *type, const char *package, HelperInfo *helper_info)
+{
+    package_info_h pkg_info = NULL;
+    char *pkg_label = NULL;
+    char *pkg_icon_path = NULL;
+    bool result = false;
+
+    if (!type)
+        return false;
+
+    if (strncmp (type, "wgt", 3) != 0)
+        return false;
+
+    if (package_info_create (package, &pkg_info) != PACKAGE_MANAGER_ERROR_NONE)
+        return false;
+
+    if (!pkg_info)
+        return false;
+
+    package_info_foreach_app_from_package (pkg_info, PACKAGE_INFO_UIAPP, app_info_cb, helper_info);
+
+    if (helper_info->uuid.length ()  > 0) {
+        if (package_info_get_label (pkg_info, &pkg_label) == 0)
+            helper_info->name = (pkg_label ? scim::String (pkg_label) : scim::String (""));
+
+        if (package_info_get_icon (pkg_info, &pkg_icon_path) == 0)
+            helper_info->icon = (pkg_icon_path ? scim::String (pkg_icon_path) : scim::String (""));
+
+        helper_info->option = SCIM_HELPER_STAND_ALONE | SCIM_HELPER_NEED_SCREEN_INFO | SCIM_HELPER_NEED_SPOT_LOCATION_INFO | SCIM_HELPER_AUTO_RESTART;
+
+        result = true;
+    }
+
+    if (pkg_label) {
+        free (pkg_label);
+        pkg_label = NULL;
+    }
+
+    if (pkg_icon_path) {
+        free (pkg_icon_path);
+        pkg_icon_path = NULL;
+    }
+
+    package_info_destroy (pkg_info);
+
+    return result;
+}
+
+static void _package_manager_event_cb (const char *type, const char *package, package_manager_event_type_e event_type, package_manager_event_state_e event_state, int progress, package_manager_error_e error, void *user_data)
+{
+    if (!package || !type) return;
+
+    if (event_type == PACKAGE_MANAGER_EVENT_TYPE_INSTALL ||
+        event_type == PACKAGE_MANAGER_EVENT_TYPE_UPDATE) {
+        HelperInfo helper_info;
+
+        if (event_state != PACKAGE_MANAGER_EVENT_STATE_COMPLETED)
+            return;
+
+        if (get_helper_ise_info (type, package, &helper_info)) {
+            /* update engine list */
+            if (isf_remove_helper_ise (helper_info.uuid.c_str (), _config))
+                LOGD ("remove helper info. uuid : %s\n", helper_info.uuid.c_str ());
+
+            if (isf_add_helper_ise (helper_info, String ("ise-web-helper-agent"))) {
+                LOGD ("add helper info. uuid : %s\n", helper_info.uuid.c_str ());
+                _panel_agent->update_ise_list (_uuids);
+            }
+        }
+    } else if (event_type == PACKAGE_MANAGER_EVENT_TYPE_UNINSTALL) {
+        switch (event_state) {
+            case PACKAGE_MANAGER_EVENT_STATE_STARTED:
+                /* get package information and check whether the type of package is Web IME */
+                /* In COMPLETED status, it is impossible to get the package information,
+                   therefore it is necessary to get package information in the START status in advance */
+                if (get_helper_ise_info (type, package, &remove_helper_info)) {
+                    LOGD ("'%s' package has been uninstalled", remove_helper_info.name.c_str ());
+                }
+                break;
+            case PACKAGE_MANAGER_EVENT_STATE_COMPLETED:
+                if (remove_helper_info.uuid.length () == 0)
+                    return;
+
+                /* update engine list */
+                if (isf_remove_helper_ise (remove_helper_info.uuid.c_str (), _config)) {
+                    LOGD ("Completed to remove IME uuid : %s\n", remove_helper_info.uuid.c_str ());
+
+                    _panel_agent->update_ise_list (_uuids);
+
+                    String uuid  = scim_global_config_read (String (SCIM_GLOBAL_CONFIG_DEFAULT_ISE_UUID), _initial_ise_uuid);
+                    if (uuid == remove_helper_info.uuid) {
+                        /* switching to initial ISE */
+                        if (_soft_keyboard_launched) {
+                            _panel_agent->hide_helper (uuid);
+                            _panel_agent->stop_helper (uuid);
+                            _panel_agent->start_helper (_initial_ise_uuid);
+                        }
+                    }
+                }
+                remove_helper_info.uuid = String ("");
+                break;
+            case PACKAGE_MANAGER_EVENT_STATE_FAILED:
+                remove_helper_info.uuid = String ("");
+                break;
+            default:
+                break;
+        }
+    }
+}
+#endif
+
 /**
  * @brief Get ISE module file path.
  *
@@ -1186,7 +1228,12 @@ static int osp_module_list_get (std::vector <String> &ops_module_names)
 
         DIR *dir = opendir (path.c_str ());
         if (dir) {
-            struct dirent *file = readdir (dir);
+            struct dirent direntp, *result = NULL;
+            struct dirent *file = NULL;
+
+            if (readdir_r (dir, &direntp, &result) == 0 && result){
+                file = result;
+            }
             while (file) {
                 struct stat filestat;
                 String absfn = path + String (SCIM_PATH_DELIM_STRING) + file->d_name;
@@ -1198,7 +1245,9 @@ static int osp_module_list_get (std::vector <String> &ops_module_names)
                     ops_module_names.push_back (link_name.substr (0, link_name.find_last_of ('.')));
                 }
 
-                file = readdir (dir);
+                if (readdir_r (dir, &direntp, &file) != 0){
+                    break;
+                }
             }
             closedir (dir);
         }
@@ -1217,7 +1266,12 @@ static String osp_module_name_get (const String &path)
     String bin_path = path + String ("/bin");
     DIR *dir = opendir (bin_path.c_str ());
     if (dir) {
-        struct dirent *file = readdir (dir);
+        struct dirent direntp, *result = NULL;
+        struct dirent *file = NULL;
+
+        if (readdir_r (dir, &direntp, &result) == 0 && result){
+            file = result;
+        }
         while (file) {
             struct stat filestat;
             String absfn = bin_path + String (SCIM_PATH_DELIM_STRING) + file->d_name;
@@ -1233,7 +1287,9 @@ static String osp_module_name_get (const String &path)
                 }
             }
 
-            file = readdir (dir);
+            if (readdir_r (dir, &direntp, &file) != 0){
+                break;
+            }
         }
         closedir (dir);
     } else {
@@ -1271,10 +1327,12 @@ static void osp_engine_dir_monitor_cb (void *data, Ecore_File_Monitor *em, Ecore
                 if (_modes[index] == TOOLBAR_HELPER_MODE) {
                     String active_module = get_module_file_path (_module_names[index], String ("Helper"));
                     if (String (module_path) == active_module) {
-                        /* Restart helper ISE */
-                        _panel_agent->hide_helper (uuid);
-                        _panel_agent->stop_helper (uuid);
-                        _panel_agent->start_helper (uuid);
+                        if (_soft_keyboard_launched) {
+                            /* Restart helper ISE */
+                            _panel_agent->hide_helper (uuid);
+                            _panel_agent->stop_helper (uuid);
+                            _panel_agent->start_helper (uuid);
+                        }
                     }
                 }
             }
@@ -1295,7 +1353,8 @@ static void add_monitor_for_osp_module (const String &module_name)
             LOGD ("add %s", module_name.c_str ());
         }
     } else {
-        LOGW ("can't access : %s, reason : %s\n", exe_path.c_str (), strerror (errno));
+        char buf_err[256];
+        LOGW ("can't access : %s, reason : %s\n", exe_path.c_str (), strerror_r (errno, buf_err, sizeof (buf_err)));
     }
 
     if (stat (manifest_path.c_str (), &filestat) == 0) {
@@ -1303,7 +1362,8 @@ static void add_monitor_for_osp_module (const String &module_name)
             _osp_info_em[module_name] = ecore_file_monitor_add (manifest_path.c_str (), osp_engine_dir_monitor_cb, NULL);
         }
     } else {
-        LOGW ("can't access : %s, reason : %s\n", manifest_path.c_str (), strerror (errno));
+        char buf_err[256];
+        LOGW ("can't access : %s, reason : %s\n", manifest_path.c_str (), strerror_r (errno, buf_err, sizeof (buf_err)));
     }
 }
 
@@ -1351,7 +1411,7 @@ static void ise_file_monitor_cb (void *data, Ecore_File_Monitor *em, Ecore_File_
         if (event == ECORE_FILE_EVENT_DELETED_FILE) {
             /* Update ISE list */
             std::vector<String> list;
-            slot_get_ise_list (list);
+            update_ise_list (list);
 
             /* delete osp monitor */
             OSPEmRepository::iterator iter = _osp_bin_em.find (module_name);
@@ -1375,10 +1435,12 @@ static void ise_file_monitor_cb (void *data, Ecore_File_Monitor *em, Ecore_File_
                              String (SCIM_PATH_DELIM_STRING) + _module_names[index] + String (".so");
 
             if (String (path) == strFile && _modes[index] == TOOLBAR_HELPER_MODE) {
-                /* Restart helper ISE */
-                _panel_agent->hide_helper (uuid);
-                _panel_agent->stop_helper (uuid);
-                _panel_agent->start_helper (uuid);
+                if (_soft_keyboard_launched) {
+                    /* Restart helper ISE */
+                    _panel_agent->hide_helper (uuid);
+                    _panel_agent->stop_helper (uuid);
+                    _panel_agent->start_helper (uuid);
+                }
             }
 
             /* add osp monitor */
@@ -1427,6 +1489,13 @@ static void delete_ise_directory_em (void) {
     }
     _osp_bin_em.clear ();
     _osp_info_em.clear ();
+
+#if HAVE_PKGMGR_INFO
+    if (pkgmgr) {
+        package_manager_destroy (pkgmgr);
+        pkgmgr = NULL;
+    }
+#endif
 }
 
 /**
@@ -1481,6 +1550,20 @@ static void add_ise_directory_em (void) {
     }
 
     add_monitor_for_all_osp_modules ();
+
+#if HAVE_PKGMGR_INFO
+    if (!pkgmgr) {
+        int ret = package_manager_create (&pkgmgr);
+        if (ret == 0) {
+            ret = package_manager_set_event_cb (pkgmgr, _package_manager_event_cb, NULL);
+            if (ret != 0)
+                LOGW ("Failed to call package_manager_set_event_cb(). ret : %d\n", ret);
+        }
+        else {
+            LOGW ("Failed to call package_manager_create(). ret : %d\n", ret);
+        }
+    }
+#endif
 }
 
 /**
@@ -1501,6 +1584,7 @@ static bool set_keyboard_ise (const String &uuid, const String &module_name)
         String pre_uuid = _panel_agent->get_current_helper_uuid ();
         _panel_agent->hide_helper (pre_uuid);
         _panel_agent->stop_helper (pre_uuid);
+        _soft_keyboard_launched = false;
     } else if (TOOLBAR_KEYBOARD_MODE == mode) {
         uint32 kbd_option = 0;
         String kbd_uuid, kbd_name;
@@ -1522,19 +1606,20 @@ static bool set_keyboard_ise (const String &uuid, const String &module_name)
  *
  * @param uuid The helper ISE's uuid.
  * @param module_name The helper ISE's module name.
+ * @param launch_ise The flag for launching helper ISE.
  *
  * @return false if helper ISE change is failed, otherwise return true.
  */
-static bool set_helper_ise (const String &uuid, const String &module_name)
+static bool set_helper_ise (const String &uuid, const String &module_name, bool launch_ise)
 {
     SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
 
     TOOLBAR_MODE_T mode = _panel_agent->get_current_toolbar_mode ();
     String pre_uuid = _panel_agent->get_current_helper_uuid ();
-    if (pre_uuid == uuid)
+    if (pre_uuid == uuid && _soft_keyboard_launched)
         return false;
 
-    if (TOOLBAR_HELPER_MODE == mode) {
+    if (TOOLBAR_HELPER_MODE == mode && pre_uuid.length () > 0 && _soft_keyboard_launched) {
         _panel_agent->hide_helper (pre_uuid);
         _panel_agent->stop_helper (pre_uuid);
         char buf[256] = {0};
@@ -1543,12 +1628,15 @@ static bool set_helper_ise (const String &uuid, const String &module_name)
         isf_save_log (buf);
     }
 
-    char buf[256] = {0};
-    snprintf (buf, sizeof (buf), "time:%ld  pid:%d  %s  %s  Start helper (%s)\n",
-        time (0), getpid (), __FILE__, __func__, uuid.c_str ());
-    isf_save_log (buf);
+    if (launch_ise) {
+        char buf[256] = {0};
+        snprintf (buf, sizeof (buf), "time:%ld  pid:%d  %s  %s  Start helper (%s)\n",
+            time (0), getpid (), __FILE__, __func__, uuid.c_str ());
+        isf_save_log (buf);
 
-    _panel_agent->start_helper (uuid);
+        if (_panel_agent->start_helper (uuid))
+            _soft_keyboard_launched = true;
+    }
     _config->write (String (SCIM_CONFIG_DEFAULT_HELPER_ISE), uuid);
 
     return true;
@@ -1558,10 +1646,11 @@ static bool set_helper_ise (const String &uuid, const String &module_name)
  * @brief Set active ISE.
  *
  * @param uuid The ISE's uuid.
+ * @param launch_ise The flag for launching helper ISE.
  *
  * @return false if ISE change is failed, otherwise return true.
  */
-static bool set_active_ise (const String &uuid)
+static bool set_active_ise (const String &uuid, bool launch_ise)
 {
     SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
     char buf[256] = {0};
@@ -1579,7 +1668,7 @@ static bool set_active_ise (const String &uuid)
             if (TOOLBAR_KEYBOARD_MODE == _modes[i])
                 ise_changed = set_keyboard_ise (_uuids[i], _module_names[i]);
             else if (TOOLBAR_HELPER_MODE == _modes[i])
-                ise_changed = set_helper_ise (_uuids[i], _module_names[i]);
+                ise_changed = set_helper_ise (_uuids[i], _module_names[i], launch_ise);
             _panel_agent->set_current_toolbar_mode (_modes[i]);
             if (ise_changed) {
                 _panel_agent->set_current_helper_option (_options[i]);
@@ -1598,6 +1687,8 @@ static bool set_active_ise (const String &uuid)
                 _config->flush ();
                 _config->reload ();
                 _panel_agent->reload_config ();
+
+                vconf_set_str (VCONFKEY_ISF_ACTIVE_KEYBOARD_UUID, uuid.c_str ());
             }
 
             return true;
@@ -1619,6 +1710,7 @@ static void load_config (void)
         bool shared_ise = _config->read (String (SCIM_CONFIG_FRONTEND_SHARED_INPUT_METHOD), false);
         _panel_agent->set_should_shared_ise (shared_ise);
     }
+    _launch_ise_on_request = scim_global_config_read (String (SCIM_GLOBAL_CONFIG_LAUNCH_ISE_ON_REQUEST), _launch_ise_on_request);
 
     isf_load_ise_information (ALL_ISE, _config);
 }
@@ -2661,7 +2753,7 @@ static void ui_tts_focus_rect_show (int x, int y, int w, int h)
         return;
 
     if (_tts_focus_rect == NULL) {
-        _tts_focus_rect = evas_object_rectangle_add (evas_object_evas_get((Evas_Object*)_candidate_window));
+        _tts_focus_rect = evas_object_rectangle_add (evas_object_evas_get ((Evas_Object*)_candidate_window));
         evas_object_color_set (_tts_focus_rect, 0, 0, 0, 0);
         elm_access_highlight_set (elm_access_object_register (_tts_focus_rect, (Evas_Object*)_candidate_window));
     }
@@ -3072,10 +3164,12 @@ static void ui_destroy_candidate_window (void)
         _tts_focus_rect   = NULL;
     }
 
-    if (_preedit_window) {
+    if (_preedit_text) {
         evas_object_del (_preedit_text);
         _preedit_text = NULL;
+    }
 
+    if (_preedit_window) {
         evas_object_hide (_preedit_window);
         evas_object_del (_preedit_window);
         _preedit_window = NULL;
@@ -3398,7 +3492,8 @@ static Ecore_X_Window efl_get_app_window (void)
 
     if (ret == Success) {
         if ((type_return == XA_WINDOW) && (format_return == 32) && (data)) {
-            xAppWindow = *(Window *)data;
+            void *pvoid = data;
+            xAppWindow = *(Window *)pvoid;
             if (data)
                 XFree (data);
         }
@@ -3407,6 +3502,43 @@ static Ecore_X_Window efl_get_app_window (void)
     }
 
     return xAppWindow;
+}
+
+/**
+ * @brief Get clipboard window's x window id.
+ *
+ */
+static Ecore_X_Window efl_get_clipboard_window (void)
+{
+    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
+
+    /* Gets the XID of the clipboard window from the root window property */
+    int  ret = 0;
+    Atom type_return;
+    int  format_return;
+    unsigned long    nitems_return;
+    unsigned long    bytes_after_return;
+    unsigned char   *data = NULL;
+    Ecore_X_Window   clipboard_window = 0;
+
+    ret = XGetWindowProperty ((Display *)ecore_x_display_get (),
+                              ecore_x_window_root_get (_control_window),
+                              ecore_x_atom_get ("CBHM_ELM_WIN"),
+                              0, G_MAXLONG, False, XA_WINDOW, &type_return,
+                              &format_return, &nitems_return, &bytes_after_return,
+                              &data);
+
+    if (ret == Success) {
+        if ((type_return == XA_WINDOW) && (format_return == 32) && (data)) {
+            clipboard_window = *(Window *)data;
+            if (data)
+                XFree (data);
+        }
+    } else {
+        std::cerr << "XGetWindowProperty () is failed!!!\n";
+    }
+
+    return clipboard_window;
 }
 
 static Ecore_X_Window efl_get_quickpanel_window (void)
@@ -3568,10 +3700,13 @@ static bool initialize_panel_agent (const String &config, const String &display,
 
     _panel_agent->signal_connect_will_hide_ack              (slot (slot_will_hide_ack));
 
-    _panel_agent->signal_connect_set_hardware_keyboard_mode (slot (slot_set_hardware_keyboard_mode));
+    _panel_agent->signal_connect_set_keyboard_mode (slot (slot_set_keyboard_mode));
 
     _panel_agent->signal_connect_candidate_will_hide_ack    (slot (slot_candidate_will_hide_ack));
     _panel_agent->signal_connect_get_ise_state              (slot (slot_get_ise_state));
+    _panel_agent->signal_connect_start_default_ise          (slot (slot_start_default_ise));
+    _panel_agent->signal_connect_stop_default_ise           (slot (slot_stop_default_ise));
+    _panel_agent->signal_connect_show_panel                 (slot (slot_show_ise_selector));
 
     std::vector<String> load_ise_list;
     _panel_agent->get_active_ise_list (load_ise_list);
@@ -3583,6 +3718,90 @@ static bool initialize_panel_agent (const String &config, const String &display,
     return true;
 }
 
+static void delete_ise_hide_timer (void)
+{
+    LOGD ("deleting ise_hide_timer");
+    if (_ise_hide_timer) {
+        ecore_timer_del (_ise_hide_timer);
+        _ise_hide_timer = NULL;
+    }
+}
+
+static void hide_ise ()
+{
+    LOGD ("send request to hide helper\n");
+    String uuid = _panel_agent->get_current_helper_uuid ();
+    _panel_agent->hide_helper (uuid);
+
+    /* Only if we are not already in HIDE state */
+    if (_ise_state != WINDOW_STATE_HIDE) {
+        /* From this point, slot_get_input_panel_geometry should return hidden state geometry */
+        _ise_state = WINDOW_STATE_WILL_HIDE;
+
+        _updated_hide_state_geometry = false;
+    }
+    _ise_angle = -1;
+
+    ecore_x_event_mask_unset (_app_window, ECORE_X_EVENT_MASK_WINDOW_FOCUS_CHANGE);
+
+    if (_candidate_window) {
+        if (_panel_agent->get_current_toolbar_mode () == TOOLBAR_KEYBOARD_MODE)
+            ui_candidate_hide (true, true, true);
+    }
+}
+#if ENABLE_MULTIWINDOW_SUPPORT
+
+static Eina_Bool ise_hide_timeout (void *data)
+{
+    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
+
+    delete_ise_hide_timer ();
+    hide_ise ();
+
+    return ECORE_CALLBACK_CANCEL;
+}
+
+static bool update_ise_list (std::vector<String> &list)
+{
+    /* update ise list */
+    bool ret = isf_update_ise_list (ALL_ISE, _config);
+
+    list.clear ();
+    list = _uuids;
+
+    _panel_agent->update_ise_list (list);
+
+    if (ret && _initial_ise_uuid.length () > 0) {
+        String active_uuid   = _initial_ise_uuid;
+        String default_uuid  = scim_global_config_read (String (SCIM_GLOBAL_CONFIG_DEFAULT_ISE_UUID), String (""));
+        if (std::find (_uuids.begin (), _uuids.end (), default_uuid) == _uuids.end ()) {
+            if ((_panel_agent->get_current_toolbar_mode () == TOOLBAR_KEYBOARD_MODE) && (_modes[get_ise_index (_initial_ise_uuid)] != TOOLBAR_KEYBOARD_MODE)) {
+                active_uuid = String (SCIM_COMPOSE_KEY_FACTORY_UUID);
+            }
+            set_active_ise (active_uuid, _soft_keyboard_launched);
+        } else if (_panel_agent->get_current_toolbar_mode () == TOOLBAR_HELPER_MODE) {    // Check whether keyboard engine is installed
+            String IMENGINE_KEY  = String (SCIM_CONFIG_DEFAULT_IMENGINE_FACTORY) + String ("/") + String ("~other");
+            String keyboard_uuid = _config->read (IMENGINE_KEY, String (""));
+            if (std::find (_uuids.begin (), _uuids.end (), keyboard_uuid) == _uuids.end ()) {
+                active_uuid = String (SCIM_COMPOSE_KEY_FACTORY_UUID);
+                _panel_agent->change_factory (active_uuid);
+                _config->write (IMENGINE_KEY, active_uuid);
+                _config->flush ();
+            }
+        }
+    }
+
+    add_ise_directory_em ();
+
+    char *lang_str = vconf_get_str (VCONFKEY_LANGSET);
+    if (lang_str) {
+        _locale_string = String (lang_str);
+        free (lang_str);
+    }
+
+    return ret;
+}
+#endif
 /**
  * @brief Reload config slot function for PanelAgent.
  */
@@ -3601,6 +3820,22 @@ static void slot_focus_in (void)
 {
     SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
 
+    _focus_in = true;
+    if ((_panel_agent->get_current_toolbar_mode () == TOOLBAR_KEYBOARD_MODE)) {
+        if (_launch_ise_on_request && !_soft_keyboard_launched) {
+            String uuid = _config->read (SCIM_CONFIG_DEFAULT_HELPER_ISE, String (""));
+            if (uuid.length () > 0 && (_options[get_ise_index (uuid)] & ISM_HELPER_PROCESS_KEYBOARD_KEYEVENT)) {
+                char buf[256] = {0};
+                snprintf (buf, sizeof (buf), "time:%ld  pid:%d  %s  %s  Start helper (%s)\n",
+                    time (0), getpid (), __FILE__, __func__, uuid.c_str ());
+                isf_save_log (buf);
+
+                if (_panel_agent->start_helper (uuid))
+                    _soft_keyboard_launched = true;
+            }
+        }
+    }
+
     ui_candidate_delete_destroy_timer ();
 }
 
@@ -3610,6 +3845,9 @@ static void slot_focus_in (void)
 static void slot_focus_out (void)
 {
     SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
+
+    _focus_in = false;
+
     ui_candidate_delete_destroy_timer ();
     _destroy_timer = ecore_timer_add (ISF_CANDIDATE_DESTROY_DELAY, ui_candidate_destroy_timeout, NULL);
 }
@@ -3686,7 +3924,6 @@ static void slot_update_factory_info (const PanelFactoryInfo &info)
 
     String ise_name = info.name;
     String ise_icon = info.icon;
-    unsigned int keyboard_ise_count = 0;
 
     String old_ise = _panel_agent->get_current_ise_name ();
     if (old_ise != ise_name) {
@@ -3703,26 +3940,27 @@ static void slot_update_factory_info (const PanelFactoryInfo &info)
     if (ise_name.length () > 0)
         _panel_agent->set_current_ise_name (ise_name);
 
+#ifdef HAVE_NOTIFICATION
     if (old_ise != ise_name) {
         if (TOOLBAR_KEYBOARD_MODE == mode) {
             char noti_msg[256] = {0};
-            keyboard_ise_count = get_ise_size (TOOLBAR_KEYBOARD_MODE);
+            unsigned int keyboard_ise_count = get_ise_size (TOOLBAR_KEYBOARD_MODE);
             if (keyboard_ise_count == 0) {
                 LOGD ("the number of keyboard ise is %d\n", keyboard_ise_count);
                 return;
             }
             else if (keyboard_ise_count >= 2) {
                 snprintf (noti_msg, sizeof (noti_msg), _("%s selected"), ise_name.c_str ());
-           }
+            }
             else if (keyboard_ise_count == 1) {
-                snprintf (noti_msg, sizeof (noti_msg), _("Only %s is available"), ise_name.c_str ());
+                snprintf (noti_msg, sizeof (noti_msg), _("Only %s available"), ise_name.c_str ());
             }
 
             notification_status_message_post (noti_msg);
             LOGD ("%s\n", noti_msg);
         }
     }
-
+#endif
 }
 
 /**
@@ -4068,15 +4306,15 @@ static void set_highlight_color (Evas_Object *item, uint32 nForeGround, uint32 n
 
     int r, g, b, a, r2, g2, b2, a2, r3, g3, b3, a3;
     if (edje_object_color_class_get (item, "text_color", &r, &g, &b, &a, &r2, &g2, &b2, &a2, &r3, &g3, &b3, &a3)) {
-        r = SCIM_RGB_COLOR_RED(nForeGround);
-        g = SCIM_RGB_COLOR_GREEN(nForeGround);
-        b = SCIM_RGB_COLOR_BLUE(nForeGround);
+        r = SCIM_RGB_COLOR_RED (nForeGround);
+        g = SCIM_RGB_COLOR_GREEN (nForeGround);
+        b = SCIM_RGB_COLOR_BLUE (nForeGround);
         edje_object_color_class_set (item, "text_color", r, g, b, a, r2, g2, b2, a2, r3, g3, b3, a3);
     }
     if (bSetBack && edje_object_color_class_get (item, "rect_color", &r, &g, &b, &a, &r2, &g2, &b2, &a2, &r3, &g3, &b3, &a3)) {
-        r = SCIM_RGB_COLOR_RED(nBackGround);
-        g = SCIM_RGB_COLOR_GREEN(nBackGround);
-        b = SCIM_RGB_COLOR_BLUE(nBackGround);
+        r = SCIM_RGB_COLOR_RED (nBackGround);
+        g = SCIM_RGB_COLOR_GREEN (nBackGround);
+        b = SCIM_RGB_COLOR_BLUE (nBackGround);
         edje_object_color_class_set (item, "rect_color", r, g, b, 255, r2, g2, b2, a2, r3, g3, b3, a3);
     }
 }
@@ -4111,8 +4349,8 @@ static void slot_update_aux_string (const String &str, const AttributeList &attr
     int    aux_index = -1, aux_start = 0, aux_end = 0;
     String strAux      = str;
     bool   bSetBack    = false;
-    uint32 nForeGround = SCIM_RGB_COLOR(62, 207, 255);
-    uint32 nBackGround = SCIM_RGB_COLOR(0, 0, 0);
+    uint32 nForeGround = SCIM_RGB_COLOR (62, 207, 255);
+    uint32 nBackGround = SCIM_RGB_COLOR (0, 0, 0);
     for (AttributeList::const_iterator ait = attrs.begin (); ait != attrs.end (); ++ait) {
         if (aux_index == -1 && ait->get_type () == SCIM_ATTR_DECORATE) {
             aux_index = ait->get_value ();
@@ -4155,6 +4393,7 @@ static void slot_update_aux_string (const String &str, const AttributeList &attr
         aux_edje = edje_object_add (evas);
         edje_object_file_set (aux_edje, _candidate_edje_file.c_str (), "aux");
         edje_object_part_text_set (aux_edje, "aux", aux_list [i].c_str ());
+        edje_object_text_class_set (aux_edje, "tizen", _candidate_font_name.c_str (), _aux_font_size);
         elm_table_pack (_aux_table, aux_edje, 2 * i, 0, 1, 1);
         evas_object_event_callback_add (aux_edje, EVAS_CALLBACK_MOUSE_DOWN, ui_mouse_button_pressed_cb, GINT_TO_POINTER ((i << 8) + ISF_EFL_AUX));
         evas_object_event_callback_add (aux_edje, EVAS_CALLBACK_MOUSE_UP, ui_mouse_button_released_cb, GINT_TO_POINTER (i));
@@ -4275,13 +4514,13 @@ static void update_table (int table_type, const LookupTable &table)
         if (i < item_num) {
             bool   bHighLight  = false;
             bool   bSetBack    = false;
-            uint32 nForeGround = SCIM_RGB_COLOR(249, 249, 249);
-            uint32 nBackGround = SCIM_RGB_COLOR(0, 0, 0);
+            uint32 nForeGround = SCIM_RGB_COLOR (249, 249, 249);
+            uint32 nBackGround = SCIM_RGB_COLOR (0, 0, 0);
             attrs = table.get_attributes_in_current_page (i);
             for (AttributeList::const_iterator ait = attrs.begin (); ait != attrs.end (); ++ait) {
                 if (ait->get_type () == SCIM_ATTR_DECORATE && ait->get_value () == SCIM_ATTR_DECORATE_HIGHLIGHT) {
                     bHighLight  = true;
-                    nForeGround = SCIM_RGB_COLOR(62, 207, 255);
+                    nForeGround = SCIM_RGB_COLOR (62, 207, 255);
                 } else if (ait->get_type () == SCIM_ATTR_FOREGROUND) {
                     bHighLight  = true;
                     nForeGround = ait->get_value ();
@@ -4604,8 +4843,7 @@ static void slot_get_input_panel_geometry (struct rectinfo &info)
 static void slot_set_active_ise (const String &uuid, bool changeDefault)
 {
     SCIM_DEBUG_MAIN (3) << __FUNCTION__ << " (" << uuid << ")\n";
-
-    set_active_ise (uuid);
+    set_active_ise (uuid, _soft_keyboard_launched);
 }
 
 /**
@@ -4619,36 +4857,17 @@ static bool slot_get_ise_list (std::vector<String> &list)
 {
     SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
 
-    /* update ise list */
-    bool ret = isf_update_ise_list (ALL_ISE, _config);
+    bool result = false;
 
-    list.clear ();
-    list = _uuids;
-
-    _panel_agent->update_ise_list (list);
-
-    if (ret && _initial_ise_uuid.length () > 0) {
-        String active_uuid   = _initial_ise_uuid;
-        String default_uuid  = scim_global_config_read (String (SCIM_GLOBAL_CONFIG_DEFAULT_ISE_UUID), String (""));
-        if (std::find (_uuids.begin (), _uuids.end (), default_uuid) == _uuids.end ()) {
-            if ((_panel_agent->get_current_toolbar_mode () == TOOLBAR_KEYBOARD_MODE) && (_modes[get_ise_index (_initial_ise_uuid)] != TOOLBAR_KEYBOARD_MODE)) {
-                active_uuid = String (SCIM_COMPOSE_KEY_FACTORY_UUID);
-            }
-            set_active_ise (active_uuid);
-        } else if (_panel_agent->get_current_toolbar_mode () == TOOLBAR_HELPER_MODE) {    // Check whether keyboard engine is installed
-            String IMENGINE_KEY  = String (SCIM_CONFIG_DEFAULT_IMENGINE_FACTORY) + String ("/") + String ("~other");
-            String keyboard_uuid = _config->read (IMENGINE_KEY, String (""));
-            if (std::find (_uuids.begin (), _uuids.end (), keyboard_uuid) == _uuids.end ()) {
-                active_uuid = String (SCIM_COMPOSE_KEY_FACTORY_UUID);
-                _panel_agent->change_factory (active_uuid);
-                _config->write (IMENGINE_KEY, active_uuid);
-                _config->flush ();
-            }
-        }
+    if (_uuids.size () > 0) {
+        list = _uuids;
+        result = true;
+    }
+    else {
+        result = update_ise_list (list);
     }
 
-    add_ise_directory_em ();
-    return ret;
+    return result;
 }
 
 /**
@@ -4667,6 +4886,10 @@ static bool slot_get_ise_information (String uuid, String &name, String &languag
     SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
 
     if (uuid.length () > 0) {
+        // update all ISE names according to the display languages
+        // sometimes get_ise_information is called before vconf display language changed callback is called.
+        update_ise_locale ();
+
         for (unsigned int i = 0; i < _uuids.size (); i++) {
             if (uuid == _uuids[i]) {
                 name     = _names[i];
@@ -4845,6 +5068,8 @@ static void slot_accept_connection (int fd)
 
     Ecore_Fd_Handler *panel_agent_read_handler = ecore_main_fd_handler_add (fd, ECORE_FD_READ, panel_agent_handler, NULL, NULL, NULL);
     _read_handler_list.push_back (panel_agent_read_handler);
+
+    get_input_window ();
 }
 
 /**
@@ -4898,10 +5123,22 @@ static void slot_register_helper_properties (int id, const PropertyList &props)
             efl_set_transient_for_app_window (_ise_window);
         }
 
-        if (delete_ise_launch_timer ()) {
-            destroy_ise_selector ();
+        Ecore_X_Atom atom = ecore_x_atom_get ("_ISF_ISE_WINDOW");
+        if (atom && _control_window && _ise_window) {
+            ecore_x_window_prop_xid_set (_control_window, atom, ECORE_X_ATOM_WINDOW, &_ise_window, 1);
         }
+
+        ise_selector_destroy ();
     }
+}
+
+static void slot_show_ise_selector (void)
+{
+    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
+
+    elm_config_scale_set (_system_scale);
+
+    ise_selector_create (get_ise_index (_panel_agent->get_current_helper_uuid ()), efl_get_app_window (), ise_selected_cb, ise_selector_deleted_cb);
 }
 
 static void slot_show_ise (void)
@@ -4914,6 +5151,10 @@ static void slot_show_ise (void)
             _panel_agent->get_current_toolbar_mode ());
         return;
     }
+
+    LOGD ("slot_show_ise ()\n");
+
+    delete_ise_hide_timer ();
 
     /* WMSYNC, #3 Clear the existing application's conformant area and set transient_for */
     // Unset conformant area
@@ -4946,6 +5187,13 @@ static void slot_show_ise (void)
     ecore_x_event_mask_set (_app_window, ECORE_X_EVENT_MASK_WINDOW_FOCUS_CHANGE);
     efl_set_transient_for_app_window (_ise_window);
 
+    /* Make clipboard window to have transient_for information on ISE window,
+       so that the clipboard window will always be above ISE window */
+    Ecore_X_Window clipboard_window = efl_get_clipboard_window ();
+    if (_ise_window && clipboard_window) {
+        ecore_x_icccm_transient_for_set (clipboard_window, _ise_window);
+    }
+
     /* If our ISE was already in SHOW state, skip state transition to WILL_SHOW */
     if (_ise_state != WINDOW_STATE_SHOW) {
         _ise_state = WINDOW_STATE_WILL_SHOW;
@@ -4956,21 +5204,10 @@ static void slot_hide_ise (void)
 {
     SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
 
-    /* Only if we are not already in HIDE state */
-    if (_ise_state != WINDOW_STATE_HIDE) {
-        /* From this point, slot_get_input_panel_geometry should return hidden state geometry */
-        _ise_state = WINDOW_STATE_WILL_HIDE;
+    LOGD ("slot_hide_ise ()");
 
-        _updated_hide_state_geometry = false;
-    }
-    _ise_angle = -1;
-
-    ecore_x_event_mask_unset (_app_window, ECORE_X_EVENT_MASK_WINDOW_FOCUS_CHANGE);
-
-    if (_candidate_window) {
-        if (_panel_agent->get_current_toolbar_mode () == TOOLBAR_KEYBOARD_MODE)
-            ui_candidate_hide (true, true, true);
-    }
+    if (!_ise_hide_timer)
+        hide_ise ();
 }
 
 static void slot_will_hide_ack (void)
@@ -5010,10 +5247,11 @@ static void slot_candidate_will_hide_ack (void)
     }
 }
 
-static void slot_set_hardware_keyboard_mode (void)
+static void slot_set_keyboard_mode (int mode)
 {
-    LOGD ("slot_set_hardware_keyboard_mode called");
-    check_hardware_keyboard (HARDWARE_KEYBOARD_MODE);
+    LOGD ("slot_set_keyboard_mode called (TOOLBAR_MODE : %d)\n",mode);
+
+    check_hardware_keyboard ((TOOLBAR_MODE_T)mode);
 }
 
 static void slot_get_ise_state (int &state)
@@ -5042,6 +5280,43 @@ static void slot_get_ise_state (int &state)
     }
     LOGD ("state = %d", state);
     SCIM_DEBUG_MAIN (3) << __FUNCTION__ << " state = " << state << "\n";
+}
+
+static void slot_start_default_ise (void)
+{
+    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
+    if ((_panel_agent->get_current_toolbar_mode () == TOOLBAR_HELPER_MODE)) {
+        if (_launch_ise_on_request && !_soft_keyboard_launched) {
+            String uuid  = _config->read (SCIM_CONFIG_DEFAULT_HELPER_ISE, String (""));
+
+            char buf[256] = {0};
+            snprintf (buf, sizeof (buf), "time:%ld  pid:%d  %s  %s  Start helper (%s)\n",
+                time (0), getpid (), __FILE__, __func__, uuid.c_str ());
+            isf_save_log (buf);
+
+            if (_panel_agent->start_helper (uuid))
+                _soft_keyboard_launched = true;
+        }
+    }
+}
+
+static void slot_stop_default_ise (void)
+{
+    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
+
+    if (_launch_ise_on_request && _soft_keyboard_launched) {
+        String uuid = _panel_agent->get_current_helper_uuid ();
+
+        if (uuid.length () > 0) {
+            _panel_agent->hide_helper (uuid);
+            _panel_agent->stop_helper (uuid);
+            _soft_keyboard_launched = false;
+            char buf[256] = {0};
+            snprintf (buf, sizeof (buf), "time:%ld  pid:%d  %s  %s  stop helper (%s)\n",
+                time (0), getpid (), __FILE__, __func__, uuid.c_str ());
+            isf_save_log (buf);
+        }
+    }
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -5191,7 +5466,7 @@ static bool update_helper_ise_locale (const String module_name, int index)
     HelperInfo   helper_info;
     helper_module.load (module_name);
     if (helper_module.valid ()) {
-        for (size_t j = 0; j < helper_module.number_of_helpers (); ++j) {
+        for (size_t j = 0; j < helper_module.number_of_helpers () && (index+j) < _names.size (); ++j) {
             helper_module.get_helper_info (j, helper_info);
             _names[index+j] = helper_info.name;
         }
@@ -5201,6 +5476,38 @@ static bool update_helper_ise_locale (const String module_name, int index)
     }
 
     return true;
+}
+
+static void update_ise_locale ()
+{
+    std::vector<String> module_list;
+
+    char *lang_str = vconf_get_str (VCONFKEY_LANGSET);
+
+    if (lang_str && _locale_string == String (lang_str)) {
+        free (lang_str);
+        return;
+    }
+
+    LOGD ("update all ISE names according to display language\n");
+    set_language_and_locale ();
+
+    for (unsigned int i = 0; i < _module_names.size (); i++) {
+        if (std::find (module_list.begin (), module_list.end (), _module_names[i]) != module_list.end ())
+            continue;
+        module_list.push_back (_module_names[i]);
+        if (_modes[i] == TOOLBAR_KEYBOARD_MODE) {
+            update_keyboard_ise_locale (_module_names[i], i);
+        } else if (_modes[i] == TOOLBAR_HELPER_MODE) {
+            update_helper_ise_locale (_module_names[i], i);
+        }
+    }
+    isf_save_ise_information ();
+
+    if (lang_str) {
+        _locale_string = String (lang_str);
+        free (lang_str);
+    }
 }
 
 /**
@@ -5215,6 +5522,8 @@ static void set_language_and_locale (void)
     char *lang_str = vconf_get_str (VCONFKEY_LANGSET);
 
     if (lang_str) {
+        elm_language_set (lang_str);
+
         setenv ("LANG", lang_str, 1);
         setlocale (LC_MESSAGES, lang_str);
         free (lang_str);
@@ -5239,23 +5548,16 @@ static void display_language_changed_cb (keynode_t *key, void* data)
     set_language_and_locale ();
 
     /* Update all ISE names according to display language */
-    std::vector<String> module_list;
-    for (unsigned int i = 0; i < _module_names.size (); i++) {
-        if (std::find (module_list.begin (), module_list.end (), _module_names[i]) != module_list.end ())
-            continue;
-        module_list.push_back (_module_names[i]);
-        if (_modes[i] == TOOLBAR_KEYBOARD_MODE) {
-            update_keyboard_ise_locale (_module_names[i], i);
-        } else if (_modes[i] == TOOLBAR_HELPER_MODE) {
-            update_helper_ise_locale (_module_names[i], i);
-        }
-    }
-    isf_save_ise_information ();
+    update_ise_locale ();
 
     String default_uuid = scim_global_config_read (String (SCIM_GLOBAL_CONFIG_DEFAULT_ISE_UUID), _initial_ise_uuid);
-    String default_name = _names[get_ise_index (default_uuid)];
-    _panel_agent->set_current_ise_name (default_name);
-    _config->reload ();
+    unsigned int ise_idx = get_ise_index (default_uuid);
+
+    if (ise_idx < _names.size ()) {
+        String default_name = _names[ise_idx];
+        _panel_agent->set_current_ise_name (default_name);
+        _config->reload ();
+    }
 
 #ifdef HAVE_MINICONTROL
     if (input_detect_minictrl.get_visibility ())
@@ -5275,20 +5577,24 @@ static void display_language_changed_cb (keynode_t *key, void* data)
 /**
  * @brief Check hardware keyboard.
  *
+ * @param mode The keyboard mode.
+ *
  * @return void
  */
-static void check_hardware_keyboard (KEYBOARD_MODE mode)
+static void check_hardware_keyboard (TOOLBAR_MODE_T mode)
 {
     SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
 
     uint32 option = 0;
     String uuid, name;
     unsigned int val = 0;
+    bool _support_hw_keyboard_mode = false;
 
     String helper_uuid  = _config->read (SCIM_CONFIG_DEFAULT_HELPER_ISE, String (""));
     String default_uuid = scim_global_config_read (String (SCIM_GLOBAL_CONFIG_DEFAULT_ISE_UUID), String (""));
+    _support_hw_keyboard_mode = scim_global_config_read (String (SCIM_GLOBAL_CONFIG_SUPPORT_HW_KEYBOARD_MODE), _support_hw_keyboard_mode);
 
-    if (mode == HARDWARE_KEYBOARD_MODE) {
+    if (mode == TOOLBAR_KEYBOARD_MODE && _support_hw_keyboard_mode) {
         if (_panel_agent->get_current_toolbar_mode () == TOOLBAR_KEYBOARD_MODE) {
             LOGD ("HARDWARE_KEYBOARD_MODE return");
             return;
@@ -5327,6 +5633,15 @@ static void check_hardware_keyboard (KEYBOARD_MODE mode)
         _panel_agent->hide_helper (helper_uuid);
         _panel_agent->reload_config ();
 
+        /* Check whether stop soft keyboard */
+        if (_focus_in && (_options[get_ise_index (helper_uuid)] & ISM_HELPER_PROCESS_KEYBOARD_KEYEVENT)) {
+            /* If focus in and soft keyboard can support hardware key event, then don't stop it */
+            ;
+        } else if (_launch_ise_on_request && _soft_keyboard_launched) {
+            _panel_agent->stop_helper (helper_uuid);
+            _soft_keyboard_launched = false;
+        }
+
         ecore_x_event_mask_set (efl_get_quickpanel_window (), ECORE_X_EVENT_MASK_WINDOW_PROPERTY);
 
 #ifdef HAVE_MINICONTROL
@@ -5337,13 +5652,15 @@ static void check_hardware_keyboard (KEYBOARD_MODE mode)
         input_detect_minictrl.show ();
 #endif
 
+#ifdef HAVE_NOTIFICATION
         notification_status_message_post (_("Input detected from hardware keyboard"));
+#endif
 
         /* Set input detected property for isf setting */
-        val = (unsigned int)HARDWARE_KEYBOARD_MODE;
+        val = 1;
         ecore_x_window_prop_card32_set (_control_window, ecore_x_atom_get (PROP_X_EXT_KEYBOARD_INPUT_DETECTED), &val, 1);
         ecore_x_window_prop_card32_set (ecore_x_window_root_first_get (), ecore_x_atom_get (PROP_X_EXT_KEYBOARD_INPUT_DETECTED), &val, 1);
-    } else if (mode == SOFTWARE_KEYBOARD_MODE) {
+    } else if (mode == TOOLBAR_HELPER_MODE) {
         LOGD ("SOFTWARE KEYBOARD MODE");
         /* When switching back to S/W keyboard mode, let's hide candidate window first */
         LOGD ("calling ui_candidate_hide (true, true, true)");
@@ -5351,7 +5668,10 @@ static void check_hardware_keyboard (KEYBOARD_MODE mode)
         _config->write (ISF_CONFIG_HARDWARE_KEYBOARD_DETECT, 0);
         if (_panel_agent->get_current_toolbar_mode () == TOOLBAR_KEYBOARD_MODE) {
             uuid = helper_uuid.length () > 0 ? helper_uuid : _initial_ise_uuid;
-            set_active_ise (uuid);
+            if (_launch_ise_on_request)
+                set_active_ise (uuid, false);
+            else
+                set_active_ise (uuid, true);
         }
 
 #ifdef HAVE_MINICONTROL
@@ -5360,8 +5680,10 @@ static void check_hardware_keyboard (KEYBOARD_MODE mode)
 #endif
 
         /* Set input detected property for isf setting */
-        val = (unsigned int)SOFTWARE_KEYBOARD_MODE;
-        ecore_x_test_fake_key_press ("XF86MenuKB");
+        val = 0;
+        if (_ise_state == WINDOW_STATE_HIDE) {
+            ecore_x_test_fake_key_press ("XF86MenuKB");
+        }
         ecore_x_window_prop_card32_set (_control_window, ecore_x_atom_get (PROP_X_EXT_KEYBOARD_INPUT_DETECTED), &val, 1);
         ecore_x_window_prop_card32_set (ecore_x_window_root_first_get (), ecore_x_atom_get (PROP_X_EXT_KEYBOARD_INPUT_DETECTED), &val, 1);
     }
@@ -5412,7 +5734,7 @@ static Eina_Bool x_event_window_property_cb (void *data, int ev_type, void *even
         if (ecore_x_window_prop_card32_get (_input_win, ecore_x_atom_get (PROP_X_EXT_KEYBOARD_EXIST), &val, 1) > 0) {
             if (val == 0) {
                 _panel_agent->reset_keyboard_ise ();
-                check_hardware_keyboard (SOFTWARE_KEYBOARD_MODE);
+                check_hardware_keyboard (TOOLBAR_HELPER_MODE);
                 set_keyboard_geometry_atom_info (_app_window, get_ise_geometry ());
                 _panel_agent->update_input_panel_event (ECORE_IMF_INPUT_PANEL_GEOMETRY_EVENT, 0);
             }
@@ -5472,6 +5794,8 @@ static Eina_Bool x_event_window_property_cb (void *data, int ev_type, void *even
                 }
 
                 _updated_hide_state_geometry = false;
+
+                ecore_x_e_virtual_keyboard_state_set (_ise_window, ECORE_X_VIRTUAL_KEYBOARD_STATE_ON);
             } else if (state == ECORE_X_VIRTUAL_KEYBOARD_STATE_OFF) {
                 /* WMSYNC, #9 The keyboard window is hidden fully so send HIDE state */
                 LOGD ("ECORE_X_VIRTUAL_KEYBOARD_STATE_OFF\n");
@@ -5504,6 +5828,8 @@ static Eina_Bool x_event_window_property_cb (void *data, int ev_type, void *even
 #endif
 
                 _ise_reported_geometry.valid = false;
+
+                ecore_x_e_virtual_keyboard_state_set (_ise_window, ECORE_X_VIRTUAL_KEYBOARD_STATE_OFF);
             }
             ui_settle_candidate_window ();
         }
@@ -5678,11 +6004,11 @@ static Eina_Bool x_event_client_message_cb (void *data, int type, void *event)
                     if ((unsigned int)ev->data.l[1] == ECORE_X_ATOM_E_ILLUME_ACCESS_ACTION_READ_NEXT) {
                         // flick right
                         SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "    1 finger flick right\n";
-                        if (evas_object_visible_get (_more_btn) && _candidate_tts_focus_index == (_candidate_display_number - 1))
+                        if (evas_object_visible_get (_more_btn) && _candidate_tts_focus_index == (int)(_candidate_display_number - 1))
                             _candidate_tts_focus_index = _candidate_display_number == _candidate_row_items[0] ? MORE_BUTTON_INDEX : 0;
-                        else if (evas_object_visible_get (_more_btn) && _candidate_tts_focus_index == (_candidate_row_items[0] - 1))
+                        else if (evas_object_visible_get (_more_btn) && _candidate_tts_focus_index == (int)(_candidate_row_items[0] - 1))
                             _candidate_tts_focus_index = MORE_BUTTON_INDEX;
-                        else if (evas_object_visible_get (_close_btn) && _candidate_tts_focus_index == (_candidate_row_items[0] - 1))
+                        else if (evas_object_visible_get (_close_btn) && _candidate_tts_focus_index == (int)(_candidate_row_items[0] - 1))
                             _candidate_tts_focus_index = CLOSE_BUTTON_INDEX;
                         else if (_candidate_tts_focus_index == MORE_BUTTON_INDEX)
                             _candidate_tts_focus_index = _candidate_display_number == _candidate_row_items[0] ? 0 : _candidate_row_items[0];
@@ -5768,6 +6094,25 @@ static Eina_Bool x_event_client_message_cb (void *data, int type, void *event)
     return ECORE_CALLBACK_RENEW;
 }
 
+Eina_Bool check_focus_out_by_popup_win ()
+{
+    Ecore_X_Window focus_win = ecore_x_window_focus_get ();
+    Eina_Bool ret = EINA_FALSE;
+    Ecore_X_Window_Type win_type = ECORE_X_WINDOW_TYPE_UNKNOWN;
+
+    if (!ecore_x_netwm_window_type_get (focus_win, &win_type))
+        return EINA_FALSE;
+
+    LOGD ("win type : %d\n", win_type);
+
+    if (win_type == ECORE_X_WINDOW_TYPE_POPUP_MENU ||
+        win_type == ECORE_X_WINDOW_TYPE_NOTIFICATION) {
+        ret = EINA_TRUE;
+    }
+
+    return ret;
+}
+
 /**
  * @brief Callback function for focus out event of application window
  *
@@ -5775,18 +6120,43 @@ static Eina_Bool x_event_client_message_cb (void *data, int type, void *event)
  *
  * @return ECORE_CALLBACK_RENEW
  */
-
 static Eina_Bool x_event_window_focus_out_cb (void *data, int ev_type, void *event)
 {
     Ecore_X_Event_Window_Focus_Out *e = (Ecore_X_Event_Window_Focus_Out*)event;
 
     if (e && e->win == _app_window) {
-
         if (_panel_agent->get_current_toolbar_mode () == TOOLBAR_HELPER_MODE) {
+            if (check_focus_out_by_popup_win ())
+                return ECORE_CALLBACK_RENEW;
+
+#if ENABLE_MULTIWINDOW_SUPPORT
+            unsigned int layout = 0;
+            LOGD ("Application window focus OUT!\n");
+            delete_ise_hide_timer ();
+
+            // Check multi window mode
+            if (ecore_x_window_prop_card32_get (efl_get_app_window (), ECORE_X_ATOM_E_WINDOW_DESKTOP_LAYOUT, &layout, 1) != -1) {
+                if (layout == 0 || layout == 1) {
+                    // Split mode
+                    LOGD ("Multi window mode. start timer to hide IME\n");
+
+                    // Use timer not to hide and show IME again in focus-out and focus-in event between applications
+                    _ise_hide_timer = ecore_timer_add (ISF_ISE_HIDE_DELAY, ise_hide_timeout, NULL);
+                }
+            }
+
+            if (!_ise_hide_timer) {
+                LOGD ("Panel hides ISE\n");
+                _panel_agent->hide_helper (_panel_agent->get_current_helper_uuid ());
+                slot_hide_ise ();
+                ui_candidate_hide (true, false, false);
+            }
+#else
             LOGD ("Application window focus OUT! Panel hides ISE");
             _panel_agent->hide_helper (_panel_agent->get_current_helper_uuid ());
             slot_hide_ise ();
             ui_candidate_hide (true, false, false);
+#endif
         }
     }
 
@@ -5819,11 +6189,25 @@ static void launch_default_soft_keyboard (keynode_t *key, void* data)
 {
     SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
 
+    char *csc_initial_uuid = vconf_get_str ("db/isf/csc_initial_uuid");
+    if (csc_initial_uuid) {
+        if (strlen (csc_initial_uuid) > 0) {
+            _config->write (SCIM_CONFIG_DEFAULT_HELPER_ISE, String (csc_initial_uuid));
+            scim_global_config_write (String (SCIM_GLOBAL_CONFIG_DEFAULT_ISE_UUID), String (csc_initial_uuid));
+
+            _config->flush ();
+            scim_global_config_flush ();
+        }
+        free (csc_initial_uuid);
+
+        vconf_set_str ("db/isf/csc_initial_uuid", "");
+    }
+
     /* Start default ISE */
-    check_hardware_keyboard (SOFTWARE_KEYBOARD_MODE);
+    check_hardware_keyboard (TOOLBAR_HELPER_MODE);
 }
 
-static String sanitize_string(const char *str, int maxlen = 32)
+static String sanitize_string (const char *str, int maxlen = 32)
 {
     String ret;
     static char acceptables[] =
@@ -5837,10 +6221,10 @@ static String sanitize_string(const char *str, int maxlen = 32)
     }
     int len = 0;
     if (newstr) {
-        memset (newstr, 0x00, sizeof(char) * (maxlen + 1));
+        memset (newstr, 0x00, sizeof (char) * (maxlen + 1));
 
         if (str) {
-            while (len < maxlen && str[len] != '\0' && strchr(acceptables, str[len]) != NULL) {
+            while (len < maxlen && str[len] != '\0' && strchr (acceptables, str[len]) != NULL) {
                 newstr[len] = str[len];
                 len++;
             }
@@ -5858,17 +6242,16 @@ int main (int argc, char *argv [])
 
     int           i;
     int           ret             = 0;
-    int           win_ret         = -1;
 
     bool          daemon          = false;
     bool          should_resident = true;
 
     int           new_argc        = 0;
     char        **new_argv        = new char * [40];
+    int           display_name_c  = 0;
     ConfigModule *config_module   = NULL;
     String        config_name     = String ("socket");
     String        display_name    = String ();
-    Ecore_X_Atom  atom            = 0;
 
     Ecore_Fd_Handler *panel_agent_read_handler = NULL;
     Ecore_Fd_Handler *helper_manager_handler   = NULL;
@@ -5876,7 +6259,7 @@ int main (int argc, char *argv [])
     Ecore_Event_Handler *xwindow_property_handler = NULL;
     Ecore_Event_Handler *xwindow_focus_out_handler = NULL;
 
-    set_app_privilege ("isf", NULL, NULL);
+    perm_app_set_privilege ("isf", NULL, NULL);
 
     check_time ("\nStarting ISF Panel EFL...... ");
     char buf[256] = {0};
@@ -5977,7 +6360,8 @@ int main (int argc, char *argv [])
     /* Make up DISPLAY env. */
     if (display_name.length ()) {
         new_argv [new_argc ++] = const_cast <char*> ("--display");
-        new_argv [new_argc ++] = const_cast <char*> (display_name.c_str ());
+        display_name_c = new_argc;
+        new_argv [new_argc ++] = strdup (display_name.c_str ());
 
         setenv ("DISPLAY", display_name.c_str (), 1);
     }
@@ -6080,20 +6464,6 @@ int main (int argc, char *argv [])
 
     elm_policy_set (ELM_POLICY_THROTTLE, ELM_POLICY_THROTTLE_NEVER);
 
-    /* get the input window */
-    atom = ecore_x_atom_get (E_PROP_DEVICEMGR_INPUTWIN);
-    win_ret = ecore_x_window_prop_xid_get (ecore_x_window_root_first_get (), atom, ECORE_X_ATOM_WINDOW, &_input_win, 1);
-    if (_input_win == 0 || win_ret < 1) {
-        LOGW ("Input window is NULL!\n");
-    } else {
-        ecore_x_event_mask_set (_input_win, ECORE_X_EVENT_MASK_WINDOW_PROPERTY);
-
-        unsigned int val = 0;
-        Ecore_X_Window root_window = ecore_x_window_root_get (_input_win);
-        ecore_x_window_prop_card32_set (_input_win, ecore_x_atom_get (PROP_X_EXT_KEYBOARD_EXIST), &val, 1);
-        ecore_x_window_prop_card32_set (root_window, ecore_x_atom_get (PROP_X_EXT_KEYBOARD_EXIST), &val, 1);
-    }
-
     if (!efl_create_control_window ()) {
         LOGW ("Failed to create control window\n");
         goto cleanup;
@@ -6135,7 +6505,7 @@ int main (int argc, char *argv [])
     try {
         /* Update ISE list */
         std::vector<String> list;
-        slot_get_ise_list (list);
+        update_ise_list (list);
 
         /* Load initial ISE information */
         _initial_ise_uuid = scim_global_config_read (String (SCIM_GLOBAL_CONFIG_INITIAL_ISE_UUID), String (SCIM_COMPOSE_KEY_FACTORY_UUID));
@@ -6161,9 +6531,16 @@ int main (int argc, char *argv [])
          LOGW ("bt_hid_host_initialize failed");
 #endif
 
+    _system_scale = elm_config_scale_get ();
+
     /* Set elementary scale */
-    if (_screen_width)
-        elm_config_scale_set (_screen_width / 720.0f);
+    if (_screen_width) {
+        _app_scale = _screen_width / 720.0;
+        elm_config_scale_set (_app_scale);
+        char buf[16] = {0};
+        snprintf (buf, sizeof (buf), "%4.3f", _app_scale);
+        setenv ("ELM_SCALE", buf, 1);
+    }
 
     signal (SIGQUIT, signalhandler);
     signal (SIGTERM, signalhandler);
@@ -6188,12 +6565,26 @@ int main (int argc, char *argv [])
         LOGW ("bt_deinitialize failed: %d", ret);
 #endif
 
-    ecore_event_handler_del (xclient_message_handler);
-    ecore_event_handler_del (xwindow_property_handler);
-    ecore_event_handler_del (xwindow_focus_out_handler);
+    if (xclient_message_handler) {
+        ecore_event_handler_del (xclient_message_handler);
+        xclient_message_handler = NULL;
+    }
 
-    if (helper_manager_handler)
+    if (xwindow_property_handler) {
+        ecore_event_handler_del (xwindow_property_handler);
+        xwindow_property_handler = NULL;
+    }
+
+    if (xwindow_focus_out_handler) {
+        ecore_event_handler_del (xwindow_focus_out_handler);
+        xwindow_focus_out_handler = NULL;
+    }
+
+    if (helper_manager_handler) {
         ecore_main_fd_handler_del (helper_manager_handler);
+        helper_manager_handler = NULL;
+    }
+
     for (unsigned int ii = 0; ii < _read_handler_list.size (); ++ii) {
         ecore_main_fd_handler_del (_read_handler_list[ii]);
     }
@@ -6209,7 +6600,7 @@ cleanup:
     ui_candidate_delete_longpress_timer ();
     ui_candidate_delete_destroy_timer ();
     delete_ise_directory_em ();
-    destroy_ise_selector ();
+    ise_selector_destroy ();
     delete_ise_launch_timer ();
     ui_close_tts ();
 
@@ -6227,7 +6618,9 @@ cleanup:
         }
         delete _panel_agent;
     }
-
+    if ((display_name_c > 0) && new_argv [display_name_c]) {
+        free (new_argv [display_name_c]);
+    }
     delete []new_argv;
 
     snprintf (buf, sizeof (buf), "time:%ld  pid:%d  %s  %s  ret=%d\n",

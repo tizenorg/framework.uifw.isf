@@ -1,6 +1,6 @@
 # Process this file with autoconf to produce a configure script
 #AC_INIT(scim, 1.4.7, suzhe@tsinghua.org.cn)
-AC_INIT(isf, 2.4.7424, isf@samsung.com)
+AC_INIT(isf, 2.4.8317, isf@samsung.com)
 AC_CONFIG_SRCDIR([ism/src/scim.h])
 
 ###########################################################
@@ -10,7 +10,7 @@ AC_CONFIG_SRCDIR([ism/src/scim.h])
 # ISF version
 ISF_MAJOR_VERSION=2
 ISF_MINOR_VERSION=4
-ISF_MICRO_VERSION=7424
+ISF_MICRO_VERSION=8317
 
 ISF_VERSION=$ISF_MAJOR_VERSION.$ISF_MINOR_VERSION.$ISF_MICRO_VERSION
 
@@ -83,7 +83,7 @@ AM_CONFIG_HEADER([config.h])
 PLATFORM_INIT
 
 # Init gettext
-ALL_LINGUAS="hy az eu bg ca zh_CN zh_HK zh_TW hr cs da nl_NL en en_US et fi fr_FR gl ka de_DE el_GR hu is ga it_IT ja_JP kk ko_KR lv lt mk nb pl pt_PT pt_BR ro ru_RU sr sk sl es_ES es_US es_MX sv tr_TR uk uz ar zh_SG hi en_PH fr_CA fa th ur"
+ALL_LINGUAS="hy az eu bg ca zh_CN zh_HK zh_TW hr cs da nl_NL en en_US et fi fr_FR gl ka de_DE el_GR hu is ga it_IT ja_JP kk ko_KR lv lt mk nb pl pt_PT pt_BR ro ru_RU sr sk sl es_ES es_US es_MX sv tr_TR uk uz ar zh_SG hi en_PH fr_CA fa th ur as bn gu id km kn lo ml mn_MN mr ms my ne or pa si ta te tl vi"
 AM_GNU_GETTEXT
 
 # Init libtool
@@ -214,6 +214,9 @@ if test "$ISF_HAS_GCONF" = "yes"; then
   AC_DEFINE(HAVE_GCONF,1,[Have GConf functions.])
 fi
 
+# Check ECORE
+PKG_CHECK_MODULES(ECORE, [ecore])
+
 # Check EFL library
 PKG_CHECK_MODULES(EFL, [elementary ecore-x evas ecore ecore-evas ecore-file edje ecore-input ecore-ipc ecore-imf],
                   [ISF_HAS_EFL=yes],
@@ -257,11 +260,10 @@ PKG_CHECK_MODULES(MINICONTROL_PROVIDER, [minicontrol-provider],
                   [ISF_HAS_MINICONTROL=yes],
                   [ISF_HAS_MINICONTROL=no])
 
-# Check ail library
-PKG_CHECK_MODULES(AIL, [ail >= 0])
-
 # Check notification library
-PKG_CHECK_MODULES(NOTIFICATION, [notification])
+PKG_CHECK_MODULES(NOTIFICATION, [notification],
+                  [ISF_HAS_NOTIFICATION=yes],
+                  [ISF_HAS_NOTIFICATION=no])
 
 # Check tts library
 PKG_CHECK_MODULES(TTS, [tts],
@@ -293,6 +295,14 @@ PKG_CHECK_MODULES(FEEDBACK, [feedback],
                   [ISF_HAS_FEEDBACK=yes],
                   [ISF_HAS_FEEDBACK=no])
 
+# Check package manager
+PKG_CHECK_MODULES(PACKAGE_MANAGER, [capi-appfw-package-manager])
+
+# Check core package manager
+PKG_CHECK_MODULES(PKGMGR_INFO, [pkgmgr-info],
+                  [ISF_HAS_PKGMGR_INFO=yes],
+                  [ISF_HAS_PKGMGR_INFO=no])
+
 if test "$ISF_HAS_VCONF" = "yes"; then
   AC_DEFINE(HAVE_VCONF,1,[Have VConf functions.])
 fi
@@ -309,11 +319,17 @@ if test "$ISF_HAS_MINICONTROL" = "yes"; then
   AC_DEFINE(HAVE_MINICONTROL,1,[Have Minicontrol functions.])
 fi
 
+if test "$ISF_HAS_NOTIFICATION" = "yes"; then
+  AC_DEFINE(HAVE_NOTIFICATION,1,[Have Notification functions.])
+fi
+
 if test "$ISF_HAS_UIGADGET" = "yes"; then
   AC_DEFINE(HAVE_UIGADGET,1,[Have UI gadget functions.])
 fi
 
-AM_CONDITIONAL([MOBILE_ENV], [test x$ISF_HAS_UIGADGET = xyes])
+if test "$ISF_HAS_PKGMGR_INFO" = "yes"; then
+  AC_DEFINE(HAVE_PKGMGR_INFO,1,[Have Package manager functions.])
+fi
 
 # Check GTK2 library
 PKG_CHECK_MODULES(GTK2, [gtk+-2.0 >= 2.4.0 pango >= 1.1.0 gdk-pixbuf-2.0 >= 2.4.0],
@@ -451,6 +467,11 @@ AC_ARG_ENABLE(tray-icon,
               enable_tray_icon=no,
               enable_tray_icon=yes)
 
+AC_ARG_ENABLE(multiwindow-support,
+              [  --disable-multiwindow-support       Do not build Multiwindow Support],
+              enable_multiwindow_support=no,
+              enable_multiwindow_support=yes)
+
 if test "$have_x" = "yes"; then
   SCIM_BUILD_X11_UTILS=1
   enable_x11_utils=yes
@@ -551,6 +572,13 @@ if test "$enable_tray_icon" = "yes"; then
   fi
 else
   enable_tray_icon=no
+fi
+
+if test "$enable_multiwindow_support" = "yes"; then
+  enable_multiwindow_support=yes
+  AC_DEFINE(ENABLE_MULTIWINDOW_SUPPORT,1,[Enable the Multi Window code.])
+else
+  enable_multiwindow_support=no
 fi
 
 if test "$enable_efl_immodule" = "yes" -a "$ISF_HAS_EFL" = "yes"; then
@@ -744,5 +772,6 @@ Module options:
   EFL  Setting             $enable_setting_efl
 
   Enable TrayIcon          $enable_tray_icon
+  Enable MultiWindow       $enable_multiwindow_support
 ])
 

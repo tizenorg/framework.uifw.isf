@@ -4,7 +4,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2013 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -175,6 +175,10 @@ public:
         m_frontend->set_candidate_style (si->get_id (), portrait_line, mode);
     }
 
+    void slot_send_private_command(IMEngineInstanceBase * si, const String & command) {
+        m_frontend->send_private_command (si->get_id (), command);
+    }
+
     void attach_instance (const IMEngineInstancePointer &si)
     {
         si->signal_connect_show_preedit_string (
@@ -244,6 +248,9 @@ public:
 
         si->signal_connect_set_candidate_style (
             slot (this, &FrontEndBase::FrontEndBaseImpl::slot_set_candidate_style));
+
+        si->signal_connect_send_private_command (
+            slot (this, &FrontEndBase::FrontEndBaseImpl::slot_send_private_command));
     }
 };
 
@@ -728,6 +735,22 @@ FrontEndBase::set_layout (int id, unsigned int layout) const
 }
 
 void
+FrontEndBase::set_input_hint (int id, unsigned int input_hint) const
+{
+    IMEngineInstancePointer si = m_impl->find_instance (id);
+
+    if (!si.null ()) si->set_input_hint (input_hint);
+}
+
+void
+FrontEndBase::update_bidi_direction (int id, unsigned int bidi_direction) const
+{
+    IMEngineInstancePointer si = m_impl->find_instance (id);
+
+    if (!si.null ()) si->update_bidi_direction (bidi_direction);
+}
+
+void
 FrontEndBase::update_candidate_item_layout (int id, const std::vector<unsigned int> &row_items) const
 {
     IMEngineInstancePointer si = m_impl->find_instance (id);
@@ -781,6 +804,14 @@ FrontEndBase::set_imdata (int id, const char *data, unsigned int len) const
     IMEngineInstancePointer si = m_impl->find_instance (id);
 
     if (!si.null ()) si->set_imdata (data, len);
+}
+
+void
+FrontEndBase::set_autocapital_type (int id, int mode) const
+{
+    IMEngineInstancePointer si = m_impl->find_instance (id);
+
+    if (!si.null ()) si->set_autocapital_type (mode);
 }
 
 void
@@ -920,13 +951,19 @@ FrontEndBase::set_candidate_style (int id, ISF_CANDIDATE_PORTRAIT_LINE_T portrai
 {
 }
 void
+FrontEndBase::send_private_command  (int id, const String & command)
+{
+}
+void
 FrontEndBase::dump_instances (void)
 {
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
     IMEngineInstanceRepository::iterator it = m_impl->m_instance_repository.begin ();
     for (; it != m_impl->m_instance_repository.end (); it++) {
         String name = get_instance_uuid (it->first);
-        SCIM_DEBUG_FRONTEND(1) << "\t" << name << "-----" << it->first << "\n";
+        IMEngineInstanceRefCount::iterator it_ref = m_impl->m_instance_ref_count.find(it->first);
+        SCIM_DEBUG_FRONTEND(1) << "\t" << name << "--- id->" << it->first << " ref->"
+            << (it_ref==m_impl->m_instance_ref_count.end ()?0:it_ref->second) << "\n";
     }
 
     return;

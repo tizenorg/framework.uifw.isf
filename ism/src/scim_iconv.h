@@ -67,7 +67,7 @@ public:
     /**
      * @brief Assign operator
      */
-    const IConvert & operator = (const IConvert & iconvert);
+    IConvert & operator = (const IConvert & iconvert);
 
     /**
      * @brief Set the working local encoding.

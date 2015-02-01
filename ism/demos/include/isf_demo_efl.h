@@ -2,7 +2,7 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2012-2013 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  * Contact: Shuo Liu <shuo0805.liu@samsung.com>, Jihoon Kim <jihoon48.kim@samsung.com>
  *
@@ -39,6 +39,7 @@ struct appdata {
     Evas_Object *win_main;
     Evas_Object *layout_main;     // Layout widget based on EDJ
     Evas_Object *naviframe;
+    Evas_Object *menu_popup;
 
     int is_frameview;
 
@@ -54,7 +55,7 @@ struct _menu_item {
 };
 
 // Utility functions
-Evas_Object *create_ef (Evas_Object *parent, const char *label, const char *guide_text);
+Evas_Object *create_ef (Evas_Object *parent, const char *label, const char *guide_text, Evas_Object **entry = NULL);
 void         add_layout_to_naviframe (void *data, Evas_Object *lay_in, const char *title);
 
 #endif /* __ISF_DEMO_EFL_H */

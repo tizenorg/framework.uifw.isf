@@ -9,7 +9,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2013 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -522,6 +522,27 @@ protected:
     void set_imdata (int id, const char *data, unsigned int len) const;
 
     /**
+     * @brief Set autocapital type
+     * @param id the IMEngine instance id.
+     * @param mode autocapital type
+     */
+    void set_autocapital_type (int id, int mode) const;
+
+    /**
+     * @brief Set input hint.
+     * @param id the IMEngine instance id.
+     * @param input_hint - the input hint.
+     */
+    void set_input_hint (int id, unsigned int input_hint) const;
+
+    /**
+     * @brief Update BiDi direction. (Neutral / LTR / RTL)
+     * @param id the IMEngine instance id.
+     * @param bidi_direction - the BiDi direction.
+     */
+    void update_bidi_direction (int id, unsigned int bidi_direction) const;
+
+    /**
      * @}
      */
 
@@ -748,6 +769,15 @@ protected:
     virtual void set_candidate_style (int                           id,
                                       ISF_CANDIDATE_PORTRAIT_LINE_T portrait_line,
                                       ISF_CANDIDATE_MODE_T          mode);
+
+    /**
+     * @brief Send a private command to an application.
+     *
+     * @param id     the id of the IMEngine instance. It must have been focused in.
+     * @param command The private command
+     */
+    virtual void send_private_command  (int id, const String &command);
+
     /**
      * @}
      */

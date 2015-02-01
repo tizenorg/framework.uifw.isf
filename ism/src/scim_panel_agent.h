@@ -13,7 +13,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2004-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2013 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -66,12 +66,6 @@ namespace scim {
  * which need to communicate with Panel daemons.
  * @{
  */
-
-typedef enum
-{
-    TOOLBAR_KEYBOARD_MODE = 0,  /* Hardware keyboard ISE */
-    TOOLBAR_HELPER_MODE         /* Software keyboard ISE */
-} TOOLBAR_MODE_T;
 
 typedef struct _ISE_INFO
 {
@@ -726,6 +720,13 @@ public:
     Connection signal_connect_start_default_ise          (PanelAgentSlotVoid                *slot);
 
     /**
+     * @brief Signal: stop default ise.
+     *
+     * slot prototype: void stop_default_ise (void);
+     */
+    Connection signal_connect_stop_default_ise           (PanelAgentSlotVoid                *slot);
+
+    /**
      * @brief Signal: Get the list of keyboard ise name.
      *
      * slot prototype: bool get_keyboard_ise_list (std::vector<String> &);
@@ -1146,9 +1147,9 @@ public:
     /**
      * @brief Signal: Set hardware mode
      *
-     * slot prototype: void set_hardware_keyboard_mode (void);
+     * slot prototype: void set_keyboard_mode (void);
      */
-    Connection signal_connect_set_hardware_keyboard_mode (PanelAgentSlotVoid                *slot);
+    Connection signal_connect_set_keyboard_mode (PanelAgentSlotInt                *slot);
 
     /**
      * @brief Signal: Notifies the client finished handling WILL_HIDE event for candidate

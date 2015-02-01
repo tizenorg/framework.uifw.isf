@@ -7,7 +7,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2013 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -123,6 +123,8 @@ protected:
 
     virtual bool get_selection           (int siid, WideString &text);
     virtual bool set_selection           (int siid, int start, int end);
+
+    virtual void send_private_command    (int siid, const String & command);
 
 public:
     virtual void init (int argc, char **argv);

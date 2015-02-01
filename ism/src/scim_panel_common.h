@@ -41,6 +41,11 @@ namespace scim {
  * which need to communicate with Panel daemons.
  * @{
  */
+typedef enum
+{
+    TOOLBAR_KEYBOARD_MODE = 0,  /* Hardware keyboard ISE */
+    TOOLBAR_HELPER_MODE         /* Software keyboard ISE */
+} TOOLBAR_MODE_T;
 
 class EAPI PanelError: public Exception
 {

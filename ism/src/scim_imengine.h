@@ -14,7 +14,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2013 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -67,7 +67,7 @@ enum ClientCapability
     SCIM_CLIENT_CAP_ONTHESPOT_PREEDIT     = (1 << 0),   /**< The client support OnTheSpot preedit (embed preedit string into client window) */
     SCIM_CLIENT_CAP_SINGLE_LEVEL_PROPERTY = (1 << 1),   /**< The client support displaying single level property, property tree may not be supported*/
     SCIM_CLIENT_CAP_MULTI_LEVEL_PROPERTY  = (1 << 2),   /**< The client support displaying multiple level property, aka. property tree */
-    SCIM_CLIENT_CAP_TRIGGER_PROPERTY      = (1 << 3),   /**< The client is capabile to trigger the IMEngine property. */
+    SCIM_CLIENT_CAP_TRIGGER_PROPERTY      = (1 << 3),   /**< The client is capable to trigger the IMEngine property. */
     SCIM_CLIENT_CAP_HELPER_MODULE         = (1 << 4),   /**< The client support helper module */
     SCIM_CLIENT_CAP_SURROUNDING_TEXT      = (1 << 5),   /**< The client support get/delete surrounding text operations */
     SCIM_CLIENT_CAP_ALL_CAPABILITIES      = 0x3F
@@ -521,6 +521,8 @@ public:
     Connection signal_connect_contract_candidate      (IMEngineSlotVoid *slot);
 
     Connection signal_connect_set_candidate_style     (IMEngineSlotCandidateStyle *slot);
+
+    Connection signal_connect_send_private_command    (IMEngineSlotString *slot);
     /** @} */
 
 public:
@@ -730,6 +732,27 @@ public:
      */
     virtual void set_imdata (const char *data, unsigned int len);
 
+    /**
+     * @brief Set autocapital type.
+     *
+     * @param mode autocapital type.
+     */
+    virtual void set_autocapital_type (int mode);
+
+    /**
+     * @brief Set input hint
+     *
+     * @param input_hint - the input hint.
+     */
+    virtual void set_input_hint (unsigned int input_hint);
+
+    /**
+     * @brief When bidi direction is changed, this method will be invoked by FrontEnd.
+     *
+     * @param bidi_direction - the bidi direction.
+     */
+    virtual void update_bidi_direction (unsigned int bidi_direction);
+
 protected:
     /**
      * @name Signal activation functions
@@ -834,7 +857,7 @@ protected:
     /**
      * @brief Commit a string to the client application.
      *
-     * The preedit string should be hid before calling
+     * The preedit string should be hidden before calling
      * this method. Otherwise the clients which use
      * OnTheSpot input mode will flicker annoyingly.
      *
@@ -909,9 +932,9 @@ protected:
      *
      * @param text          location to store the context string around the insertion point.
      * @param cursor        location to store index of the insertion cursor within @text.
-     * @param maxlen_before the maxmium length of context string to be retrieved
+     * @param maxlen_before the maximum length of context string to be retrieved
      *                      before the cursor; -1 means unlimited.
-     * @param maxlen_after  the maxmium length of context string to be retrieved
+     * @param maxlen_after  the maximum length of context string to be retrieved
      *                      after the cursor; -1 means unlimited.
      *
      * @return true if surrounding text was provided.
@@ -973,6 +996,8 @@ protected:
      */
     void set_candidate_style (ISF_CANDIDATE_PORTRAIT_LINE_T portrait_line = ONE_LINE_CANDIDATE,
                               ISF_CANDIDATE_MODE_T          mode = FIXED_CANDIDATE_WINDOW);
+
+   void send_private_command (const String &command);
 
     /** @} */
 };

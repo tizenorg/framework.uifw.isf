@@ -4,7 +4,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2004-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2013 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -117,8 +117,8 @@ int main (int argc, char *argv [])
                 std::vector<String> debug_mask_list;
                 scim_split_string_list (debug_mask_list, argv [i], ',');
                 DebugOutput::disable_debug (SCIM_DEBUG_AllMask);
-                for (size_t j=0; j<debug_mask_list.size (); j++)
-                    DebugOutput::enable_debug_by_name (debug_mask_list [j]);
+                for (size_t k=0; k<debug_mask_list.size (); k++)
+                    DebugOutput::enable_debug_by_name (debug_mask_list [k]);
             }
             continue;
         }
@@ -173,7 +173,7 @@ int main (int argc, char *argv [])
         return -1;
     }
 
-    set_app_privilege ("isf", NULL, NULL);
+    perm_app_set_privilege ("isf", NULL, NULL);
 
     HelperModule helper_module (helper);
 

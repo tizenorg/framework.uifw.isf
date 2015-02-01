@@ -2,7 +2,7 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2012-2013 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  * Contact: Shuo Liu <shuo0805.liu@samsung.com>, Jihoon Kim <jihoon48.kim@samsung.com>
  *
@@ -28,34 +28,41 @@
 static Ecore_IMF_Context *imf_context = NULL;
 static Elm_Genlist_Item_Class itci;
 
-enum {
-    INPUT_PANEL_GEOMETRY_GET,
-    INPUT_PANEL_SHOW,
-    INPUT_PANEL_HIDE,
-    INPUT_PANEL_IMDATA_SET,
-    INPUT_PANEL_IMDATA_GET,
-    INPUT_PANEL_LAYOUT_SET,
-    INPUT_PANEL_LAYOUT_GET,
-    INPUT_PANEL_STATE_GET,
-    GET_ACTIVE_ISE,
-    GET_ISE_INFO,
-    GET_ISE_LIST,
-    RESET_DEFAULT_ISE
-};
+static void test_input_panel_geometry_get (void *data, Evas_Object *obj, void *event_info);
+static void test_input_panel_show (void *data, Evas_Object *obj, void *event_info);
+static void test_input_panel_hide (void *data, Evas_Object *obj, void *event_info);
+static void test_input_panel_imdata_set (void *data, Evas_Object *obj, void *event_info);
+static void test_input_panel_imdata_get (void *data, Evas_Object *obj, void *event_info);
+static void test_input_panel_layout_set (void *data, Evas_Object *obj, void *event_info);
+static void test_input_panel_layout_get (void *data, Evas_Object *obj, void *event_info);
+static void test_input_panel_state_get (void *data, Evas_Object *obj, void *event_info);
+static void test_get_active_ise (void *data, Evas_Object *obj, void *event_info);
+static void test_get_ise_list (void *data, Evas_Object *obj, void *event_info);
+static void test_get_ise_info (void *data, Evas_Object *obj, void *event_info);
+static void test_get_initial_ise (void *data, Evas_Object *obj, void *event_info);
+static void test_get_ise_count (void *data, Evas_Object *obj, void *event_info);
+static void test_reset_default_ise (void *data, Evas_Object *obj, void *event_info);
+static void test_show_ise_selector (void *data, Evas_Object *obj, void *event_info);
 
-const char *api_list[]={
-    "PANEL GEOMETRY GET",
-    "INPUT PANEL SHOW",
-    "INPUT PANEL HIDE",
-    "INPUT PANEL IMDATA SET",
-    "INPUT PANEL IMDATA GET",
-    "INPUT PANEL LAYOUT SET",
-    "INPUT PANEL LAYOUT GET",
-    "INPUT PANEL STATE GET",
-    "GET ACTIVE ISE",
-    "GET ACTIVE ISE INFO",
-    "GET ISE LIST",
-    "RESET DEFAULT ISE"
+static struct _menu_item imcontrol_menu_its[] = {
+    { "PANEL GEOMETRY GET", test_input_panel_geometry_get },
+    { "INPUT PANEL SHOW", test_input_panel_show },
+    { "INPUT PANEL HIDE", test_input_panel_hide },
+    { "INPUT PANEL IMDATA SET", test_input_panel_imdata_set },
+    { "INPUT PANEL IMDATA GET", test_input_panel_imdata_get },
+    { "INPUT PANEL LAYOUT SET", test_input_panel_layout_set },
+    { "INPUT PANEL LAYOUT GET", test_input_panel_layout_get },
+    { "INPUT PANEL STATE GET", test_input_panel_state_get },
+    { "GET ACTIVE ISE", test_get_active_ise },
+    { "GET ACTIVE ISE INFO", test_get_ise_info },
+    { "GET INITIAL ISE", test_get_initial_ise },
+    { "GET ISE LIST", test_get_ise_list },
+    { "GET ISE COUNT", test_get_ise_count },
+    { "RESET DEFAULT ISE", test_reset_default_ise },
+    { "SHOW ISE SELECTOR", test_show_ise_selector },
+
+    /* do not delete below */
+    { NULL, NULL}
 };
 
 static void test_input_panel_geometry_get (void *data, Evas_Object *obj, void *event_info)
@@ -70,7 +77,7 @@ static void test_input_panel_geometry_get (void *data, Evas_Object *obj, void *e
     }
 }
 
-void test_input_panel_show (void *data, Evas_Object *obj, void *event_info)
+static void test_input_panel_show (void *data, Evas_Object *obj, void *event_info)
 {
     if (imf_context != NULL) {
         ecore_imf_context_focus_in (imf_context);
@@ -78,7 +85,7 @@ void test_input_panel_show (void *data, Evas_Object *obj, void *event_info)
     }
 }
 
-void test_input_panel_hide (void *data, Evas_Object *obj, void *event_info)
+static void test_input_panel_hide (void *data, Evas_Object *obj, void *event_info)
 {
     if (imf_context != NULL) {
         ecore_imf_context_focus_out (imf_context);
@@ -86,7 +93,7 @@ void test_input_panel_hide (void *data, Evas_Object *obj, void *event_info)
     }
 }
 
-void test_input_panel_imdata_set (void *data, Evas_Object *obj, void *event_info)
+static void test_input_panel_imdata_set (void *data, Evas_Object *obj, void *event_info)
 {
     // need ISE to deal with the data
     char buf[256] = "ur imdata";
@@ -94,12 +101,11 @@ void test_input_panel_imdata_set (void *data, Evas_Object *obj, void *event_info
         ecore_imf_context_input_panel_imdata_set (imf_context, buf, sizeof (buf));
 }
 
-void test_input_panel_imdata_get (void *data, Evas_Object *obj, void *event_info)
+static void test_input_panel_imdata_get (void *data, Evas_Object *obj, void *event_info)
 {
     int len = 256;
-    char* buf = (char*) malloc (len);
+    char* buf = (char*) calloc (1, len*sizeof (char));
     if (buf != NULL) {
-        memset (buf, '\0', len);
         if (imf_context != NULL) {
             ecore_imf_context_input_panel_imdata_get (imf_context, buf, &len);
             printf ("get imdata  %s, and len is %d ...\n", (char *)buf, len);
@@ -108,14 +114,14 @@ void test_input_panel_imdata_get (void *data, Evas_Object *obj, void *event_info
     }
 }
 
-void test_input_panel_layout_set (void *data, Evas_Object *obj, void *event_info)
+static void test_input_panel_layout_set (void *data, Evas_Object *obj, void *event_info)
 {
     Ecore_IMF_Input_Panel_Layout layout = ECORE_IMF_INPUT_PANEL_LAYOUT_EMAIL;
     if (imf_context != NULL)
         ecore_imf_context_input_panel_layout_set (imf_context, layout);
 }
 
-void test_input_panel_layout_get (void *data, Evas_Object *obj, void *event_info)
+static void test_input_panel_layout_get (void *data, Evas_Object *obj, void *event_info)
 {
     Ecore_IMF_Input_Panel_Layout layout;
     if (imf_context != NULL) {
@@ -124,7 +130,7 @@ void test_input_panel_layout_get (void *data, Evas_Object *obj, void *event_info
     }
 }
 
-void test_input_panel_state_get (void *data, Evas_Object *obj, void *event_info)
+static void test_input_panel_state_get (void *data, Evas_Object *obj, void *event_info)
 {
     Ecore_IMF_Input_Panel_State state;
 
@@ -134,7 +140,7 @@ void test_input_panel_state_get (void *data, Evas_Object *obj, void *event_info)
     }
 }
 
-void test_get_active_ise (void *data, Evas_Object *obj, void *event_info)
+static void test_get_active_ise (void *data, Evas_Object *obj, void *event_info)
 {
     char *uuid = NULL;
     int ret = isf_control_get_active_ise (&uuid);
@@ -144,22 +150,26 @@ void test_get_active_ise (void *data, Evas_Object *obj, void *event_info)
         free (uuid);
 }
 
-void test_get_ise_list (void *data, Evas_Object *obj, void *event_info)
+static void test_get_ise_list (void *data, Evas_Object *obj, void *event_info)
 {
     char **iselist = NULL;
     int count = isf_control_get_ise_list (&iselist);
+    printf ("Count : %d\n", count);
 
     for (int i = 0; i < count; i++) {
         if (iselist[i]) {
             printf (" [%d : %s]\n", i, iselist[i]);
             free (iselist[i]);
         }
+        else {
+            printf (" [%d] No data\n", i);
+        }
     }
     if (iselist)
         free (iselist);
 }
 
-void test_get_ise_info (void *data, Evas_Object *obj, void *event_info)
+static void test_get_ise_info (void *data, Evas_Object *obj, void *event_info)
 {
     char *uuid = NULL;
     int ret = isf_control_get_active_ise (&uuid);
@@ -181,7 +191,12 @@ void test_get_ise_info (void *data, Evas_Object *obj, void *event_info)
         free (uuid);
 }
 
-void test_reset_default_ise (void *data, Evas_Object *obj, void *event_info)
+static void test_get_ise_count (void *data, Evas_Object *obj, void *event_info)
+{
+    printf ("S/W keyboard : %d, H/W keyboard : %d\n", isf_control_get_ise_count (SOFTWARE_KEYBOARD_ISE), isf_control_get_ise_count (HARDWARE_KEYBOARD_ISE));
+}
+
+static void test_reset_default_ise (void *data, Evas_Object *obj, void *event_info)
 {
     int ret = isf_control_set_active_ise_to_default ();
     if (ret == 0)
@@ -190,55 +205,39 @@ void test_reset_default_ise (void *data, Evas_Object *obj, void *event_info)
         printf (" Reset default ISE is failed!!!\n");
 }
 
-char *gli_label_get (void *data, Evas_Object *obj, const char *part)
+static void test_show_ise_selector (void *data, Evas_Object *obj, void *event_info)
+{
+    int ret = isf_control_show_ise_selector ();
+    if (ret == 0)
+        printf (" Show ISE selector is successful!\n");
+    else
+        printf (" Show ISE selector is failed!!!\n");
+}
+
+static void test_get_initial_ise (void *data, Evas_Object *obj, void *event_info)
+{
+    char *uuid = NULL;
+    int ret = isf_control_get_initial_ise (&uuid);
+    if (ret > 0 && uuid)
+        printf (" Get initial ISE: %s\n", uuid);
+    if (uuid)
+        free (uuid);
+}
+
+static char *gli_label_get (void *data, Evas_Object *obj, const char *part)
 {
     int j = (int)data;
-    return strdup (api_list[j]);
+    return strdup (imcontrol_menu_its[j].name);
 }
 
 static void test_api (void *data, Evas_Object *obj, void *event_info)
 {
     int j = (int)data;
-    switch (j) {
-    case INPUT_PANEL_GEOMETRY_GET:
-        test_input_panel_geometry_get (NULL, obj, event_info);
-        break;
-    case INPUT_PANEL_SHOW:
-        test_input_panel_show (NULL, obj, event_info);
-        break;
-    case INPUT_PANEL_HIDE:
-        test_input_panel_hide (NULL, obj, event_info);
-        break;
-    case INPUT_PANEL_IMDATA_SET:
-        test_input_panel_imdata_set (NULL,obj, event_info);
-        break;
-    case INPUT_PANEL_IMDATA_GET:
-        test_input_panel_imdata_get (NULL,obj, event_info);
-        break;
-    case INPUT_PANEL_LAYOUT_SET:
-        test_input_panel_layout_set (NULL,obj, event_info);
-        break;
-    case INPUT_PANEL_LAYOUT_GET:
-        test_input_panel_layout_get (NULL,obj, event_info);
-        break;
-    case INPUT_PANEL_STATE_GET:
-        test_input_panel_state_get (NULL, obj, event_info);
-        break;
-    case GET_ACTIVE_ISE:
-        test_get_active_ise (NULL, obj, event_info);
-        break;
-    case GET_ISE_LIST:
-        test_get_ise_list (NULL, obj, event_info);
-        break;
-    case GET_ISE_INFO:
-        test_get_ise_info (NULL, obj, event_info);
-        break;
-    case RESET_DEFAULT_ISE:
-        test_reset_default_ise (NULL, obj, event_info);
-        break;
-    default:
-        break;
-    }
+    Elm_Object_Item *it = (Elm_Object_Item *)event_info;
+    if (it)
+        elm_genlist_item_selected_set (it, EINA_FALSE);
+
+    imcontrol_menu_its[j].func (NULL, obj, event_info);
 }
 
 static Eina_Bool _nf_back_event_cb (void *data, Elm_Object_Item *it)
@@ -253,7 +252,7 @@ static Eina_Bool _nf_back_event_cb (void *data, Elm_Object_Item *it)
 
 static Evas_Object *_create_imcontrolapi_list (Evas_Object *parent)
 {
-    int i, num;
+    int i = 0;
 
     Evas_Object *gl = elm_genlist_add (parent);
 
@@ -263,11 +262,11 @@ static Evas_Object *_create_imcontrolapi_list (Evas_Object *parent)
     itci.func.state_get = NULL;
     itci.func.del       = NULL;
 
-    num = sizeof (api_list) / sizeof (char *);
-    for (i = 0; i < num; i++) {
+    while (imcontrol_menu_its[i].name != NULL) {
         elm_genlist_item_append (gl, &itci,
                                  (void *)i/* item data */, NULL/* parent */, ELM_GENLIST_ITEM_NONE, test_api/* func */,
                                  (void *)i/* func data */);
+        i++;
     }
 
     return gl;

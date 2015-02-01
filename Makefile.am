@@ -56,20 +56,12 @@ endif
 pkgconfig_DATA          = isf.pc scim.pc \
 			  $(GTK_UTILS_PKGCONFIG)
 
-if MOBILE_ENV
 smackdir = /etc/smack/accesses.d/
-else
-smackdir = /etc/smack/accesses2.d/
-endif
 smack_DATA = isf.rule
 
 # $(libdir) will be /usr/lib64 on x86_64 arch, so hard-coded.
-
-if MOBILE_ENV
-else
 systemduserunitdir = /usr/lib/systemd/user
 systemduserunit_DATA = scim.service
-endif
 
 ACLOCAL_AMFLAGS = -I ism/m4
 
@@ -81,9 +73,6 @@ update-ChangeLog:
 uninstall-local:
 	rm -rf @SCIM_MODULE_PATH@
 
-if MOBILE_ENV
-else
 install-data-hook:
 	$(mkinstalldirs) $(DESTDIR)$(systemduserunitdir)/core-efl.target.wants
 	ln -sf ../scim.service $(DESTDIR)$(systemduserunitdir)/core-efl.target.wants/scim.service
-endif

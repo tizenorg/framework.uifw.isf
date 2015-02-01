@@ -2,7 +2,7 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2012-2013 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  * Contact: Haifeng Deng <haifeng.deng@samsung.com>, Hengliang Luo <hl.luo@samsung.com>
  *
@@ -32,6 +32,7 @@
 #include <string.h>
 #include "scim.h"
 #include "scim_stl_map.h"
+#include "isf_panel_efl.h"
 #include "isf_panel_utility.h"
 #include "isf_query_utility.h"
 #include <sys/stat.h>
@@ -42,11 +43,6 @@
 /////////////////////////////////////////////////////////////////////////////
 // Declaration of macro.
 /////////////////////////////////////////////////////////////////////////////
-#ifdef LOG_TAG
-# undef LOG_TAG
-#endif
-#define LOG_TAG                                         "ISF_PANEL_EFL"
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Declaration of global variables.
@@ -578,7 +574,8 @@ bool isf_update_ise_module (const String strModulePath, const ConfigPointer &con
     bool ret = false;
     struct stat filestat;
     if (stat (strModulePath.c_str (), &filestat) == -1) {
-        LOGW ("can't access : %s, reason : %s\n", strModulePath.c_str (), strerror (errno));
+        char buf_err[256];
+        LOGW ("can't access : %s, reason : %s\n", strModulePath.c_str (), strerror_r (errno, buf_err, sizeof (buf_err)));
         return false;
     }
 
@@ -644,6 +641,65 @@ String isf_get_normalized_language (String src_str)
 
     return dst_str;
 }
+
+bool isf_add_helper_ise (HelperInfo helper_info, String module_name)
+{
+    String filename = String (USER_ENGINE_FILE_NAME);
+    FILE *engine_list_file = fopen (filename.c_str (), "a");
+    if (engine_list_file == NULL) {
+        LOGW ("Failed to open %s!!!\n", filename.c_str ());
+        return false;
+    }
+
+    _uuids.push_back (helper_info.uuid);
+    _names.push_back (helper_info.name);
+    _langs.push_back (isf_get_normalized_language ("en_US")); // FIXME
+    _module_names.push_back (module_name);
+    _icons.push_back (helper_info.icon);
+    _modes.push_back (TOOLBAR_HELPER_MODE);
+    _options.push_back (helper_info.option);
+
+    char mode[12];
+    char option[12];
+    snprintf (mode, sizeof (mode), "%d", (int)TOOLBAR_HELPER_MODE);
+    snprintf (option, sizeof (option), "%d", helper_info.option);
+
+    String line = isf_combine_ise_info_string (helper_info.name, helper_info.uuid, module_name, isf_get_normalized_language ("en_US"),
+                                               helper_info.icon, String (mode), String (option), String (""));
+    if (fputs (line.c_str (), engine_list_file) < 0) {
+         LOGW ("Failed to write (%s)!!!\n", line.c_str ());
+    }
+
+    if (fclose (engine_list_file) != 0)
+        LOGW ("Failed to fclose %s!!!\n", filename.c_str ());
+
+    return true;
+}
+
+bool isf_remove_helper_ise (const char *uuid, const ConfigPointer &config)
+{
+    String filename = String (USER_ENGINE_FILE_NAME);
+    if (isf_remove_ise_info_from_file_by_uuid (filename.c_str (), uuid)) {
+        isf_get_factory_list (ALL_ISE, config, _uuids, _names, _module_names, _langs, _icons, _modes, _options);
+
+        /* Update _groups */
+        _groups.clear ();
+        std::vector<String> ise_langs;
+        for (size_t i = 0; i < _uuids.size (); ++i) {
+            scim_split_string_list (ise_langs, _langs[i]);
+            for (size_t j = 0; j < ise_langs.size (); j++) {
+                if (std::find (_groups[ise_langs[j]].begin (), _groups[ise_langs[j]].end (), i) == _groups[ise_langs[j]].end ())
+                    _groups[ise_langs[j]].push_back (i);
+            }
+            ise_langs.clear ();
+        }
+        return true;
+    } else {
+        LOGW ("Failed to remove uuid : %s from cache file : %s!!!", uuid, filename.c_str ());
+        return false;
+    }
+}
+
 
 /*
 vi:ts=4:nowrap:ai:expandtab

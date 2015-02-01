@@ -8,7 +8,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2013 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -146,6 +146,8 @@ public:
     IMEngineSignalVoid                    m_signal_contract_candidate;
 
     IMEngineSignalCandidateStyle          m_signal_set_candidate_style;
+
+    IMEngineSignalString                  m_signal_send_private_command;
 
     int    m_id;
     void * m_frontend_data;
@@ -404,6 +406,16 @@ IMEngineInstanceBase::set_layout (unsigned int layout)
 }
 
 void
+IMEngineInstanceBase::set_input_hint (unsigned int input_hint)
+{
+}
+
+void
+IMEngineInstanceBase::update_bidi_direction (unsigned int bidi_direction)
+{
+}
+
+void
 IMEngineInstanceBase::update_candidate_item_layout (const std::vector<unsigned int> &row_items)
 {
 }
@@ -623,6 +635,12 @@ IMEngineInstanceBase::signal_connect_set_candidate_style (IMEngineSlotCandidateS
     return m_impl->m_signal_set_candidate_style.connect (slot);
 }
 
+Connection
+IMEngineInstanceBase::signal_connect_send_private_command (IMEngineSlotString *slot)
+{
+    return m_impl->m_signal_send_private_command.connect (slot);
+}
+
 void
 IMEngineInstanceBase::show_preedit_string ()
 {
@@ -794,6 +812,17 @@ IMEngineInstanceBase::set_candidate_style (ISF_CANDIDATE_PORTRAIT_LINE_T portrai
                                            ISF_CANDIDATE_MODE_T          mode)
 {
     m_impl->m_signal_set_candidate_style (this, portrait_line, mode);
+}
+
+void
+IMEngineInstanceBase::set_autocapital_type (int mode)
+{
+}
+
+void
+IMEngineInstanceBase::send_private_command (const String &command)
+{
+    m_impl->m_signal_send_private_command (this, command);
 }
 
 // implementation of DummyIMEngine

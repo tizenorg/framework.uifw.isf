@@ -2,7 +2,7 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2012-2013 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  * Contact: Jihoon Kim <jihoon48.kim@samsung.com>, Haifeng Deng <haifeng.deng@samsung.com>
  *
@@ -75,7 +75,9 @@ extern "C"
         NULL, /* input_panel_event_callback_add */
         NULL, /* input_panel_event_callback_del */
         isf_imf_context_input_panel_language_locale_get,
-        isf_imf_context_candidate_window_geometry_get
+        isf_imf_context_candidate_window_geometry_get,
+        isf_imf_context_input_hint_set,
+        isf_imf_context_bidi_direction_set
     };
 
     static Ecore_IMF_Context *imf_module_create (void);

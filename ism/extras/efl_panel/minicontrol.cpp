@@ -2,7 +2,7 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2012-2013 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  * Contact: Jihoon Kim <jihoon48.kim@samsung.com>
  *
@@ -22,6 +22,7 @@
  *
  */
 #include "minicontrol.h"
+#include "isf_panel_efl.h"
 #include <Elementary.h>
 #include <minicontrol-provider.h>
 
@@ -56,24 +57,19 @@ MiniControl::create (const char *name, const char *file, int angle)
         return false;
     }
 
+    elm_win_alpha_set (win, EINA_TRUE);
+
     double scale = elm_config_scale_get ();
     if (angle == 90 || angle == 270)
         evas_object_resize (win, MINI_CONTROLLER_WIDTH_LANDSCAPE * scale, MINI_CONTROLLER_HEIGHT * scale);
     else
         evas_object_resize (win, MINI_CONTROLLER_WIDTH * scale, MINI_CONTROLLER_HEIGHT * scale);
 
-    /* create bg */
-    Evas_Object *bg;
-    bg = elm_bg_add (win);
-    evas_object_size_hint_weight_set (bg, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
-    evas_object_size_hint_align_set (bg, EVAS_HINT_FILL, EVAS_HINT_FILL);
-    elm_win_resize_object_add (win, bg);
-    elm_bg_color_set (bg, 0, 0, 0);
-    evas_object_show (bg);
-
     /* load layout */
     layout = elm_layout_add (win);
-    elm_layout_file_set (layout, file , "mini_controller");
+    if (!elm_layout_file_set (layout, file , "mini_controller"))
+        LOGW ("Failed to elm_layout_file_set : %s\n", file);
+
     evas_object_size_hint_weight_set (layout, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
     evas_object_size_hint_align_set (layout, EVAS_HINT_FILL, EVAS_HINT_FILL);
 
@@ -115,8 +111,8 @@ MiniControl::set_text (const char *title, const char *content)
         Evas_Object *content_label = elm_label_add (layout_edj);
         elm_label_line_wrap_set (content_label, ELM_WRAP_WORD);
 
-        eina_strbuf_append_printf (title_text, "<font_size=30 color=#ffffff>%s</>", title);
-        eina_strbuf_append_printf (content_text, "<font_size=28 color=#abaaaa>%s</>", content);
+        eina_strbuf_append_printf (title_text, "<font_size=45 color=#070707>%s</>", title);
+        eina_strbuf_append_printf (content_text, "<font_size=42 color=#4c4c4c>%s</>", content);
 
         elm_object_text_set (title_label, eina_strbuf_string_get (title_text));
         elm_object_part_content_set (layout, "title_text", title_label);

@@ -388,6 +388,7 @@ protected:
     virtual bool filter_delete_surrounding_text (int offset, int len);
     virtual bool filter_get_selection (WideString &text);
     virtual bool filter_set_selection (int start, int end);
+    virtual void filter_send_private_command (const String &command);
     /** @} */
 };
 

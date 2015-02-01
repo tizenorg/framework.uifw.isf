@@ -100,7 +100,7 @@ int main (int argc, char *argv [])
         time (0), getpid (), getppid (), __FILE__, __func__);
     isf_save_log (buf);
 
-    set_app_privilege ("isf", NULL, NULL);
+    perm_app_set_privilege ("isf", NULL, NULL);
 
     while (i < argc) {
         if (++i >= argc) break;

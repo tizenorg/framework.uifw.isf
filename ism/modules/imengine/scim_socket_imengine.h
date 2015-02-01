@@ -8,7 +8,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2013 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -116,6 +116,9 @@ public:
     virtual void candidate_more_window_hide (void);
     virtual void longpress_candidate (unsigned int index);
     virtual void set_imdata (const char *data, unsigned int len);
+    virtual void set_autocapital_type (int mode);
+    virtual void set_input_hint (unsigned int input_hint);
+    virtual void update_bidi_direction (unsigned int bidi_direction);
 
 private:
     bool commit_transaction (Transaction &trans);

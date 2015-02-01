@@ -1,3 +1,82 @@
+ISF 2.4.7720 :
+ 1. Replace deprecated API of package manager
+ 2. Add missing dependency
+ 3. check Web IME package to use category instead of label
+ 4. [demo] code cleanup
+ 5. fix fail to launch Web IME in no OSP environment
+ 6. fix build warning in no minicontrol environment
+
+
+ISF 2.4.7709 :
+ 1. fix build error in no minicontrol library environment
+ 2. Set smack for Web IME
+ 3. Fix minicontrol layout
+ 4. Monitor Web IME install/uninstall/update and update engine list
+ 5. Fix _default_instance double free bug
+ 6. Fix bug infinite connection logs are found in no helper module
+ 7. Remove unnecessary repetition if the size of helpers is equal to 0
+ 8. Add ecore loop into frontend
+ 9. Set FD_CLOEXEC to release FD on exec
+
+
+ISF 2.4.7618 :
+ 1. [panel] Make minicontrol be transparent
+ 2. [panel] remove unused variables
+
+
+ISF 2.4.7610 :
+ 1. changed the obtaining time of input window
+
+
+ISF 2.4.7609 :
+ 1. Support conditional build related to ui-gadget library
+ 2. Support conditional build about notification library
+ 3. Replace deprecated ail_package prefix () API with new one
+ 4. adjust the timer value of hiding ISE
+ 5. Use timer not to hide and show IME again in focus-out and focus-in event between applications
+ 6. Add return value in Transaction::read_from_buffer
+ 7. [demo] remove code to set scale
+ 8. fix build warning
+ 9. [panel] Fix inappropriate X event mask
+
+
+ISF 2.4.7528 :
+ 1. removed wrong syntax and words in the po_file
+ 2. modified translated words and added vi.po, mn_mn.po
+ 3. [demo] Refactoring code in imcontrol demo
+ 4. change keyboard mode by touch & code refactoring about the keyboard mode
+
+
+ISF 2.4.7517 :
+ 1. Add API to get the number of S/W or H/W keyboard ISEs
+ 2. [demo] unselect menu item when pressing menu
+ 3. Refactoring ise selector code
+ 4. Add isf_control_show_ise_selector API
+ 5. Correct build error
+ 6. added hotkeys in the config file for hiding ise
+
+
+ISF 2.4.7510 :
+ 1. Support conditional build about minicontrol
+ 2. Writing description about some APIs in scim_helper.h
+ 3. Add preload keyboard ise feature
+ 4. Use appropriate return value enum type of callback func registered by ecore_event_handler_add
+ 5. Allow NULL pointer in isf_control_get_ise_info_and_module_name if programmer is not interested in
+ 6. Launch ISE on request
+ 7. fix event type in ecore key event handler
+ 8. Add aul in smack rule
+
+
+ISF 2.4.7426 :
+ 1. [panel] check NULL or not before deleting object
+ 2. Fix API description error
+ 3. Remove unused config path
+ 4. Commented out the code leaving isf file logs
+ 5. update the translated word for the supporting language
+ 6. fix memset buffer size of 0 issue detected by prevent
+ 7. fix smack label issue of some locale directories such as es_US, fa, th, and ur
+
+
 ISF 2.4.7424 :
  1. Add bt-service in isf.rule
  2. [panel] initialize variable after calling edbus del and close
@@ -20,22 +99,13 @@ ISF 2.4.7420 :
 
 
 ISF 2.4.7413 :
- 1. Add isf_control_get_ise_info_and_module_name ()
- 2. [panel] Applied multi resolution support for candidate items
- 3. fix prevent issue : uninitialized scalar variable
- 4. Added sanitize_string to avoid TAINTED_STRING error in Prevent system
- 5. Re-show ISE panel after scim-helper-launcher process is recovered.
- 6. Fix prevent issue: integer overflow
-
-
-ISF 2.4.7410 :
- 1. Remove unused dependency and directory
-
-
-ISF 2.4.7404 :
- 1. fix bug keyboard remains on menu screen
- 2. [panel] remove unused variable
- 3. Remove ui-gadget dependency
+ 1. [panel] remove unused variable
+ 2. Add isf_control_get_ise_info_and_module_name ()
+ 3. [panel] Applied multi resolution support for candidate items
+ 4. fix prevent issue : uninitialized scalar variable
+ 5. Added sanitize_string to avoid TAINTED_STRING error in Prevent system
+ 6. Re-show ISE panel after scim-helper-launcher process is recovered.
+ 7. Fix prevent issue: integer overflow
 
 
 ISF 2.4.7323 :

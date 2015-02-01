@@ -2,7 +2,7 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2012-2013 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  * Contact: Jihoon Kim <jihoon48.kim@samsung.com>, Haifeng Deng <haifeng.deng@samsung.com>
  *
@@ -48,6 +48,9 @@ struct _EcoreIMFContextISF {
 
     int id; /* Input Context id*/
     struct _EcoreIMFContextISF *next;
+
+    /* Constructor */
+    _EcoreIMFContextISF () : ctx(NULL), impl(NULL), id(0), next(NULL) {}
 };
 
 EAPI int register_key_handler ();
@@ -80,6 +83,8 @@ EAPI void isf_imf_context_prediction_allow_set (Ecore_IMF_Context* ctx, Eina_Boo
 EAPI void isf_imf_context_autocapital_type_set (Ecore_IMF_Context* ctx, Ecore_IMF_Autocapital_Type autocapital_type);
 EAPI void isf_imf_context_imdata_set (Ecore_IMF_Context* ctx, const void *data, int len);
 EAPI void isf_imf_context_imdata_get (Ecore_IMF_Context* ctx, void *data, int *len);
+EAPI void isf_imf_context_input_hint_set (Ecore_IMF_Context* ctx, Ecore_IMF_Input_Hints hint);
+EAPI void isf_imf_context_bidi_direction_set (Ecore_IMF_Context* ctx, Ecore_IMF_BiDi_Direction direction);
 
 EAPI EcoreIMFContextISF* isf_imf_context_new      (void);
 EAPI void                isf_imf_context_shutdown (void);

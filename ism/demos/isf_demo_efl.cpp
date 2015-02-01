@@ -2,7 +2,7 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2012-2013 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  * Contact: Shuo Liu <shuo0805.liu@samsung.com>, Jihoon Kim <jihoon48.kim@samsung.com>
  *
@@ -42,6 +42,7 @@
 #include "isf_focus_movement_efl.h"
 #include "isf_language_efl.h"
 #include "isf_ondemand_efl.h"
+#include "isf_input_hint_efl.h"
 
 #if HAVE_UIGADGET
 #include <ui-gadget.h>
@@ -56,10 +57,9 @@ static struct _menu_item isf_demo_menu_its[] = {
     { "ISF Language", ise_language_bt },
     { "ISF Return Key Type", ise_return_key_type_bt },
     { "ISF Return Key Disable", ise_return_key_disable_bt },
+    { "ISF Input hint", ise_input_hint_bt },
     { "ISF IM Data", ise_imdata_set_bt },
-#ifdef _WEARABLE
     { "ISF ondemand", ise_ondemand_bt },
-#endif
     { "ISF Focus Movement", isf_focus_movement_bt },
     { "ISF Event", isf_event_demo_bt },
     { "ISF IM Control", imcontrolapi_bt },
@@ -119,10 +119,10 @@ static void layout_cb (ui_gadget_h ug, enum ug_mode mode, void *priv)
     }
 }
 
-static void result_cb (ui_gadget_h ug, service_h s, void *priv)
+static void result_cb (ui_gadget_h ug, app_control_h s, void *priv)
 {
     char *name = NULL;
-    service_get_extra_data (s, "name", &name);
+    app_control_get_extra_data (s, "name", &name);
 
     if (name) {
         free (name);
@@ -140,7 +140,7 @@ static void destroy_cb (ui_gadget_h ug, void *priv)
 static void isfsetting_bt (void *data, Evas_Object *obj, void *event_info)
 {
     struct appdata *ad = (struct appdata *)data;
-    struct ug_cbs cbs = {0, };
+    struct ug_cbs cbs = {0, 0, 0, 0, 0, {0, 0, 0}};
 
     UG_INIT_EFL (ad->win_main, UG_OPT_INDICATOR_ENABLE);
 
@@ -180,7 +180,7 @@ static int create_demo_view (struct appdata *ad)
     return 0;
 }
 
-static int lang_changed (void *data)
+static int lang_changed (void *event_info, void *data)
 {
     struct appdata *ad = (appdata *)data;
 
@@ -299,11 +299,46 @@ static Eina_Bool _keydown_event (void *data, int type, void *event)
     return ECORE_CALLBACK_PASS_ON;
 }
 
+static void
+more_ctxpopup_del_cb (void *data, Evas *evas, Evas_Object *obj, void *event_info)
+{
+    struct appdata *ad = (struct appdata *)data;
+    if (ad == NULL) return;
+
+    ad->menu_popup = NULL;
+}
+
+static void toggle_menu (void *data)
+{
+    struct appdata *ad = (struct appdata *)data;
+    if (ad == NULL) return;
+
+    if (ad->menu_popup) {
+        evas_object_del (ad->menu_popup);
+        ad->menu_popup = NULL;
+    }
+    else {
+        Evas_Object *more_ctxpopup = ea_menu_popup_add (ad->win_main);
+        elm_ctxpopup_item_append (more_ctxpopup, "Menu 1", NULL, NULL, NULL);
+        elm_ctxpopup_item_append (more_ctxpopup, "Menu 2", NULL, NULL, NULL);
+        ea_menu_popup_move (more_ctxpopup);
+        evas_object_show (more_ctxpopup);
+
+        evas_object_event_callback_add (more_ctxpopup, EVAS_CALLBACK_DEL, more_ctxpopup_del_cb, ad);
+
+        ad->menu_popup = more_ctxpopup;
+    }
+}
+
 static Eina_Bool _keyup_event (void *data, int type, void *event)
 {
     Ecore_Event_Key *ev = (Ecore_Event_Key *)event;
 
     printf ("[ecore key up] keyname : '%s', key : '%s', string : '%s', compose : '%s'\n", ev->keyname, ev->key, ev->string, ev->compose);
+
+    if (strcmp (ev->keyname, "XF86Send") == 0) {
+        toggle_menu (data);
+    }
 
     return ECORE_CALLBACK_PASS_ON;
 }
@@ -324,6 +359,9 @@ static void input_panel_state_changed_cb (keynode_t *key, void* data)
             break;
         case VCONFKEY_ISF_INPUT_PANEL_STATE_WILL_SHOW:
             printf ("state : will_show\n");
+            break;
+        default :
+            printf ("sip_status error!\n");
             break;
     }
 }
@@ -352,7 +390,7 @@ static int app_create (void *data)
     //init the content in layout_main.
     create_demo_view (ad);
 
-    lang_changed (ad);
+    lang_changed (NULL, ad);
 
     evas_object_show (ad->win_main);
 
@@ -408,7 +446,7 @@ static int app_resume (void *data)
 
 int main (int argc, char *argv[])
 {
-    set_app_privilege ("isf", NULL, NULL);
+    perm_app_set_privilege ("isf", NULL, NULL);
 
     struct appdata ad;
     struct appcore_ops ops;
@@ -433,23 +471,36 @@ int main (int argc, char *argv[])
 }
 
 // Utility functions
-Evas_Object *create_ef (Evas_Object *parent, const char *label, const char *guide_text)
+Evas_Object *create_ef (Evas_Object *parent, const char *label, const char *guide_text, Evas_Object **entry)
 {
-    Evas_Object *ef, *en;
+    Evas_Object *lb, *en;
 
-    ef = elm_layout_add (parent);
-    elm_layout_theme_set (ef, "layout", "dialogue/editfield/title", "default");
-    elm_object_part_text_set (ef, "elm.text", label);
-    evas_object_size_hint_weight_set (ef, EVAS_HINT_EXPAND, 0);
-    evas_object_size_hint_align_set (ef, EVAS_HINT_FILL, 0);
+    Evas_Object *bx;
+    bx = elm_box_add (parent);
+    evas_object_size_hint_weight_set (bx, EVAS_HINT_EXPAND, 0.0);
+    evas_object_size_hint_align_set (bx, EVAS_HINT_FILL, 0.0);
+    evas_object_show (bx);
+
+    lb = elm_label_add (parent);
+    evas_object_size_hint_weight_set (lb, EVAS_HINT_EXPAND, 0.0);
+    evas_object_size_hint_align_set (lb, EVAS_HINT_FILL, 0.0);
+    elm_object_text_set (lb, label);
+    evas_object_show (lb);
+    elm_box_pack_end (bx, lb);
 
     en = ea_editfield_add (parent, EA_EDITFIELD_SCROLL_SINGLELINE);
+    evas_object_size_hint_weight_set (en, EVAS_HINT_EXPAND, 0.0);
+    evas_object_size_hint_align_set (en, EVAS_HINT_FILL, 0.0);
     elm_object_part_text_set (en, "elm.guide", guide_text);
-    elm_object_part_content_set (ef, "elm.icon.entry", en);
+    evas_object_show (en);
+    elm_box_pack_end (bx, en);
 
-    evas_object_show (ef);
+    if (entry)
+        *entry = en;
 
-    return ef;
+    evas_object_show (bx);
+
+    return bx;
 }
 
 static void _back_btn_clicked_cb (void *data, Evas_Object *obj, void *event_info)

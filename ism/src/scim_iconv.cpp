@@ -66,9 +66,13 @@ IConvert::~IConvert ()
     delete m_impl;
 }
 
-const IConvert &
+IConvert &
 IConvert::operator= (const IConvert & iconvert)
 {
+    if (m_impl)
+        delete (m_impl);
+    m_impl = new IConvertImpl ();
+
     if (this != &iconvert)
         set_encoding (iconvert.m_impl->m_encoding);
 
@@ -147,7 +151,7 @@ IConvert::convert (String &dest, const ucs4_t *src, int src_len) const
     iconv (m_impl->m_iconv_from_unicode, 0, &src_buf_size, 0, &dest_buf_size);
 
     char *dest_buf_ptr = dest_buf;
-    ICONV_CONST char *src_buf_ptr = (ICONV_CONST char*) src;
+    ICONV_CONST char *src_buf_ptr = (ICONV_CONST char*)(const_cast<ucs4_t*> (src));
 
     dest_buf_size = SCIM_MAX_BUFSIZE * MB_LEN_MAX;
     src_buf_size = src_len * sizeof (ucs4_t);
@@ -177,7 +181,7 @@ IConvert::test_convert (const ucs4_t *src, int src_len) const
     iconv (m_impl->m_iconv_from_unicode, 0, &src_buf_size, 0, &dest_buf_size);
 
     char *dest_buf_ptr = dest_buf;
-    ICONV_CONST char *src_buf_ptr = (ICONV_CONST char*) src;
+    ICONV_CONST char *src_buf_ptr = (ICONV_CONST char*)(const_cast<ucs4_t*> (src));
 
     src_buf_size = src_len * sizeof (ucs4_t);
     dest_buf_size = SCIM_MAX_BUFSIZE * MB_LEN_MAX;
@@ -207,13 +211,14 @@ IConvert::convert (WideString &dest, const char *src, int src_len) const
     iconv (m_impl->m_iconv_to_unicode, 0, &src_buf_size, 0, &dest_buf_size);
 
     char *dest_buf_ptr = (char*) dest_buf;
-    ICONV_CONST char *src_buf_ptr = (ICONV_CONST char*) src;
+    ICONV_CONST char *src_buf_ptr = const_cast<ICONV_CONST char*> (src);
 
     dest_buf_size = SCIM_MAX_BUFSIZE * sizeof (ucs4_t);
     src_buf_size = src_len;
 
     ret = iconv (m_impl->m_iconv_to_unicode, &src_buf_ptr, &src_buf_size, &dest_buf_ptr, &dest_buf_size);
-    dest.assign (dest_buf, (ucs4_t*) dest_buf_ptr);
+    void *pvoid = dest_buf_ptr;
+    dest.assign (dest_buf, (ucs4_t*) pvoid);
 
     return ret != (size_t) -1;
 }
@@ -238,7 +243,7 @@ IConvert::test_convert (const char *src, int src_len) const
     iconv (m_impl->m_iconv_from_unicode, 0, &src_buf_size, 0, &dest_buf_size);
 
     char *dest_buf_ptr = (char*) dest_buf;
-    ICONV_CONST char *src_buf_ptr = (ICONV_CONST char*) src;
+    ICONV_CONST char *src_buf_ptr = const_cast<ICONV_CONST char*> (src);
 
     src_buf_size = src_len;
     dest_buf_size = SCIM_MAX_BUFSIZE * sizeof (ucs4_t);

@@ -2,7 +2,7 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2012-2013 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  * Contact: Shuo Liu <shuo0805.liu@samsung.com>, Jihoon Kim <jihoon48.kim@samsung.com>
  *
@@ -169,17 +169,25 @@ static void entry_preedit_changed_cb (void *data, Evas_Object *obj, void *event_
     printf ("[%s]\n", __func__);
 }
 
+static void entry_cursor_changed_cb (void *data, Evas_Object *obj, void *event_info)
+{
+    printf ("[%s] cursor pos : %d\n", __func__, elm_entry_cursor_pos_get (obj));
+}
+
 static Evas_Object *_create_ef_layout (Evas_Object *parent, const char *label, const char *guide_text, Elm_Input_Panel_Layout layout, int layout_variation = 0)
 {
-    Evas_Object *ef = create_ef (parent, label, guide_text);
+    Evas_Object *en;
+    Evas_Object *ef = create_ef (parent, label, guide_text, &en);
+    if (!ef || !en) return NULL;
+
     Ecore_IMF_Context *ic = NULL;
-    Evas_Object *en = elm_object_part_content_get (ef, "elm.icon.entry");
     elm_entry_input_panel_layout_set (en, layout);
     elm_entry_input_panel_layout_variation_set (en, layout_variation);
     evas_object_event_callback_add (en, EVAS_CALLBACK_KEY_DOWN, _key_down_cb, NULL);
     evas_object_event_callback_add (en, EVAS_CALLBACK_KEY_UP, _key_up_cb, NULL);
     evas_object_smart_callback_add (en, "changed", entry_changed_cb, NULL);
     evas_object_smart_callback_add (en, "preedit,changed", entry_preedit_changed_cb, NULL);
+    evas_object_smart_callback_add (en, "cursor,changed", entry_cursor_changed_cb, NULL);
 
     ic = (Ecore_IMF_Context *)elm_entry_imf_context_get (en);
 
@@ -241,15 +249,15 @@ static Evas_Object * create_inner_layout (void *data)
     elm_box_pack_end (bx, ef);
 
     /* Number Only with signed Layout */
-    ef = _create_ef_layout (parent, _("NUMBERONLY WITH SIGNED LAYOUT"), _("click to enter NUMBERONLY WITH SIGNED"), ELM_INPUT_PANEL_LAYOUT_NUMBERONLY, ELM_INPUT_PANEL_LAYOUT_NUMBERONLY_VARIATION_SIGNED);
+    ef = _create_ef_layout (parent, _("NUMBERONLY - SIGNED"), _("click to enter NUMBERONLY WITH SIGNED"), ELM_INPUT_PANEL_LAYOUT_NUMBERONLY, ELM_INPUT_PANEL_LAYOUT_NUMBERONLY_VARIATION_SIGNED);
     elm_box_pack_end (bx, ef);
 
     /* Number Only with decimal Layout */
-    ef = _create_ef_layout (parent, _("NUMBERONLY WITH DECIMAL LAYOUT"), _("click to enter NUMBERONLY WITH DECIMAL"), ELM_INPUT_PANEL_LAYOUT_NUMBERONLY, ELM_INPUT_PANEL_LAYOUT_NUMBERONLY_VARIATION_DECIMAL);
+    ef = _create_ef_layout (parent, _("NUMBERONLY - DECIMAL"), _("click to enter NUMBERONLY WITH DECIMAL"), ELM_INPUT_PANEL_LAYOUT_NUMBERONLY, ELM_INPUT_PANEL_LAYOUT_NUMBERONLY_VARIATION_DECIMAL);
     elm_box_pack_end (bx, ef);
 
     /* Number Only with signed and decimal Layout */
-    ef = _create_ef_layout (parent, _("NUMBERONLY WITH SIGNED AND DECIMAL LAYOUT"), _("click to enter NUMBERONLY WITH SIGNED AND DECIMAL"), ELM_INPUT_PANEL_LAYOUT_NUMBERONLY, ELM_INPUT_PANEL_LAYOUT_NUMBERONLY_VARIATION_SIGNED_AND_DECIMAL);
+    ef = _create_ef_layout (parent, _("NUMBERONLY - SIGNED AND DECIMAL"), _("click to enter NUMBERONLY WITH SIGNED AND DECIMAL"), ELM_INPUT_PANEL_LAYOUT_NUMBERONLY, ELM_INPUT_PANEL_LAYOUT_NUMBERONLY_VARIATION_SIGNED_AND_DECIMAL);
     elm_box_pack_end (bx, ef);
 
     /* Datetime Layout */
@@ -258,6 +266,14 @@ static Evas_Object * create_inner_layout (void *data)
 
     /* Password Layout */
     ef = _create_ef_layout (parent, _("PASSWORD LAYOUT"), _("click to enter PASSWORD"), ELM_INPUT_PANEL_LAYOUT_PASSWORD);
+    elm_box_pack_end (bx, ef);
+
+    /* Password numberonly Layout */
+    ef = _create_ef_layout (parent, _("PASSWORD NUMBERONLY LAYOUT"), _("click to enter PASSWORD"), ELM_INPUT_PANEL_LAYOUT_PASSWORD, ELM_INPUT_PANEL_LAYOUT_PASSWORD_VARIATION_NUMBERONLY);
+    elm_box_pack_end (bx, ef);
+
+    /* Emoticon Layout */
+    ef = _create_ef_layout (parent, _("Emoticon LAYOUT"), _("click to enter Emoticon"), ELM_INPUT_PANEL_LAYOUT_EMOTICON);
     elm_box_pack_end (bx, ef);
 
     /* Terminal Layout */

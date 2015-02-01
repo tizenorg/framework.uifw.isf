@@ -7,7 +7,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2013 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -68,7 +68,9 @@
 #include <unistd.h>
 #include <signal.h>
 #include <dlog.h>
-
+#if HAVE_PKGMGR_INFO
+#include <pkgmgr-info.h>
+#endif
 
 #ifdef LOG_TAG
 # undef LOG_TAG
@@ -96,12 +98,12 @@ static char   **_argv = NULL;
 extern "C" {
     EAPI void scim_module_init (void)
     {
-        SCIM_DEBUG_FRONTEND(1) << "Initializing Socket FrontEnd module...\n";
+        SCIM_DEBUG_FRONTEND (1) << "Initializing Socket FrontEnd module...\n";
     }
 
     EAPI void scim_module_exit (void)
     {
-        SCIM_DEBUG_FRONTEND(1) << "Exiting Socket FrontEnd module...\n";
+        SCIM_DEBUG_FRONTEND (1) << "Exiting Socket FrontEnd module...\n";
         _scim_frontend.reset ();
     }
 
@@ -111,7 +113,7 @@ extern "C" {
                                     char **argv)
     {
         if (_scim_frontend.null ()) {
-            SCIM_DEBUG_FRONTEND(1) << "Initializing Socket FrontEnd module (more)...\n";
+            SCIM_DEBUG_FRONTEND (1) << "Initializing Socket FrontEnd module (more)...\n";
             _scim_frontend = new SocketFrontEnd (backend, config);
             _argc = argc;
             _argv = argv;
@@ -123,7 +125,7 @@ extern "C" {
         struct tms tiks_buf;
         clock_t start = times (&tiks_buf);
         if (!_scim_frontend.null ()) {
-            SCIM_DEBUG_FRONTEND(1) << "Starting Socket FrontEnd module...\n";
+            SCIM_DEBUG_FRONTEND (1) << "Starting Socket FrontEnd module...\n";
             _scim_frontend->init (_argc, _argv);
             gettime (start, "Init socket frontend");
             _scim_frontend->run ();
@@ -145,7 +147,7 @@ void SocketFrontEnd::load_helper_modules (const std::vector<String> &load_engine
 {
     SCIM_DEBUG_MAIN (1) << "load_helper_modules ()\n";
 
-    size_t i;
+    size_t i = 0;
 
     __load_engine_list.clear ();
     for (i = 0; i < load_engine_list.size (); ++i)
@@ -174,7 +176,7 @@ void SocketFrontEnd::load_helper_modules (const std::vector<String> &load_engine
         if (!ret) {
             std::cerr << __func__ << " Failed to read(" << USER_ENGINE_FILE_NAME << ")\n";
         }
-        for (size_t i = 0; i < info_list.size (); ++i) {
+        for (i = 0; i < info_list.size (); ++i) {
             if (info_list [i].mode != TOOLBAR_HELPER_MODE)
                 continue;
             if (std::find (mod_list.begin (), mod_list.end (), info_list [i].module) != mod_list.end ()) {
@@ -195,7 +197,7 @@ void SocketFrontEnd::load_helper_modules (const std::vector<String> &load_engine
             LOGW ("Failed to open %s!!!\n", filename.c_str ());
         }
 
-        for (size_t i = 0; i < mod_list.size (); ++i) {
+        for (i = 0; i < mod_list.size (); ++i) {
             if (std::find (tmp_list.begin (), tmp_list.end (), mod_list [i]) != tmp_list.end ())
                 continue;
 
@@ -229,8 +231,8 @@ void SocketFrontEnd::load_helper_modules (const std::vector<String> &load_engine
             module.unload ();
         }
         if (engine_list_file) {
-            int ret = fclose (engine_list_file);
-            if (ret != 0)
+            int iret = fclose (engine_list_file);
+            if (iret != 0)
                 LOGW ("Failed to fclose %s!!!\n", filename.c_str ());
         }
     }
@@ -278,7 +280,7 @@ void SocketFrontEnd::run_helper (const Socket &client)
     for (size_t i = 0; i < __helpers.size (); ++i) {
         if (__helpers [i].first.uuid == uuid && __helpers [i].second.length ()) {
 
-            __active_helpers.push_back(__helpers [i].first.name);
+            __active_helpers.push_back (__helpers [i].first.name);
 
             int pid;
 
@@ -287,8 +289,6 @@ void SocketFrontEnd::run_helper (const Socket &client)
             if (pid < 0) return;
 
             if (pid == 0) {
-                if (m_socket_server.is_running ())
-                    m_socket_server.shutdown ();
 
                 const char *argv [] = { SCIM_HELPER_LAUNCHER_PROGRAM,
                                    "--daemon",
@@ -298,13 +298,13 @@ void SocketFrontEnd::run_helper (const Socket &client)
                                    const_cast<char*> (__helpers [i].first.uuid.c_str ()),
                                    0};
 
-                SCIM_DEBUG_MAIN(2) << " Call scim-helper-launcher.\n";
-                char buf[256] = {0};
-                snprintf (buf, sizeof (buf), "time:%ld  pid:%d  %s  %s  Exec scim_helper_launcher(%s)\n",
-                    time (0), getpid (), __FILE__, __func__, __helpers [i].second.c_str ());
+                SCIM_DEBUG_MAIN (2) << " Call scim-helper-launcher.\n";
+                buf[0] = '\0';
+                snprintf (buf, sizeof (buf), "time:%ld  pid:%d ppid:%d  %s  %s  Exec scim_helper_launcher(%s)\n",
+                    time (0), getpid (), getppid (), __FILE__, __func__, __helpers [i].second.c_str ());
                 isf_save_log (buf);
 
-                execv (SCIM_HELPER_LAUNCHER_PROGRAM, (char **)argv);
+                execv (SCIM_HELPER_LAUNCHER_PROGRAM, const_cast<char **>(argv));
                 exit (-1);
             }
 
@@ -312,11 +312,15 @@ void SocketFrontEnd::run_helper (const Socket &client)
             //waitpid (pid, &status, 0);
 
             break;
+        } else {
+            snprintf (buf, sizeof (buf), "time:%ld  pid:%d  %s  %s  Can't find and exec scim_helper_launcher uuid : %s\n",
+                time (0), getpid (), __FILE__, __func__, uuid.c_str ());
+            isf_save_log (buf);
         }
     }
 
     m_send_trans.put_command (SCIM_TRANS_CMD_OK);
-    SCIM_DEBUG_MAIN(2) << " exit run_helper ().\n";
+    SCIM_DEBUG_MAIN (2) << " exit run_helper ().\n";
 }
 
 /**
@@ -328,6 +332,24 @@ void
 SocketFrontEnd::get_active_ise_list (int clientid)
 {
     m_send_trans.put_data (__load_engine_list);
+}
+
+void
+SocketFrontEnd::preload_keyboard_ise (const String &uuid)
+{
+    SCIM_DEBUG_MAIN (1) << "preload_keyboard_ise ()\n";
+
+    if (uuid.length () == 0)
+        return;
+
+    if (m_preload_keyboard_ise_id != -1)
+    {
+        if (get_instance_uuid (m_preload_keyboard_ise_id) == uuid)
+            return;
+        delete_instance (m_preload_keyboard_ise_id);
+    }
+
+    m_preload_keyboard_ise_id = new_instance (m_config, uuid, "UTF-8");
 }
 
 void
@@ -359,6 +381,7 @@ SocketFrontEnd::SocketFrontEnd (const BackEndPointer &backend,
       m_socket_timeout (scim_get_default_socket_timeout ()),
       m_current_instance (-1),
       m_current_socket_client (-1),
+      m_preload_keyboard_ise_id (-1),
       m_current_socket_client_key (0)
 {
     SCIM_DEBUG_FRONTEND (2) << " Constructing SocketFrontEnd object...\n";
@@ -720,6 +743,15 @@ SocketFrontEnd::set_selection (int id, int start, int end)
 }
 
 void
+SocketFrontEnd::send_private_command (int id, const String &command)
+{
+    if (m_current_instance == id) {
+        m_send_trans.put_command (SCIM_TRANS_CMD_SEND_PRIVATE_COMMAND);
+        m_temp_trans.put_data (command);
+    }
+}
+
+void
 SocketFrontEnd::expand_candidate (int id)
 {
     if (m_current_instance == id)
@@ -776,7 +808,7 @@ SocketFrontEnd::init (int argc, char **argv)
     m_socket_server.signal_connect_receive (
         slot (this, &SocketFrontEnd::socket_receive_callback));
 
-    m_socket_server.signal_connect_exception(
+    m_socket_server.signal_connect_exception (
         slot (this, &SocketFrontEnd::socket_exception_callback));
 
     if (argv && argc > 1) {
@@ -797,6 +829,12 @@ SocketFrontEnd::init (int argc, char **argv)
     }
 
     load_helper_modules (engine_list);
+    if (scim_global_config_read (SCIM_GLOBAL_CONFIG_PRELOAD_KEYBOARD_ISE, false)) {
+        String def_uuid = m_config->read (String (SCIM_CONFIG_DEFAULT_IMENGINE_FACTORY) +
+                                       String ("/") + String ("~other"),
+                                       String (""));
+        preload_keyboard_ise (def_uuid);
+    }
 
     /**
      * initialize the random number generator.
@@ -806,17 +844,53 @@ SocketFrontEnd::init (int argc, char **argv)
     signal (SIGCHLD, SIG_IGN);
 }
 
+/**
+ * @brief Callback function for ecore fd handler.
+ *
+ * @param data The data to pass to this callback.
+ * @param fd_handler The ecore fd handler.
+ *
+ * @return ECORE_CALLBACK_RENEW
+ */
+static Eina_Bool
+frontend_handler (void *data, Ecore_Fd_Handler *fd_handler)
+{
+    if (data == NULL || fd_handler == NULL)
+        return ECORE_CALLBACK_RENEW;
+    SocketServer *_socket_server = (SocketServer*)data;
+    int _fd = ecore_main_fd_handler_fd_get (fd_handler);
+    SCIM_DEBUG_FRONTEND (1) << "frontend_handler (" << _fd << ").\n";
+    if (!_socket_server->filter_event (_fd)) {
+        _socket_server->filter_exception_event (_fd);
+    }
+    return ECORE_CALLBACK_RENEW;
+}
+
 void
 SocketFrontEnd::run ()
 {
     if (m_socket_server.valid ())
-        m_socket_server.run ();
+    {
+        ecore_init ();
+        ecore_main_loop_glib_integrate ();
+        Ecore_Fd_Handler *_server_read_handler = ecore_main_fd_handler_add (m_socket_server.get_id (),
+                ECORE_FD_READ, frontend_handler, &m_socket_server, NULL, NULL);
+        if (_server_read_handler != NULL) {
+            ecore_main_loop_begin ();
+            ecore_main_fd_handler_del (_server_read_handler);
+        } else {
+            SCIM_DEBUG_FRONTEND (1) << "Error occurred when calling ecore_main_fd_handler_add(server_fd)" << "\n";
+        }
+        ecore_shutdown ();
+    }
 }
 
 uint32
 SocketFrontEnd::generate_key () const
 {
-    return (uint32)rand ();
+    unsigned int seed = (unsigned int)time (NULL);
+
+    return (uint32)rand_r (&seed);
 }
 
 bool
@@ -824,9 +898,9 @@ SocketFrontEnd::check_client_connection (const Socket &client) const
 {
     SCIM_DEBUG_FRONTEND (1) << "check_client_connection (" << client.get_id () << ").\n";
 
-    unsigned char buf [sizeof(uint32)];
+    unsigned char buf [sizeof (uint32)];
 
-    int nbytes = client.read_with_timeout (buf, sizeof(uint32), m_socket_timeout);
+    int nbytes = client.read_with_timeout (buf, sizeof (uint32), m_socket_timeout);
 
     if (nbytes == sizeof (uint32))
         return true;
@@ -846,6 +920,22 @@ void
 SocketFrontEnd::socket_accept_callback (SocketServer *server, const Socket &client)
 {
     SCIM_DEBUG_FRONTEND (1) << "socket_accept_callback (" << client.get_id () << ").\n";
+    ClientInfo client_info = socket_get_client_info (client);
+
+    // If it's a new client, then request to open the connection first.
+    if (client_info.type == NONE_CLIENT) {
+        client_info.type = UNKNOWN_CLIENT;
+        client_info.handler = ecore_main_fd_handler_add (client.get_id (),
+                ECORE_FD_READ, frontend_handler, &m_socket_server, NULL, NULL);
+        if (client_info.handler == NULL) {
+            SCIM_DEBUG_FRONTEND (1) << "Error occurred when calling ecore_main_fd_handler_add("
+                << client.get_id () << ")\n";
+            server->close_connection (client);
+        } else {
+            //Insert new ClientInfo into repository with type UNKNOWN_CLIENT.
+            m_socket_client_repository [client.get_id ()] = client_info;
+        }
+    }
 }
 
 void
@@ -925,8 +1015,14 @@ SocketFrontEnd::socket_receive_callback (SocketServer *server, const Socket &cli
             socket_longpress_candidate (id);
         else if (cmd == ISM_TRANS_CMD_SET_ISE_IMDATA)
             socket_set_imdata (id);
+        else if (cmd == SCIM_TRANS_CMD_SET_AUTOCAPITAL_TYPE)
+            socket_set_autocapital_type (id);
         else if (cmd == ISM_TRANS_CMD_SET_LAYOUT)
             socket_set_layout (id);
+        else if (cmd == ISM_TRANS_CMD_SET_INPUT_HINT)
+            socket_set_input_hint (id);
+        else if (cmd == ISM_TRANS_CMD_UPDATE_BIDI_DIRECTION)
+            socket_update_bidi_direction (id);
         else if (cmd == ISM_TRANS_CMD_RESET_ISE_OPTION)
             socket_reset_option (id);
         else if (cmd == SCIM_TRANS_CMD_RESET)
@@ -1019,6 +1115,12 @@ SocketFrontEnd::socket_receive_callback (SocketServer *server, const Socket &cli
             SCIM_DEBUG_FRONTEND (1) << "receive cmd SCIM_TRANS_CMD_HELPER_MANAGER_SEND_ISE_LIST\n";
             reply = false;
             socket_update_ise_list (id);
+        } else if (cmd == ISM_TRANS_CMD_PRELOAD_KEYBOARD_ISE) {
+            SCIM_DEBUG_FRONTEND (1) << "receive cmd ISM_TRANS_CMD_PRELOAD_KEYBOARD_ISE\n";
+            String uuid;
+            if (m_receive_trans.get_data (uuid) && uuid.length ())
+                preload_keyboard_ise (uuid);
+            m_send_trans.put_command (SCIM_TRANS_CMD_OK);
         } else if (cmd == ISM_TRANS_CMD_TURN_ON_LOG) {
             SCIM_DEBUG_FRONTEND (1) << "receive cmd ISM_TRANS_CMD_TURN_ON_LOG\n";
             socket_turn_on_log (id);
@@ -1041,7 +1143,8 @@ SocketFrontEnd::socket_receive_callback (SocketServer *server, const Socket &cli
 bool
 SocketFrontEnd::socket_open_connection (SocketServer *server, const Socket &client)
 {
-    SCIM_DEBUG_FRONTEND (2) << " Open socket connection for client " << client.get_id () << "  number of clients=" << m_socket_client_repository.size () << ".\n";
+    SCIM_DEBUG_FRONTEND (2) << " Open socket connection for client " << client.get_id () 
+        << "  number of clients=" << m_socket_client_repository.size () << ".\n";
 
     uint32 key;
     String type = scim_socket_accept_connection (key,
@@ -1049,48 +1152,53 @@ SocketFrontEnd::socket_open_connection (SocketServer *server, const Socket &clie
                                                  String ("SocketIMEngine,SocketConfig,HelperManager"),
                                                  client,
                                                  m_socket_timeout);
+    ClientInfo info = socket_get_client_info (client);
 
-    if (type.length ()) {
-        ClientInfo info;
+    if (type.length () && info.type == UNKNOWN_CLIENT) {
         info.key = key;
         info.type = ((type == "SocketIMEngine") ? IMENGINE_CLIENT
                         : ((type == "SocketConfig") ? CONFIG_CLIENT : HELPER_MANAGER_CLIENT));
-
         SCIM_DEBUG_MAIN (2) << " Add client to repository. Type=" << type << " key=" << key << "\n";
+        // Overwrite ClientInfo
         m_socket_client_repository [client.get_id ()] = info;
         return true;
     }
 
     // Client did not pass the registration process, close it.
-    SCIM_DEBUG_FRONTEND (2) << " Failed to create new connection.\n";
-    server->close_connection (client);
+    SCIM_DEBUG_FRONTEND (2) << " Failed to create new connection. type(" << type.c_str () << "," << info.type << ")\n";
+    socket_close_connection (server, client);
     return false;
 }
 
 void
 SocketFrontEnd::socket_close_connection (SocketServer *server, const Socket &client)
 {
-    SCIM_DEBUG_FRONTEND (2) << " Close client connection " << client.get_id () << "  number of clients=" << m_socket_client_repository.size () << ".\n";
+    SCIM_DEBUG_FRONTEND (2) << " Close client connection " << client.get_id () << " number of clients="
+        << m_socket_client_repository.size () << ".\n";
 
     ClientInfo client_info = socket_get_client_info (client);
 
     server->close_connection (client);
 
-    if (client_info.type != UNKNOWN_CLIENT) {
+    if (client_info.type != NONE_CLIENT) {
+        ecore_main_fd_handler_del (client_info.handler);
         m_socket_client_repository.erase (client.get_id ());
 
         if (client_info.type == IMENGINE_CLIENT)
             socket_delete_all_instances (client.get_id ());
 
-        if (!m_socket_client_repository.size () && !m_stay)
+        if (!m_socket_client_repository.size () && !m_stay) {
+            SCIM_DEBUG_FRONTEND (1) << "All clients are close, FrontEnd is exiting." << "\n";
             server->shutdown ();
+            ecore_main_loop_quit ();
+        }
     }
 }
 
 SocketFrontEnd::ClientInfo
 SocketFrontEnd::socket_get_client_info (const Socket &client)
 {
-    static ClientInfo null_client = { 0, UNKNOWN_CLIENT };
+    static ClientInfo null_client = { 0, NONE_CLIENT, 0};
     SocketClientRepository::iterator it = m_socket_client_repository.find (client.get_id ());
 
     if (it != m_socket_client_repository.end ())
@@ -1531,6 +1639,50 @@ SocketFrontEnd::socket_set_layout (int /*client_id*/)
 }
 
 void
+SocketFrontEnd::socket_set_input_hint (int /*client_id*/)
+{
+    uint32 siid;
+    uint32 input_hint;
+
+    SCIM_DEBUG_FRONTEND (2) << __func__ << "\n";
+
+    if (m_receive_trans.get_data (siid) &&
+        m_receive_trans.get_data (input_hint)) {
+
+        SCIM_DEBUG_FRONTEND (3) << "  SI (" << siid << ").\n";
+
+        m_current_instance = (int) siid;
+
+        set_input_hint ((int) siid, input_hint);
+        m_send_trans.put_command (SCIM_TRANS_CMD_OK);
+
+        m_current_instance = -1;
+    }
+}
+
+void
+SocketFrontEnd::socket_update_bidi_direction (int /*client_id*/)
+{
+    uint32 siid;
+    uint32 bidi_direction;
+
+    SCIM_DEBUG_FRONTEND (2) << __func__ << "\n";
+
+    if (m_receive_trans.get_data (siid) &&
+        m_receive_trans.get_data (bidi_direction)) {
+
+        SCIM_DEBUG_FRONTEND (3) << "  SI (" << siid << ").\n";
+
+        m_current_instance = (int) siid;
+
+        update_bidi_direction ((int) siid, bidi_direction);
+        m_send_trans.put_command (SCIM_TRANS_CMD_OK);
+
+        m_current_instance = -1;
+    }
+}
+
+void
 SocketFrontEnd::socket_update_candidate_item_layout (int /*client_id*/)
 {
     uint32 siid;
@@ -1663,7 +1815,7 @@ SocketFrontEnd::socket_set_imdata (int /*client_id*/)
 {
     uint32 siid;
     char *imdata = NULL;
-    unsigned int length;
+    size_t length;
 
     SCIM_DEBUG_FRONTEND (2) << __func__ << "\n";
 
@@ -1682,6 +1834,28 @@ SocketFrontEnd::socket_set_imdata (int /*client_id*/)
 
     if (NULL != imdata)
         delete [] imdata;
+}
+
+void
+SocketFrontEnd::socket_set_autocapital_type (int /*client_id*/)
+{
+    uint32 siid;
+    uint32 mode;
+
+    SCIM_DEBUG_FRONTEND (2) << __func__ << "\n";
+
+    if (m_receive_trans.get_data (siid) &&
+        m_receive_trans.get_data (mode)) {
+
+        SCIM_DEBUG_FRONTEND (3) << "  SI (" << siid << ").\n";
+
+        m_current_instance = (int) siid;
+
+        set_autocapital_type ((int) siid, mode);
+        m_send_trans.put_command (SCIM_TRANS_CMD_OK);
+
+        m_current_instance = -1;
+    }
 }
 
 void
@@ -1897,6 +2071,73 @@ SocketFrontEnd::socket_set_display_name (int /*client_id*/)
     m_send_trans.put_command (SCIM_TRANS_CMD_OK);
 }
 
+#if HAVE_PKGMGR_INFO
+int app_list_cb (pkgmgrinfo_appinfo_h handle, void *user_data)
+{
+    int ret;
+    char *app_id = NULL;
+    char *pkg_id = NULL, *pkg_label = NULL, *pkg_type = NULL, *pkg_icon_path = NULL;
+    pkgmgrinfo_appinfo_h appinfo_handle;
+    pkgmgrinfo_pkginfo_h pkginfo_handle;
+    HelperInfo helper_info;
+    size_t i;
+
+    /* Get appid */
+    ret = pkgmgrinfo_appinfo_get_appid (handle, &app_id);
+    if (ret != PMINFO_R_OK)
+        return 0;
+
+    ret = pkgmgrinfo_appinfo_get_appinfo (app_id, &appinfo_handle);
+    if (ret != PMINFO_R_OK)
+        return 0;
+
+    /* Get package id */
+    ret = pkgmgrinfo_appinfo_get_pkgname (appinfo_handle, &pkg_id);
+    if (ret != PMINFO_R_OK) {
+        pkgmgrinfo_appinfo_destroy_appinfo (appinfo_handle);
+        return 0;
+    }
+
+    /* Get package info handle */
+    ret = pkgmgrinfo_pkginfo_get_pkginfo (pkg_id, &pkginfo_handle);
+    if (ret != PMINFO_R_OK) {
+        pkgmgrinfo_appinfo_destroy_appinfo (appinfo_handle);
+        return 0;
+    }
+
+    /* Get the type of package */
+    ret = pkgmgrinfo_pkginfo_get_type (pkginfo_handle, &pkg_type);
+    if (ret == PMINFO_R_OK && pkg_type && !strncmp (pkg_type, "wgt", 3)) {
+        /* Get the label of package */
+        if (pkgmgrinfo_pkginfo_get_label (pkginfo_handle, &pkg_label) == PMINFO_R_OK)
+            helper_info.name = (pkg_label ? scim::String (pkg_label) : scim::String (""));
+
+        /* Get the icon path of package */
+        if (pkgmgrinfo_pkginfo_get_icon (pkginfo_handle, &pkg_icon_path) == PMINFO_R_OK)
+            helper_info.icon = (pkg_icon_path ? scim::String (pkg_icon_path) : scim::String (""));
+
+        // FIXME : need to get UUID
+        helper_info.uuid = (app_id ? scim::String (app_id) : scim::String (""));
+
+        helper_info.option = scim::SCIM_HELPER_STAND_ALONE | scim::SCIM_HELPER_NEED_SCREEN_INFO |
+            scim::SCIM_HELPER_NEED_SPOT_LOCATION_INFO | scim::SCIM_HELPER_AUTO_RESTART;
+
+        for (i = 0; i < __helpers.size (); ++i) {
+            if (__helpers [i].first.uuid == helper_info.uuid)
+                break;
+        }
+
+        if (i == __helpers.size ())
+            __helpers.push_back (std::make_pair (helper_info, String ("ise-web-helper-agent")));
+    }
+
+    pkgmgrinfo_pkginfo_destroy_pkginfo (pkginfo_handle);
+    pkgmgrinfo_appinfo_destroy_appinfo (appinfo_handle);
+
+    return 0;
+}
+#endif
+
 void
 SocketFrontEnd::socket_update_ise_list (int /*client_id*/)
 {
@@ -1904,6 +2145,7 @@ SocketFrontEnd::socket_update_ise_list (int /*client_id*/)
     std::vector<String> install_modules;
     std::vector<String> imengine_list;
     std::vector<String> helper_list;
+    size_t i = 0, j = 0;
 
     if (m_receive_trans.get_data (strName) && strName.length () > 0) {
         //std::cout << "ISE name list:" << strName << "\n";
@@ -1912,7 +2154,7 @@ SocketFrontEnd::socket_update_ise_list (int /*client_id*/)
         scim_get_imengine_module_list (imengine_list);
         scim_get_helper_module_list (helper_list);
 
-        for (size_t i = 0; i < imengine_list.size (); ++i) {
+        for (i = 0; i < imengine_list.size (); ++i) {
             install_modules.push_back (imengine_list [i]);
             if (std::find (__load_engine_list.begin (), __load_engine_list.end (), imengine_list [i]) == __load_engine_list.end ()) {
                 SCIM_DEBUG_FRONTEND (3) << "add_module " << imengine_list [i]  << " in " << __FUNCTION__ << "\n";
@@ -1924,12 +2166,12 @@ SocketFrontEnd::socket_update_ise_list (int /*client_id*/)
 
         HelperModule module;
         HelperInfo   info;
-        for (size_t i = 0; i < helper_list.size (); ++i) {
+        for (i = 0; i < helper_list.size (); ++i) {
             install_modules.push_back (helper_list [i]);
             if (std::find (__load_engine_list.begin (), __load_engine_list.end (), helper_list [i]) == __load_engine_list.end ()) {
                 if (module.load (helper_list [i]) && module.valid ()) {
                     size_t num = module.number_of_helpers ();
-                    for (size_t j = 0; j < num; ++j) {
+                    for (j = 0; j < num; ++j) {
                         if (module.get_helper_info (j, info))
                             __helpers.push_back (std::make_pair (info, helper_list [i]));
                     }
@@ -1940,18 +2182,34 @@ SocketFrontEnd::socket_update_ise_list (int /*client_id*/)
         }
 
         /* Try to find uninstall ISEs */
-        for (size_t i = 0; i < __load_engine_list.size (); ++i) {
+        for (i = 0; i < __load_engine_list.size (); ++i) {
             if (std::find (install_modules.begin (), install_modules.end (), __load_engine_list [i]) == install_modules.end ()) {
                 HelperRepository tmp_helpers = __helpers;
                 __helpers.clear ();
-                for (size_t i = 0; i < tmp_helpers.size (); ++i) {
-                    if (std::find (install_modules.begin (), install_modules.end (), tmp_helpers [i].second) != install_modules.end ())
-                        __helpers.push_back (tmp_helpers [i]);
+                for (j = 0; j < tmp_helpers.size (); ++j) {
+                    if (std::find (install_modules.begin (), install_modules.end (), tmp_helpers [j].second) != install_modules.end ())
+                        __helpers.push_back (tmp_helpers [j]);
                 }
                 __load_engine_list = install_modules;
                 break;
             }
         }
+
+        /* Get the information of Web IMEs */
+#if HAVE_PKGMGR_INFO
+        int ret;
+        pkgmgrinfo_appinfo_filter_h handle;
+        ret = pkgmgrinfo_appinfo_filter_create (&handle);
+        if (ret != PMINFO_R_OK)
+            return;
+
+        ret = pkgmgrinfo_appinfo_filter_add_string (handle, PMINFO_APPINFO_PROP_APP_CATEGORY, "http://tizen.org/category/ime");
+        if (ret == PMINFO_R_OK) {
+            pkgmgrinfo_appinfo_filter_foreach_appinfo (handle, app_list_cb, NULL);
+        }
+
+        pkgmgrinfo_appinfo_filter_destroy (handle);
+#endif
     }
 
     m_send_trans.put_command (SCIM_TRANS_CMD_OK);

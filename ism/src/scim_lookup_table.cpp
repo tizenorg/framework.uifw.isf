@@ -4,7 +4,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2013 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -305,7 +305,7 @@ CommonLookupTable::CommonLookupTable (int page_size)
     char buf [2] = { 0, 0 };
     for (int i = 0; i < 9; ++i) {
         buf [0] = '1' + i;
-        labels.push_back (utf8_mbstowcs (buf));
+        labels.push_back (utf8_mbstowcs (String (buf)));
     }
 
     labels.push_back (utf8_mbstowcs ("0"));

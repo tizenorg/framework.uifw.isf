@@ -2,7 +2,7 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2012-2013 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  * Contact: Haifeng Deng <haifeng.deng@samsung.com>, Hengliang Luo <hl.luo@samsung.com>
  *
@@ -27,6 +27,7 @@
 
 
 #include <string.h>
+#include <vconf.h>
 #include "scim.h"
 
 
@@ -56,7 +57,9 @@ public:
 
     int open_connection (void) {
         String config = "";
-        String display = String (getenv ("DISPLAY"));
+        const char *p = getenv ("DISPLAY");
+        String display;
+        if (p) display = String (p);
 
         SocketAddress addr (scim_get_default_panel_socket_address (display));
 
@@ -134,7 +137,7 @@ public:
     void set_active_ise_by_uuid (const char* uuid) {
         int cmd;
         m_trans.put_command (ISM_TRANS_CMD_SET_ACTIVE_ISE_BY_UUID);
-        m_trans.put_data (uuid, strlen(uuid)+1);
+        m_trans.put_data (uuid, strlen (uuid)+1);
         m_trans.write_to_socket (m_socket_imclient2panel);
         if (!m_trans.read_from_socket (m_socket_imclient2panel, m_socket_timeout))
             std::cerr << __func__ << " read_from_socket() may be timeout \n";
@@ -149,7 +152,7 @@ public:
     void set_initial_ise_by_uuid (const char* uuid) {
         int cmd;
         m_trans.put_command (ISM_TRANS_CMD_SET_INITIAL_ISE_BY_UUID);
-        m_trans.put_data (uuid, strlen(uuid)+1);
+        m_trans.put_data (uuid, strlen (uuid)+1);
         m_trans.write_to_socket (m_socket_imclient2panel);
         if (!m_trans.read_from_socket (m_socket_imclient2panel, m_socket_timeout))
             std::cerr << __func__ << " read_from_socket() may be timeout \n";
@@ -159,6 +162,8 @@ public:
         } else {
             std::cerr << __func__ << " get_command() or get_data() may fail!!!\n";
         }
+
+        vconf_set_str ("db/isf/csc_initial_uuid", uuid);
     }
 
     void get_active_ise (String &uuid) {
@@ -184,7 +189,7 @@ public:
         uint32 count_temp = 0;
         char **buf = NULL;
         size_t len;
-        char * buf_temp = NULL;
+        char *buf_temp = NULL;
 
         m_trans.put_command (ISM_TRANS_CMD_GET_ISE_LIST);
         m_trans.write_to_socket (m_socket_imclient2panel);
@@ -194,23 +199,31 @@ public:
         if (m_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_REPLY &&
                 m_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_OK &&
                 m_trans.get_data (count_temp) ) {
-            *count = count_temp;
+            if (count)
+                *count = count_temp;
         } else {
-            *count = 0;
+            if (count)
+                *count = 0;
             std::cerr << __func__ << " get_command() or get_data() may fail!!!\n";
         }
 
-        if (count_temp > 0) {
-            buf = (char**)malloc (count_temp * sizeof (char*));
-            if (buf) {
-                memset (buf, 0, count_temp * sizeof (char*));
-                for (uint32 i = 0; i < count_temp; i++) {
-                    if (m_trans.get_data (&buf_temp, len))
-                        buf[i] = buf_temp;
+        if (iselist) {
+            if (count_temp > 0) {
+                buf = (char**)calloc (1, count_temp * sizeof (char*));
+                if (buf) {
+                    for (uint32 i = 0; i < count_temp; i++) {
+                        if (m_trans.get_data (&buf_temp, len)) {
+                            if (buf_temp) {
+                                buf[i] = strdup (buf_temp);
+                                delete [] buf_temp;
+                            }
+                        }
+                    }
                 }
             }
+
+            *iselist = buf;
         }
-        *iselist = buf;
     }
 
     void get_ise_info (const char* uuid, String &name, String &language, int &type, int &option, String &module_name)
@@ -257,6 +270,10 @@ public:
 
     void set_active_ise_to_default (void) {
         m_trans.put_command (ISM_TRANS_CMD_RESET_DEFAULT_ISE);
+    }
+
+    void show_ise_selector (void) {
+        m_trans.put_command (ISM_TRANS_CMD_SHOW_ISF_CONTROL);
     }
 };
 
@@ -337,6 +354,11 @@ void IMControlClient::reset_ise_option (void)
 void IMControlClient::set_active_ise_to_default (void)
 {
     m_impl->set_active_ise_to_default ();
+}
+
+void IMControlClient::show_ise_selector (void)
+{
+    m_impl->show_ise_selector ();
 }
 };
 

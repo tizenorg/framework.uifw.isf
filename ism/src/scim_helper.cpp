@@ -8,7 +8,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2004-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2013 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -173,6 +173,9 @@ public:
     HelperAgentSignalInt                signal_update_displayed_candidate_number;
     HelperAgentSignalInt                signal_longpress_candidate;
     HelperAgentSignalKeyEventUint       signal_process_key_event;
+    HelperAgentSignalUintVoid           signal_set_input_mode;
+    HelperAgentSignalUintVoid           signal_set_input_hint;
+    HelperAgentSignalUintVoid           signal_update_bidi_direction;
 
 public:
     HelperAgentImpl () : magic (0), magic_active (0), timeout (-1), focused_ic ((uint32) -1) { }
@@ -691,6 +694,14 @@ HelperAgent::filter_event ()
                 m_impl->send.write_to_socket (m_impl->socket);
                 break;
             }
+            case ISM_TRANS_CMD_SET_INPUT_MODE:
+            {
+                uint32 input_mode;
+
+                if (m_impl->recv.get_data (input_mode))
+                    m_impl->signal_set_input_mode (this, input_mode);
+                break;
+            }
             case ISM_TRANS_CMD_SET_CAPS_MODE:
             {
                 uint32 mode;
@@ -858,6 +869,22 @@ HelperAgent::filter_event ()
                 uint32 index;
                 if (m_impl->recv.get_data (index))
                     m_impl->signal_longpress_candidate (this, ic, ic_uuid, index);
+                break;
+            }
+            case ISM_TRANS_CMD_SET_INPUT_HINT:
+            {
+                uint32 input_hint;
+
+                if (m_impl->recv.get_data (input_hint))
+                    m_impl->signal_set_input_hint (this, input_hint);
+                break;
+            }
+            case ISM_TRANS_CMD_UPDATE_BIDI_DIRECTION:
+            {
+                uint32 bidi_direction;
+
+                if (m_impl->recv.get_data (bidi_direction))
+                    m_impl->signal_update_bidi_direction (this, bidi_direction);
                 break;
             }
             default:
@@ -1440,7 +1467,7 @@ HelperAgent::get_selection (const String &uuid) const
 }
 
 /**
- * @brief Request to selected text.
+ * @brief Request to select text.
  *
  * @param start The start position in text.
  * @param end The end position in text.
@@ -1455,6 +1482,24 @@ HelperAgent::set_selection (int start, int end) const
         m_impl->send.put_command (SCIM_TRANS_CMD_SET_SELECTION);
         m_impl->send.put_data (start);
         m_impl->send.put_data (end);
+        m_impl->send.write_to_socket (m_impl->socket_active, m_impl->magic_active);
+    }
+}
+
+/**
+ * @brief Send a private command to an application.
+ *
+ * @param command The private command sent from IME.
+ */
+void
+HelperAgent::send_private_command (const String &command) const
+{
+    if (m_impl->socket_active.is_connected ()) {
+        m_impl->send.clear ();
+        m_impl->send.put_command (SCIM_TRANS_CMD_REQUEST);
+        m_impl->send.put_data (m_impl->magic_active);
+        m_impl->send.put_command (SCIM_TRANS_CMD_SEND_PRIVATE_COMMAND);
+        m_impl->send.put_data (command);
         m_impl->send.write_to_socket (m_impl->socket_active, m_impl->magic_active);
     }
 }
@@ -2105,6 +2150,48 @@ Connection
 HelperAgent::signal_connect_get_layout (HelperAgentSlotUintVoid *slot)
 {
     return m_impl->signal_get_layout.connect (slot);
+}
+
+/**
+ * @brief Connect a slot to Helper set input mode signal.
+ *
+ * This signal is used to set Helper ISE input mode.
+ *
+ * The prototype of the slot is:
+ * void set_input_mode (const HelperAgent *agent, uint32 &input_mode);
+ */
+Connection
+HelperAgent::signal_connect_set_input_mode (HelperAgentSlotUintVoid *slot)
+{
+    return m_impl->signal_set_input_mode.connect (slot);
+}
+
+/**
+ * @brief Connect a slot to Helper set input hint signal.
+ *
+ * This signal is used to set Helper ISE input hint.
+ *
+ * The prototype of the slot is:
+ * void set_input_hint (const HelperAgent *agent, uint32 &input_hint);
+ */
+Connection
+HelperAgent::signal_connect_set_input_hint (HelperAgentSlotUintVoid *slot)
+{
+    return m_impl->signal_set_input_hint.connect (slot);
+}
+
+/**
+ * @brief Connect a slot to Helper set BiDi direction signal.
+ *
+ * This signal is used to set Helper ISE BiDi direction.
+ *
+ * The prototype of the slot is:
+ * void update_bidi_direction (const HelperAgent *agent, uint32 &bidi_direction);
+ */
+Connection
+HelperAgent::signal_connect_update_bidi_direction (HelperAgentSlotUintVoid *slot)
+{
+    return m_impl->signal_update_bidi_direction.connect (slot);
 }
 
 /**

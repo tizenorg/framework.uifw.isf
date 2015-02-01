@@ -9,7 +9,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2013 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -46,13 +46,15 @@
 #define __SCIM_SOCKET_FRONTEND_H
 
 #include "scim_stl_map.h"
+#include <Ecore.h>
 
 using namespace scim;
 
 class EAPI SocketFrontEnd : public FrontEndBase
 {
     enum ClientType {
-        UNKNOWN_CLIENT,
+        NONE_CLIENT             = -1, //Client does not find in SocketClientRepository
+        UNKNOWN_CLIENT          =  0, //Connecting client, never receive any data
         IMENGINE_CLIENT,
         CONFIG_CLIENT,
         HELPER_MANAGER_CLIENT
@@ -61,6 +63,7 @@ class EAPI SocketFrontEnd : public FrontEndBase
     struct ClientInfo {
         uint32     key;
         ClientType type;
+        Ecore_Fd_Handler *handler;
     };
 
     /**
@@ -98,6 +101,8 @@ class EAPI SocketFrontEnd : public FrontEndBase
     int    m_current_instance;
 
     int    m_current_socket_client;
+
+    int    m_preload_keyboard_ise_id;
 
     uint32 m_current_socket_client_key;
 
@@ -144,6 +149,8 @@ protected:
                                           ISF_CANDIDATE_PORTRAIT_LINE_T portrait_line,
                                           ISF_CANDIDATE_MODE_T          mode);
 
+    virtual void send_private_command    (int id, const String &command);
+
 public:
     virtual void init (int argc, char **argv);
     virtual void run ();
@@ -154,6 +161,7 @@ private:
     void run_helper (const Socket &client);
 
     void get_active_ise_list (int client_id);
+    void preload_keyboard_ise (const String &uuid);
     void unregister_helper ();
 
     uint32 generate_key () const;
@@ -229,6 +237,9 @@ private:
     void socket_candidate_more_window_hide  (int client_id);
     void socket_longpress_candidate         (int client_id);
     void socket_set_imdata                  (int client_id);
+    void socket_set_autocapital_type        (int client_id);
+    void socket_set_input_hint              (int client_id);
+    void socket_update_bidi_direction       (int client_id);
 };
 
 #endif

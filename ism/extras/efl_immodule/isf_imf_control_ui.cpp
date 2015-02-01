@@ -2,7 +2,7 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2012-2013 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  * Contact: Jihoon Kim <jihoon48.kim@samsung.com>, Haifeng Deng <haifeng.deng@samsung.com>
  *
@@ -23,6 +23,7 @@
  */
 
 #define Uses_SCIM_TRANSACTION
+#define Uses_SCIM_HOTKEY
 
 
 /* IM control UI part */
@@ -46,7 +47,7 @@ static Ecore_IMF_Context *hide_req_ic       = NULL;
 static Ecore_Event_Handler *_prop_change_handler = NULL;
 static Ecore_X_Atom       prop_x_keyboard_input_detected = 0;
 static Ecore_X_Window     _control_win;
-static Eina_Bool          hw_kbd_mode = EINA_FALSE;
+static TOOLBAR_MODE_T     kbd_mode = TOOLBAR_HELPER_MODE;
 static Ecore_Timer       *hide_timer = NULL;
 static Ecore_Timer       *will_show_timer = NULL;
 Ecore_IMF_Input_Panel_State input_panel_state = ECORE_IMF_INPUT_PANEL_STATE_HIDE;
@@ -61,6 +62,7 @@ static Eina_Bool          candidate_conformant_reset_done = EINA_FALSE;
 static Eina_Bool          received_will_hide_event = EINA_FALSE;
 static Eina_Bool          received_candidate_will_hide_event = EINA_FALSE;
 static Eina_Bool          will_hide = EINA_FALSE;
+static bool               _support_hw_keyboard_mode = false;
 
 static void _send_input_panel_hide_request ();
 
@@ -166,6 +168,7 @@ static Eina_Bool _prop_change (void *data, int ev_type, void *ev)
                 LOGD ("conformant_reset_done = 0, candidate_conformant_reset_done = 0, registering _candidate_render_post_cb\n");
                 conformant_reset_done = EINA_FALSE;
                 candidate_conformant_reset_done = EINA_FALSE;
+                _clear_will_show_timer ();
                 if (active_context_canvas && _conformant_get ()) {
                     evas_event_callback_add (active_context_canvas, EVAS_CALLBACK_RENDER_POST, _candidate_render_post_cb, NULL);
                 }
@@ -179,8 +182,8 @@ static Eina_Bool _prop_change (void *data, int ev_type, void *ev)
             return ECORE_CALLBACK_PASS_ON;
 
         if (val == 0) {
-            hw_kbd_mode = EINA_FALSE;
-            LOGD ("H/W keyboard mode : %d\n", hw_kbd_mode);
+            kbd_mode = TOOLBAR_HELPER_MODE;
+            LOGD ("keyboard mode(0:H/W Keyboard, 1:S/W Keyboard): %d\n", kbd_mode);
         }
     }
 
@@ -234,6 +237,8 @@ static void _event_callback_call (Ecore_IMF_Input_Panel_Event type, int value)
                     break;
                 case ECORE_IMF_INPUT_PANEL_STATE_WILL_SHOW:
                     SECURE_LOGD ("[input panel will be shown] ctx : %p\n", using_ic);
+                    break;
+                default:
                     break;
             }
             notified_state = (Ecore_IMF_Input_Panel_State)value;
@@ -391,11 +396,16 @@ static Eina_Bool _client_window_focus_out_cb (void *data, int ev_type, void *ev)
     Ecore_IMF_Context *ctx = (Ecore_IMF_Context *)data;
     if (!ctx || !e) return ECORE_CALLBACK_PASS_ON;
     Ecore_X_Window client_win = _client_window_id_get (ctx);
+    Ecore_X_Window focus_out_win = e->win;
+    Ecore_X_Window focus_in_win = ecore_x_window_focus_get ();
 
-    LOGD ("ctx : %p, client_window : %d\n", ctx, client_win);
+    LOGD ("ctx : %p, client_window : %#x, focus-out win : %#x, focus-in win : %#x\n", ctx, client_win, focus_out_win, focus_in_win);
+
+    if (check_focus_out_by_popup_win (ctx))
+        return ECORE_CALLBACK_PASS_ON;
 
     if (client_win > 0) {
-        if (e->win == client_win)
+        if (focus_out_win == client_win)
             isf_imf_context_input_panel_instant_hide (ctx);
     }
     else {
@@ -411,9 +421,43 @@ void input_panel_event_callback_call (Ecore_IMF_Input_Panel_Event type, int valu
     _event_callback_call (type, value);
 }
 
-Eina_Bool get_hardware_keyboard_mode ()
+Eina_Bool check_focus_out_by_popup_win (Ecore_IMF_Context *ctx)
 {
-    return hw_kbd_mode;
+    Ecore_X_Window focus_win = ecore_x_window_focus_get ();
+    Eina_Bool ret = EINA_FALSE;
+    Ecore_X_Window_Type win_type = ECORE_X_WINDOW_TYPE_UNKNOWN;
+    Ecore_X_Window client_win = _client_window_id_get (ctx);
+    char *class_name = NULL;
+
+    if (!ecore_x_netwm_window_type_get (focus_win, &win_type))
+        return EINA_FALSE;
+
+    LOGD ("win type : %d\n", win_type);
+
+    if (win_type == ECORE_X_WINDOW_TYPE_POPUP_MENU ||
+        win_type == ECORE_X_WINDOW_TYPE_NOTIFICATION) {
+        LOGD ("client window : %#x, focus window : %#x\n", client_win, focus_win);
+
+        if (client_win != focus_win) {
+            ecore_x_icccm_name_class_get (focus_win, NULL, &class_name);
+
+            if (class_name) {
+                if (strncmp (class_name, "LOCK_SCREEN", 11) != 0) {
+                    ret = EINA_TRUE;
+                }
+
+                free (class_name);
+                class_name = NULL;
+            }
+        }
+    }
+
+    return ret;
+}
+
+TOOLBAR_MODE_T get_keyboard_mode ()
+{
+    return kbd_mode;
 }
 
 void isf_imf_context_control_panel_show (Ecore_IMF_Context *ctx)
@@ -442,20 +486,23 @@ void isf_imf_input_panel_init (void)
     ecore_x_event_mask_set (_control_win, ECORE_X_EVENT_MASK_WINDOW_PROPERTY);
 
     _prop_change_handler = ecore_event_handler_add (ECORE_X_EVENT_WINDOW_PROPERTY, _prop_change, NULL);
+    _support_hw_keyboard_mode = scim_global_config_read (String (SCIM_GLOBAL_CONFIG_SUPPORT_HW_KEYBOARD_MODE), _support_hw_keyboard_mode);
 
-    if (!prop_x_keyboard_input_detected)
-        prop_x_keyboard_input_detected = ecore_x_atom_get (PROP_X_EXT_KEYBOARD_INPUT_DETECTED);
+    if (_support_hw_keyboard_mode){
+        if (!prop_x_keyboard_input_detected)
+            prop_x_keyboard_input_detected = ecore_x_atom_get (PROP_X_EXT_KEYBOARD_INPUT_DETECTED);
 
-    if (ecore_x_window_prop_card32_get (_control_win, prop_x_keyboard_input_detected, &val, 1) > 0){
-        if (val == 1){
-            hw_kbd_mode = EINA_TRUE;
+        if (ecore_x_window_prop_card32_get (_control_win, prop_x_keyboard_input_detected, &val, 1) > 0){
+            if (val == 1){
+                kbd_mode = TOOLBAR_KEYBOARD_MODE;
+            } else {
+                kbd_mode = TOOLBAR_HELPER_MODE;
+            }
         } else {
-            hw_kbd_mode = EINA_FALSE;
+            kbd_mode = TOOLBAR_HELPER_MODE;
         }
-    } else {
-        hw_kbd_mode = EINA_FALSE;
     }
-    LOGD ("H/W keyboard mode : %d\n", hw_kbd_mode);
+    LOGD ("keyboard mode(0:H/W Keyboard, 1:S/W Keyboard): %d\n", kbd_mode);
 }
 
 void isf_imf_input_panel_shutdown (void)
@@ -536,7 +583,7 @@ void isf_imf_context_input_panel_show (Ecore_IMF_Context* ctx)
         return;
     }
 
-    if (hw_kbd_mode) {
+    if (kbd_mode == TOOLBAR_KEYBOARD_MODE) {
         LOGD ("H/W keyboard is existed.\n");
         return;
     }
@@ -579,10 +626,16 @@ void isf_imf_context_input_panel_show (Ecore_IMF_Context* ctx)
 
     iseContext.autocapital_type = ecore_imf_context_autocapital_type_get (ctx);
 
+    iseContext.input_hint = ecore_imf_context_input_hint_get (ctx);
+
+    iseContext.bidi_direction = ecore_imf_context_bidi_direction_get (ctx);
+
     SECURE_LOGD ("ctx : %p, layout : %d, layout variation : %d\n", ctx, iseContext.layout, iseContext.layout_variation);
     SECURE_LOGD ("language : %d, cursor position : %d, caps mode : %d\n", iseContext.language, iseContext.cursor_pos, iseContext.caps_mode);
     SECURE_LOGD ("return_key_type : %d, return_key_disabled : %d, autocapital type : %d\n", iseContext.return_key_type, iseContext.return_key_disabled, iseContext.autocapital_type);
     SECURE_LOGD ("client_window : %#x, password mode : %d, prediction_allow : %d\n", iseContext.client_window, iseContext.password_mode, iseContext.prediction_allow);
+    SECURE_LOGD ("input hint : %#x\n", iseContext.input_hint);
+    SECURE_LOGD ("bidi direction : %d\n", iseContext.bidi_direction);
 
     if (iseContext.client_window != ecore_x_window_focus_get ()) {
         LOGW ("Client window is different from focus window. client win : %#x, focus win : %#x\n", iseContext.client_window, ecore_x_window_focus_get ());
@@ -875,6 +928,9 @@ void isf_imf_context_input_panel_event_callback_clear (Ecore_IMF_Context *ctx)
 {
     ecore_imf_context_input_panel_event_callback_clear (ctx);
 
+    if (input_panel_ctx == ctx)
+        _win_focus_out_handler_del ();
+
     if (show_req_ic == ctx)
         show_req_ic = NULL;
 
@@ -931,15 +987,18 @@ void isf_imf_context_input_panel_send_will_hide_ack (Ecore_IMF_Context *ctx)
     }
 }
 
-void isf_imf_context_set_hardware_keyboard_mode (Ecore_IMF_Context *ctx)
+void isf_imf_context_set_keyboard_mode (Ecore_IMF_Context *ctx, TOOLBAR_MODE_T mode)
 {
     if (IfInitContext == false) {
         _isf_imf_context_init ();
     }
+    _support_hw_keyboard_mode = scim_global_config_read (String (SCIM_GLOBAL_CONFIG_SUPPORT_HW_KEYBOARD_MODE), _support_hw_keyboard_mode);
 
-    hw_kbd_mode = EINA_TRUE;
-    SECURE_LOGD ("H/W keyboard mode : %d\n", hw_kbd_mode);
-    _isf_imf_context_set_hardware_keyboard_mode (_get_context_id (ctx));
+    if (_support_hw_keyboard_mode) {
+        kbd_mode = mode;
+        SECURE_LOGD ("keyboard mode : %d\n", kbd_mode);
+        _isf_imf_context_set_keyboard_mode (_get_context_id (ctx), mode);
+    }
 }
 
 void isf_imf_context_input_panel_send_candidate_will_hide_ack (Ecore_IMF_Context *ctx)
@@ -961,6 +1020,19 @@ void isf_imf_context_input_panel_send_candidate_will_hide_ack (Ecore_IMF_Context
         }
     } else {
         _isf_imf_context_input_panel_send_candidate_will_hide_ack (_get_context_id (ctx));
+    }
+}
+
+void isf_imf_context_input_panel_input_mode_set (Ecore_IMF_Context *ctx, Ecore_IMF_Input_Mode input_mode)
+{
+    EcoreIMFContextISF *context_scim = (EcoreIMFContextISF *)ecore_imf_context_data_get (ctx);
+
+    if (!IfInitContext)
+        _isf_imf_context_init ();
+
+    if (context_scim == get_focused_ic ()) {
+        SECURE_LOGD ("input mode : %d\n", input_mode);
+        _isf_imf_context_input_panel_input_mode_set (_get_context_id (ctx), input_mode);
     }
 }
 

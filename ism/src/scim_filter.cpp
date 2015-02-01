@@ -188,6 +188,9 @@ public:
 
             m_orig->signal_connect_set_selection (
                 slot (this, &FilterInstanceBase::FilterInstanceBaseImpl::slot_set_selection));
+
+            m_orig->signal_connect_send_private_command (
+                slot (this, &FilterInstanceBase::FilterInstanceBaseImpl::slot_send_private_command));
         }
     }
 
@@ -330,6 +333,10 @@ private:
 
     bool slot_set_selection          (IMEngineInstanceBase * si, int start, int end) {
         return m_parent->filter_set_selection (start, end);
+    }
+
+    void slot_send_private_command   (IMEngineInstanceBase * si, const String & command) {
+        m_parent->filter_send_private_command (command);
     }
 };
 
@@ -556,6 +563,12 @@ bool
 FilterInstanceBase::filter_set_selection (int start, int end)
 {
     return set_selection (start, end);
+}
+
+void
+FilterInstanceBase::filter_send_private_command (const String &command)
+{
+    send_private_command (command);
 }
 
 } // namespace scim
