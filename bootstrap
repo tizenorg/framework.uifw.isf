@@ -20,6 +20,7 @@
 #! /bin/sh
 
 set -x
+libtoolize --force
 aclocal -I ism/m4
 autoheader
 libtoolize -c --automake 

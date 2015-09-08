@@ -2,7 +2,7 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2000 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  * Contact: Shuo Liu <shuo0805.liu@samsung.com>, Jihoon Kim <jihoon48.kim@samsung.com>
  *
@@ -38,9 +38,7 @@ static Ecore_Event_Handler *_preedit_handler = NULL;
 static Ecore_Event_Handler *_commit_handler  = NULL;
 static int focus_label_idx = 1;
 
-
 void isf_entry_event_demo_bt (void *data, Evas_Object *obj, void *event_info);
-
 
 static void _set_focus_button_bt (void *data, Evas_Object *obj, void *event_info)
 {
@@ -63,10 +61,10 @@ static void _key_up_cb (void *data, Evas *e, Evas_Object *obj, void *event_info)
     Evas_Event_Key_Up *ev = (Evas_Event_Key_Up *) event_info;
 
     if (obj == _label1) {
-        snprintf (str, sizeof(str),"label 1  get key up event: %s", (char *)(ev->keyname));
+        snprintf (str, sizeof (str), "label 1  get key up event: %s", (char *)(ev->keyname));
         elm_object_text_set (_key_event_label, str);
     } else if (obj == _label2) {
-        snprintf (str,sizeof(str), "label 2  get key up event: %s", (char *)(ev->keyname));
+        snprintf (str, sizeof (str), "label 2  get key up event: %s", (char *)(ev->keyname));
         elm_object_text_set (_key_event_label, str);
     }
 }
@@ -77,10 +75,10 @@ static void _key_down_cb (void *data, Evas *e, Evas_Object *obj, void *event_inf
     Evas_Event_Key_Up *ev = (Evas_Event_Key_Up *) event_info;
 
     if (obj == _label1) {
-        snprintf (str, sizeof(str), "label 1  get key down event: %s", (char *)(ev->keyname));
+        snprintf (str, sizeof (str), "label 1  get key down event: %s", (char *)(ev->keyname));
         elm_object_text_set (_key_event_label, str);
     } else if (obj == _label2) {
-        snprintf (str, sizeof(str),"label 2  get key down event: %s", (char *)(ev->keyname));
+        snprintf (str, sizeof (str), "label 2  get key down event: %s", (char *)(ev->keyname));
         elm_object_text_set (_key_event_label, str);
     }
 }
@@ -98,7 +96,7 @@ static Eina_Bool _ecore_imf_event_changed_cb (void *data, int type, void *event)
     if (preedit_string == NULL)
         return ECORE_CALLBACK_CANCEL;
 
-    snprintf (str,sizeof(str), "label %d get preedit string: %s", focus_label_idx, preedit_string);
+    snprintf (str, sizeof (str), "label %d get preedit string: %s", focus_label_idx, preedit_string);
 
     free (preedit_string);
     elm_object_text_set (_preedit_event_label, str);
@@ -111,20 +109,19 @@ static Eina_Bool _ecore_imf_event_commit_cb (void *data, int type, void *event)
     static char str [100];
     Ecore_IMF_Event_Commit *ev = (Ecore_IMF_Event_Commit *) event;
 
-    snprintf (str,sizeof(str), "label %d get commit string: %s", focus_label_idx, (char *)(ev->str));
+    snprintf (str,sizeof (str), "label %d get commit string: %s", focus_label_idx, (char *)(ev->str));
     elm_object_text_set (_commit_event_label, str);
     return ECORE_CALLBACK_CANCEL;
 }
 
-static void nf_back_event_cb (void *data, Evas_Object *obj, void *event_info)
+static Eina_Bool _nf_back_event_cb (void *data, Elm_Object_Item *it)
 {
     evas_object_event_callback_del (_label1, EVAS_CALLBACK_KEY_UP, NULL);
     evas_object_event_callback_del (_label2, EVAS_CALLBACK_KEY_UP, NULL);
 
-    for(int i = 0; i < 2; i++)
-    {
+    for (int i = 0; i < 2; i++) {
         if (_imf_context[i]) {
-            ecore_imf_context_del(_imf_context[i]);
+            ecore_imf_context_del (_imf_context[i]);
             _imf_context[i] = NULL;
         }
     }
@@ -138,6 +135,8 @@ static void nf_back_event_cb (void *data, Evas_Object *obj, void *event_info)
         ecore_event_handler_del (_commit_handler);
         _commit_handler = NULL;
     }
+
+    return EINA_TRUE;
 }
 
 static void isf_label_event_demo_bt (void *data, Evas_Object *obj, void *event_info)
@@ -151,8 +150,8 @@ static void isf_label_event_demo_bt (void *data, Evas_Object *obj, void *event_i
     evas_object_size_hint_weight_set (layout, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
     evas_object_show (layout);
 
-    evas = evas_object_evas_get(ad->win_main);
-    ecore_win = ecore_evas_window_get(ecore_evas_ecore_evas_get(evas));
+    evas = evas_object_evas_get (ad->win_main);
+    ecore_win = ecore_evas_window_get (ecore_evas_ecore_evas_get (evas));
 
     const char *ctx_id = ecore_imf_context_default_id_get ();
 
@@ -173,7 +172,7 @@ static void isf_label_event_demo_bt (void *data, Evas_Object *obj, void *event_i
     /* create input context for label1 */
     _imf_context[0] = ecore_imf_context_add (ctx_id);
     ecore_imf_context_client_window_set (_imf_context[0], (void *)ecore_win);
-    ecore_imf_context_client_canvas_set (_imf_context[0], evas_object_evas_get(_label1));
+    ecore_imf_context_client_canvas_set (_imf_context[0], evas_object_evas_get (_label1));
     ecore_imf_context_focus_in (_imf_context[0]);
 
     /* create label2 */
@@ -230,8 +229,7 @@ static void isf_label_event_demo_bt (void *data, Evas_Object *obj, void *event_i
     evas_object_smart_callback_add (_ise_show_button, "clicked", _button_bt, NULL);
 
     Elm_Object_Item *it = elm_naviframe_item_push (ad->naviframe, _("Label Event"), NULL, NULL, layout, NULL);
-    Evas_Object *back_btn = elm_object_item_part_content_get (it, "prev_btn");
-    evas_object_smart_callback_add (back_btn, "clicked",  nf_back_event_cb, ad);
+    elm_naviframe_item_pop_cb_set (it, _nf_back_event_cb, ad);
 }
 
 static void _list_click (void *data, Evas_Object *obj, void *event_info)

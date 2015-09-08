@@ -1,8 +1,7 @@
 # Process this file with autoconf to produce a configure script
 #AC_INIT(scim, 1.4.7, suzhe@tsinghua.org.cn)
-AC_INIT(isf, 2.3.5617, isf@samsung.com)
+AC_INIT(isf, 2.4.8317, isf@samsung.com)
 AC_CONFIG_SRCDIR([ism/src/scim.h])
-m4_pattern_allow([^AS_])
 
 ###########################################################
 ##          Some definitions of Version macros.          ##
@@ -10,8 +9,8 @@ m4_pattern_allow([^AS_])
 
 # ISF version
 ISF_MAJOR_VERSION=2
-ISF_MINOR_VERSION=3
-ISF_MICRO_VERSION=5617
+ISF_MINOR_VERSION=4
+ISF_MICRO_VERSION=8317
 
 ISF_VERSION=$ISF_MAJOR_VERSION.$ISF_MINOR_VERSION.$ISF_MICRO_VERSION
 
@@ -84,7 +83,7 @@ AM_CONFIG_HEADER([config.h])
 PLATFORM_INIT
 
 # Init gettext
-ALL_LINGUAS="de_DE el_GR en es_ES fr_FR it_IT ja_JP ko_KR nl_NL pt_PT ru_RU tr_TR zh_CN zh_HK zh_TW"
+ALL_LINGUAS="hy az eu bg ca zh_CN zh_HK zh_TW hr cs da nl_NL en en_US et fi fr_FR gl ka de_DE el_GR hu is ga it_IT ja_JP kk ko_KR lv lt mk nb pl pt_PT pt_BR ro ru_RU sr sk sl es_ES es_US es_MX sv tr_TR uk uz ar zh_SG hi en_PH fr_CA fa th ur as bn gu id km kn lo ml mn_MN mr ms my ne or pa si ta te tl vi"
 AM_GNU_GETTEXT
 
 # Init libtool
@@ -124,7 +123,7 @@ AC_PATH_PROG(PERL, perl)
 AC_SUBST(PERL)
 
 # Check intltool
-IT_PROG_INTLTOOL([0.33], [no-xml])
+#IT_PROG_INTLTOOL([0.33], [no-xml])
 
 # Checks for libraries.
 AC_HEADER_STDC
@@ -206,7 +205,7 @@ AC_CHECK_FUNCS([gethostbyname gethostbyname_r socket bind accept connect listen]
 
 AM_ICONV
 
-# Check if we should build scim-panel-gtk with gconf
+# Check gconf library
 PKG_CHECK_MODULES(GCONF, [gconf-2.0 phonestatus noti-service],
                   [ISF_HAS_GCONF=yes],
                   [ISF_HAS_GCONF=no])
@@ -215,8 +214,11 @@ if test "$ISF_HAS_GCONF" = "yes"; then
   AC_DEFINE(HAVE_GCONF,1,[Have GConf functions.])
 fi
 
-# Check if we should build isf-panel-efl daemon
-PKG_CHECK_MODULES(EFL, [elementary ecore-x evas ecore ecore-evas ecore-file edje ecore-input ecore-imf],
+# Check ECORE
+PKG_CHECK_MODULES(ECORE, [ecore])
+
+# Check EFL library
+PKG_CHECK_MODULES(EFL, [elementary ecore-x evas ecore ecore-evas ecore-file edje ecore-input ecore-ipc ecore-imf],
                   [ISF_HAS_EFL=yes],
                   [ISF_HAS_EFL=no])
 
@@ -230,11 +232,16 @@ if test "$ISF_HAS_EFL" = "yes"; then
   AC_SUBST(EFL_IM_MODULEDIR)
 fi
 
+# Check EFL assist library
+PKG_CHECK_MODULES(EFL_ASSIST, [efl-assist])
+
 # Check x11 library
 PKG_CHECK_MODULES(X11, [x11])
 
 # Check ui-gadget library
-PKG_CHECK_MODULES(UIGADGET, [ui-gadget-1])
+PKG_CHECK_MODULES(UIGADGET, [ui-gadget-1],
+                  [ISF_HAS_UIGADGET=yes],
+                  [ISF_HAS_UIGADGET=no])
 
 # Check utilX library
 PKG_CHECK_MODULES(UTILX, [utilX])
@@ -242,25 +249,89 @@ PKG_CHECK_MODULES(UTILX, [utilX])
 # Check appcore-efl library
 PKG_CHECK_MODULES(APPCORE_EFL, [appcore-efl])
 
-# Check HEYNOTI library
-PKG_CHECK_MODULES(HEYNOTI, [heynoti])
-
 # Check dlog library
 PKG_CHECK_MODULES(DLOG, [dlog >= 0])
 
 # Check privilege control library
 PKG_CHECK_MODULES(PRIVILEGE_CONTROL, [libprivilege-control >= 0])
 
-# Check if we should build isf-setting-efl
+# Check minicontrol library
+PKG_CHECK_MODULES(MINICONTROL_PROVIDER, [minicontrol-provider],
+                  [ISF_HAS_MINICONTROL=yes],
+                  [ISF_HAS_MINICONTROL=no])
+
+# Check notification library
+PKG_CHECK_MODULES(NOTIFICATION, [notification],
+                  [ISF_HAS_NOTIFICATION=yes],
+                  [ISF_HAS_NOTIFICATION=no])
+
+# Check tts library
+PKG_CHECK_MODULES(TTS, [tts],
+                  [ISF_HAS_TTS=yes],
+                  [ISF_HAS_TTS=no])
+
+if test "$ISF_HAS_TTS" = "yes"; then
+  AC_DEFINE(HAVE_TTS,1,[Have TTS functions.])
+fi
+
+# Check security server
+PKG_CHECK_MODULES(SECURITY_SERVER, [security-server])
+
+# Check vconf library
 PKG_CHECK_MODULES(VCONF, [vconf],
                   [ISF_HAS_VCONF=yes],
                   [ISF_HAS_VCONF=no])
+
+# Check edbus library
+PKG_CHECK_MODULES(EDBUS, [edbus])
+
+# Check bluetooth library
+PKG_CHECK_MODULES(BLUETOOTH, [capi-network-bluetooth],
+                  [ISF_HAS_BLUETOOTH=yes],
+                  [ISF_HAS_BLUETOOTH=no])
+
+# Check feedback library
+PKG_CHECK_MODULES(FEEDBACK, [feedback],
+                  [ISF_HAS_FEEDBACK=yes],
+                  [ISF_HAS_FEEDBACK=no])
+
+# Check package manager
+PKG_CHECK_MODULES(PACKAGE_MANAGER, [capi-appfw-package-manager])
+
+# Check core package manager
+PKG_CHECK_MODULES(PKGMGR_INFO, [pkgmgr-info],
+                  [ISF_HAS_PKGMGR_INFO=yes],
+                  [ISF_HAS_PKGMGR_INFO=no])
 
 if test "$ISF_HAS_VCONF" = "yes"; then
   AC_DEFINE(HAVE_VCONF,1,[Have VConf functions.])
 fi
 
-# Check if we should build scim-panel-gtk daemon
+if test "$ISF_HAS_BLUETOOTH" = "yes"; then
+  AC_DEFINE(HAVE_BLUETOOTH,1,[Have Bluetooth functions.])
+fi
+
+if test "$ISF_HAS_FEEDBACK" = "yes"; then
+  AC_DEFINE(HAVE_FEEDBACK,1,[Have Feedback functions.])
+fi
+
+if test "$ISF_HAS_MINICONTROL" = "yes"; then
+  AC_DEFINE(HAVE_MINICONTROL,1,[Have Minicontrol functions.])
+fi
+
+if test "$ISF_HAS_NOTIFICATION" = "yes"; then
+  AC_DEFINE(HAVE_NOTIFICATION,1,[Have Notification functions.])
+fi
+
+if test "$ISF_HAS_UIGADGET" = "yes"; then
+  AC_DEFINE(HAVE_UIGADGET,1,[Have UI gadget functions.])
+fi
+
+if test "$ISF_HAS_PKGMGR_INFO" = "yes"; then
+  AC_DEFINE(HAVE_PKGMGR_INFO,1,[Have Package manager functions.])
+fi
+
+# Check GTK2 library
 PKG_CHECK_MODULES(GTK2, [gtk+-2.0 >= 2.4.0 pango >= 1.1.0 gdk-pixbuf-2.0 >= 2.4.0],
                   [SCIM_HAS_GTK2=yes],
                   [SCIM_HAS_GTK2=no])
@@ -282,7 +353,7 @@ if test "$SCIM_HAS_GTK2" = "yes"; then
   if test -z "$GTK_LIBDIR)"; then
     GTK_LIBDIR="$libdir"
   fi
-  GTK_IM_MODULEDIR=$GTK_LIBDIR/gtk-2.0/immodules
+  GTK_IM_MODULEDIR=$GTK_LIBDIR/gtk-2.0/$GTK_BINARY_VERSION/immodules
   AC_SUBST(GTK_LIBDIR)
   AC_SUBST(GTK_IM_MODULEDIR)
   AC_SUBST(GTK_VERSION)
@@ -376,11 +447,6 @@ AC_ARG_ENABLE(gtk2-immodule,
               enable_gtk2_immodule=no,
               enable_gtk2_immodule=yes)
 
-AC_ARG_ENABLE(panel-gtk,
-              [  --disable-panel-gtk       Do not build GTK2 Panel],
-              enable_panel_gtk=no,
-              enable_panel_gtk=check)
-
 AC_ARG_ENABLE(efl-immodule,
               [  --disable-efl-immodule    Do not build EFL IMModule],
               enable_efl_immodule=no,
@@ -400,6 +466,11 @@ AC_ARG_ENABLE(tray-icon,
               [  --disable-tray-icon       Do not build Tray Icon],
               enable_tray_icon=no,
               enable_tray_icon=yes)
+
+AC_ARG_ENABLE(multiwindow-support,
+              [  --disable-multiwindow-support       Do not build Multiwindow Support],
+              enable_multiwindow_support=no,
+              enable_multiwindow_support=yes)
 
 if test "$have_x" = "yes"; then
   SCIM_BUILD_X11_UTILS=1
@@ -503,13 +574,11 @@ else
   enable_tray_icon=no
 fi
 
-SCIM_BUILD_PANEL_GTK=0
-if test "$enable_panel_gtk" != "no"; then
-  enable_panel_gtk=no
-  if test "$SCIM_HAS_GTHREAD2" = "yes" -a "$SCIM_HAS_GTK2" = "yes"; then
-    SCIM_BUILD_PANEL_GTK=1
-    enable_panel_gtk=yes
-  fi
+if test "$enable_multiwindow_support" = "yes"; then
+  enable_multiwindow_support=yes
+  AC_DEFINE(ENABLE_MULTIWINDOW_SUPPORT,1,[Enable the Multi Window code.])
+else
+  enable_multiwindow_support=no
 fi
 
 if test "$enable_efl_immodule" = "yes" -a "$ISF_HAS_EFL" = "yes"; then
@@ -582,9 +651,6 @@ AM_CONDITIONAL(SCIM_BUILD_X11_UTILS,
 AM_CONDITIONAL(SCIM_BUILD_TRAY_ICON,
                 [test "$enable_tray_icon" = "yes"])
 
-AM_CONDITIONAL(SCIM_BUILD_PANEL_GTK,
-                [test "$enable_panel_gtk" = "yes"])
-
 AM_CONDITIONAL(ISF_BUILD_EFL_IMMODULE,
                 [test "$enable_efl_immodule" = "yes"])
 
@@ -597,6 +663,9 @@ AM_CONDITIONAL(ISF_BUILD_SETTING_EFL,
 AM_CONDITIONAL(ISF_BUILD_WITH_GCONF,
                 [test "$ISF_HAS_GCONF" = "yes"])
 
+AM_CONDITIONAL(ISF_BUILD_MINICONTROL,
+                [test "$ISF_HAS_MINICONTROL" = "yes"])
+
 AC_SUBST(SCIM_BUILD_TESTS)
 AC_SUBST(SCIM_BUILD_CONFIG_SIMPLE)
 AC_SUBST(SCIM_BUILD_CONFIG_SOCKET)
@@ -608,13 +677,15 @@ AC_SUBST(SCIM_BUILD_IMENGINE_SOCKET)
 AC_SUBST(SCIM_BUILD_FILTER_SCTC)
 AC_SUBST(SCIM_BUILD_GTK2_IMMODULE)
 AC_SUBST(SCIM_BUILD_SCIM_SETUP)
-AC_SUBST(SCIM_BUILD_PANEL_GTK)
 AC_SUBST(SCIM_BUILD_GTK_UTILS)
 AC_SUBST(SCIM_BUILD_X11_UTILS)
 AC_SUBST(ISF_BUILD_EFL_IMMODULE)
 AC_SUBST(ISF_BUILD_PANEL_EFL)
 AC_SUBST(ISF_BUILD_SETTING_EFL)
 AC_SUBST(ISF_BUILD_WITH_GCONF)
+
+ISF_BUILDING_DLL="-DISF_BUILDING_DLL"
+AC_SUBST(ISF_BUILDING_DLL)
 
 # Output All necessary Paths.
 SCIM_BINDIR="$prefix/bin"
@@ -640,10 +711,7 @@ AC_SUBST(SCIM_TEMPDIR)
 ###########################################################
 AC_SUBST(ac_aux_dir)
 AC_CONFIG_FILES([Makefile
-                 ism/m4/Makefile
                  po/scim/Makefile.in
-                 po/isfsetting_efl/Makefile.in
-                 po/kbwizard_efl/Makefile.in
                  ism/src/Makefile
                  ism/src/scim_types.h
                  ism/utils/Makefile
@@ -659,10 +727,8 @@ AC_CONFIG_FILES([Makefile
                  ism/configs/Makefile
                  ism/extras/Makefile
                  ism/extras/gtk2_immodule/Makefile
-                 ism/extras/gtk_panel/Makefile
                  ism/extras/efl_immodule/Makefile
                  ism/extras/efl_panel/Makefile
-                 ism/extras/efl_setting/Makefile
                  ism/demos/Makefile
                  intltool-extract
                  intltool-merge
@@ -683,7 +749,7 @@ Build options:
   Build for x86 host       $enable_x86
   Enable ld version script $enable_ld_version_script
 
-Module options:           
+Module options:
   Simple config module     $enable_config_simple
   Socket config module     $enable_config_socket
 
@@ -699,7 +765,6 @@ Module options:
 
   GTK2 IMModule            $enable_gtk2_immodule
   GTK2 IMModule dir        $GTK_IM_MODULEDIR
-  GTK2 Panel GUI           $enable_panel_gtk
 
   EFL  IMModule            $enable_efl_immodule
   EFL  IMModule dir        $EFL_IM_MODULEDIR
@@ -707,5 +772,6 @@ Module options:
   EFL  Setting             $enable_setting_efl
 
   Enable TrayIcon          $enable_tray_icon
+  Enable MultiWindow       $enable_multiwindow_support
 ])
 

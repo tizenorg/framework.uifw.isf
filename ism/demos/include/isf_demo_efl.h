@@ -2,7 +2,7 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2000 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  * Contact: Shuo Liu <shuo0805.liu@samsung.com>, Jihoon Kim <jihoon48.kim@samsung.com>
  *
@@ -28,7 +28,12 @@
 
 #include <Elementary.h>
 #include <appcore-efl.h>
-#include <ui-gadget.h>
+#include <dlog.h>
+
+#ifdef LOG_TAG
+# undef LOG_TAG
+#endif
+#define LOG_TAG "ISF_DEMO_EFL"
 
 struct appdata {
     int root_w;
@@ -38,20 +43,27 @@ struct appdata {
 
     Evas *evas;
     Evas_Object *win_main;
-    Evas_Object *layout_main;     // layout widget based on EDJ
+    Evas_Object *layout_main;     // Layout widget based on EDJ
     Evas_Object *naviframe;
+    Evas_Object *menu_popup;
 
-    ui_gadget_h ug;
     int is_frameview;
 
-    // add more variables here
+    // Add more variables here
     Evas_Object *li;
     Evas_Object *ev_li;
-    service_h data;
+    Eina_Bool vkbd_state;
 };
 
-//utility func
-Evas_Object *_create_ef (Evas_Object *parent, const char *label, const char *guide_text);
+struct _menu_item {
+    const char *name;
+    void (*func)(void *data, Evas_Object *obj, void *event_info);
+};
+
+// Utility functions
+Evas_Object *create_ef (Evas_Object *parent, const char *label, const char *guide_text, Evas_Object **entry = NULL);
+void         add_layout_to_naviframe (void *data, Evas_Object *lay_in, const char *title);
+
 #endif /* __ISF_DEMO_EFL_H */
 
 /*

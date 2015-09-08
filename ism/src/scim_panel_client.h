@@ -13,6 +13,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2005 James Su <suzhe@tsinghua.org.cn>
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -30,6 +31,20 @@
  * Free Software Foundation, Inc., 59 Temple Place, Suite 330,
  * Boston, MA  02111-1307  USA
  *
+ * Modifications by Samsung Electronics Co., Ltd.
+ * 1. Add new signals
+ *    a. m_signal_select_aux, m_signal_reset_keyboard_ise
+ *    b. m_signal_update_candidate_item_layout and m_signal_update_displayed_candidate_number
+ *    c. m_signal_get_surrounding_text and m_signal_delete_surrounding_text
+ *    d. m_signal_show_preedit_string, m_signal_hide_preedit_string, m_signal_update_preedit_string and m_signal_update_preedit_caret
+ *    e. m_signal_candidate_more_window_show, m_signal_candidate_more_window_hide, m_signal_longpress_candidate
+ *    f. m_signal_update_ise_input_context, m_signal_update_isf_candidate_panel
+ * 2. Add new interface APIs in PanelClient class
+ *    a. update_cursor_position () and update_surrounding_text ()
+ *    b. expand_candidate (), contract_candidate () and set_candidate_style ()
+ *    c. reset_input_context () and turn_on_log ()
+ *    d. get_client_id () and register_client ()
+ *
  * $Id: scim_panel_client.h,v 1.4 2005/06/26 16:35:33 suzhe Exp $
  */
 
@@ -39,7 +54,6 @@
 #include <scim_panel_common.h>
 
 namespace scim {
-
 /**
  * @addtogroup Panel
  * @ingroup InputServiceFramework
@@ -67,8 +81,11 @@ typedef Slot4<void, int, const String &, const String &, const Transaction &>
 typedef Slot2<void, int, const KeyEvent &>
         PanelClientSlotKeyEvent;
 
-typedef Slot3<void, int, const WideString &, const AttributeList &>
-        PanelClientSlotStringAttrs;
+typedef Slot4<void, int, const WideString &, const AttributeList &, int>
+        PanelClientSlotStringAttrsInt;
+
+typedef Slot2<void, int, const std::vector<uint32> &>
+        PanelClientSlotUintVector;
 
 /**
  * @brief PanelClient is used by FrontEnd to communicate with Panel daemon.
@@ -77,7 +94,7 @@ typedef Slot3<void, int, const WideString &, const AttributeList &>
  * FrontEnd may just register some slots to the corresponding signals to handle
  * the events sent from Panel.
  */
-class PanelClient
+class EAPI PanelClient
 {
     class PanelClientImpl;
     PanelClientImpl *m_impl;
@@ -179,19 +196,19 @@ public:
     void update_spot_location   (int icid, int x, int y, int top_y);
     void update_cursor_position (int icid, int cursor_pos);
     void update_surrounding_text (int icid, const WideString &str, int cursor);
+    void update_selection       (int icid, const WideString &str);
     void show_preedit_string    (int icid);
     void show_aux_string        (int icid);
     void show_lookup_table      (int icid);
     void hide_preedit_string    (int icid);
     void hide_aux_string        (int icid);
     void hide_lookup_table      (int icid);
-    void update_preedit_string  (int icid, const WideString &str, const AttributeList &attrs);
+    void update_preedit_string  (int icid, const WideString &str, const AttributeList &attrs, int caret);
     void update_preedit_caret   (int icid, int caret);
     void update_aux_string      (int icid, const WideString &str, const AttributeList &attrs);
     void update_lookup_table    (int icid, const LookupTable &table);
     void register_properties    (int icid, const PropertyList &properties);
     void update_property        (int icid, const Property &property);
-    void start_default_ise      (int icid);
     void start_helper           (int icid, const String &helper_uuid);
     void stop_helper            (int icid, const String &helper_uuid);
     void send_helper_event      (int icid, const String &helper_uuid, const Transaction &trans);
@@ -199,6 +216,39 @@ public:
     void remove_input_context   (int icid);
     void reset_input_context    (int icid);
     void turn_on_log            (int icid, uint32 isOn);
+    void expand_candidate       (int icid);
+    void contract_candidate     (int icid);
+    void set_candidate_style    (int icid, ISF_CANDIDATE_PORTRAIT_LINE_T portrait_line, ISF_CANDIDATE_MODE_T mode);
+    void show_ise               (int client_id, int icid, void *data, int length, int *input_panel_show);
+    void hide_ise               (int client_id, int icid);
+    void show_control_panel     (void);
+    void hide_control_panel     (void);
+    void set_imdata             (const char* data, int len);
+    void get_imdata             (char* data, int* len);
+    void get_ise_window_geometry (int* x, int* y, int* width, int* height);
+    void get_candidate_window_geometry (int* x, int* y, int* width, int* height);
+    void get_ise_language_locale (char **locale);
+    void set_return_key_type    (int type);
+    void get_return_key_type    (int &type);
+    void set_return_key_disable (int disabled);
+    void get_return_key_disable (int &disabled);
+    void set_layout             (int layout);
+    void get_layout             (int* layout);
+    void set_ise_language       (int language);
+    void set_caps_mode          (int mode);
+    void send_will_show_ack     (void);
+    void send_will_hide_ack     (void);
+    void set_keyboard_mode      (int mode);
+    void send_candidate_will_hide_ack (void);
+    bool get_client_id          (int &client_id);
+    void register_client        (int client_id);
+    void get_ise_state          (int &ise_state);
+    void process_key_event      (KeyEvent& key, int* ret);
+    void get_active_helper_option (int* option);
+    void set_input_mode         (int input_mode);
+    void set_input_hint         (int icid, int input_hint);
+    void update_bidi_direction  (int icid, int bidi_direction);
+
     /** @} */
 
 public:
@@ -381,23 +431,93 @@ public:
     /**
      * @brief Signal: update preedit string
      *
-     * slot prototype: void update_preedit_string (int context, const WideString &str, const AttributeList &attrs);
+     * slot prototype: void update_preedit_string (int context, const WideString &str, const AttributeList &attrs, int caret);
      */
-    Connection signal_connect_update_preedit_string         (PanelClientSlotStringAttrs             *slot);
+    Connection signal_connect_update_preedit_string         (PanelClientSlotStringAttrsInt          *slot);
 
     /**
-     * @brief Signal: Request to get surrounding text
+     * @brief Signal: request to get surrounding text
      *
      * slot prototype: void get_surrounding text (int context, int maxlen_before, int maxlen_after);
      */
     Connection signal_connect_get_surrounding_text          (PanelClientSlotIntInt                  *slot);
 
     /**
-     * @brief Signal: Delete surrounding text
+     * @brief Signal: delete surrounding text
      *
      * slot prototype: void delete_surrounding text (int context, int offset, int len);
      */
     Connection signal_connect_delete_surrounding_text       (PanelClientSlotIntInt                  *slot);
+
+    /**
+     * @brief Signal: request to get selection
+     *
+     * slot prototype: void get_selection (int context);
+     */
+    Connection signal_connect_get_selection                 (PanelClientSlotVoid                   *slot);
+
+    /**
+     * @brief Signal: set selection
+     *
+     * slot prototype: void set_selection (int context, int start, int end);
+     */
+    Connection signal_connect_set_selection                 (PanelClientSlotIntInt                  *slot);
+
+    /**
+     * @brief Signal: update candidate item layout
+     *
+     * slot prototype: void update_candidate_item_layout (int context, const std::vector<uint32> &);
+     */
+    Connection signal_connect_update_candidate_item_layout  (PanelClientSlotUintVector              *slot);
+
+    /**
+     * @brief Signal: update displayed candidate number
+     *
+     * slot prototype: void update_displayed_candidate_number (int context, int number);
+     */
+    Connection signal_connect_update_displayed_candidate_number (PanelClientSlotInt                 *slot);
+
+    /**
+     * @brief Signal: candidate more window is shown
+     *
+     * slot prototype: void candidate_more_window_show (int context);
+     */
+    Connection signal_connect_candidate_more_window_show    (PanelClientSlotVoid                    *slot);
+
+    /**
+     * @brief Signal: candidate more window is hidden
+     *
+     * slot prototype: void candidate_more_window_hide (int context);
+     */
+    Connection signal_connect_candidate_more_window_hide    (PanelClientSlotVoid                    *slot);
+
+    /**
+     * @brief Signal: longpress candidate
+     *
+     * slot prototype: void longpress_candidate (int context, int index);
+     */
+    Connection signal_connect_longpress_candidate           (PanelClientSlotInt                     *slot);
+
+    /**
+     * @brief Signal: update ise input context
+     *
+     * slot prototype: void update_ise_input_context (int context, int type, int value);
+     */
+    Connection signal_connect_update_ise_input_context      (PanelClientSlotIntInt                  *slot);
+
+    /**
+     * @brief Signal: update isf candidate panel
+     *
+     * slot prototype: void update_isf_candidate_panel (int context, int type, int value);
+     */
+    Connection signal_connect_update_isf_candidate_panel    (PanelClientSlotIntInt                  *slot);
+
+    /**
+     * @brief Signal: send private command
+     *
+     * slot prototype: void send_private_command (int context, const String & command);
+     */
+    Connection signal_connect_send_private_command          (PanelClientSlotString                  *slot);
 
     /** @} */
 };

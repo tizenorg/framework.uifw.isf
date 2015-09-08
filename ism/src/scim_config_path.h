@@ -40,6 +40,7 @@ namespace scim {
  */
 
 #define SCIM_CONFIG_UPDATE_TIMESTAMP                                "/UpdateTimeStamp"
+
 #define SCIM_CONFIG_DEFAULT_IMENGINE_FACTORY                        "/DefaultIMEngineFactory"
 #define SCIM_CONFIG_DEFAULT_HELPER_ISE                              "/DefaultHelperISE"
 
@@ -55,6 +56,8 @@ namespace scim {
 #define SCIM_CONFIG_HOTKEYS_FRONTEND_PREVIOUS_FACTORY               "/Hotkeys/FrontEnd/PreviousFactory"
 #define SCIM_CONFIG_HOTKEYS_FRONTEND_SHOW_FACTORY_MENU              "/Hotkeys/FrontEnd/ShowFactoryMenu"
 #define SCIM_CONFIG_HOTKEYS_FRONTEND_VALID_KEY_MASK                 "/Hotkeys/FrontEnd/ValidKeyMask"
+#define SCIM_CONFIG_HOTKEYS_FRONTEND_HIDE_ISE                       "/Hotkeys/FrontEnd/HideISE"
+#define SCIM_CONFIG_HOTKEYS_FRONTEND_IGNORE_KEY                     "/Hotkeys/FrontEnd/IgnoreKey"
 
 #define SCIM_CONFIG_HOTKEYS_IMENGINE                                "/Hotkeys/IMEngine"
 #define SCIM_CONFIG_HOTKEYS_IMENGINE_LIST                           "/Hotkeys/IMEngine/List"
@@ -64,11 +67,6 @@ namespace scim {
 #define SCIM_CONFIG_FILTER_FILTERED_IMENGINES                       "/Filter/FilteredIMEngines"
 #define SCIM_CONFIG_FILTER_FILTERED_IMENGINES_LIST                  "/Filter/FilteredIMEngines/List"
 
-#define SCIM_CONFIG_SYSTEM_INPUT_LANGUAGE                           "/Language/SystemInput"
-
-#define SCIM_CONFIG_ENABLED_ISE_UUID_LIST                           "/EnabledISEUUIDList"
-#define SCIM_GLOBAL_CONFIG_ISF_DEFAULT_LANGUAGES                    "/ISFDefaultLanguages"
-#define SCIM_GLOBAL_CONFIG_DISABLED_LANGS                           "/DisabledLangs"
 #define SCIM_GLOBAL_CONFIG_DISABLED_IMENGINE_FACTORIES              "/DisabledIMEngineFactories"
 #define SCIM_GLOBAL_CONFIG_SUPPORTED_UNICODE_LOCALES                "/SupportedUnicodeLocales"
 #define SCIM_GLOBAL_CONFIG_DEFAULT_KEYBOARD_LAYOUT                  "/DefaultKeyboardLayout"
@@ -80,28 +78,16 @@ namespace scim {
 #define SCIM_GLOBAL_CONFIG_DEFAULT_PANEL_SOCKET_ADDRESS             "/DefaultPanelSocketAddress"
 #define SCIM_GLOBAL_CONFIG_DEFAULT_HELPER_MANAGER_SOCKET_ADDRESS    "/DefaultHelperManagerSocketAddress"
 #define SCIM_GLOBAL_CONFIG_DEFAULT_SOCKET_TIMEOUT                   "/DefaultSocketTimeout"
-#define SCIM_GLOBAL_CONFIG_GTKSOCKET_WINDOW_ID                      "/IMWindowSocketID"
-#define SCIM_GLOBAL_CONFIG_GTKSOCKET_WINDOW_STYLE                   "/IMWindowStyle"
+#define SCIM_GLOBAL_CONFIG_PANEL_SOUND_FEEDBACK                     "/Panel/CandidateSoundFeedback"
+#define SCIM_GLOBAL_CONFIG_PANEL_VIBRATION_FEEDBACK                 "/Panel/CandidateVibrationFeedback"
 
 #define SCIM_GLOBAL_CONFIG_INITIAL_ISE_TYPE                         "/InitialIseType"
 #define SCIM_GLOBAL_CONFIG_INITIAL_ISE_UUID                         "/InitialIseUuid"
-#define SCIM_GLOBAL_CONFIG_INITIAL_ISE_NAME                         "/InitialIseName"
-#define SCIM_GLOBAL_CONFIG_DEFAULT_ISE_TYPE                         "/DefaultIseType"
 #define SCIM_GLOBAL_CONFIG_DEFAULT_ISE_UUID                         "/DefaultIseUuid"
-#define SCIM_GLOBAL_CONFIG_DEFAULT_ISE_NAME                         "/DefaultIseName"
-
-/*keyboard engine options*/
-#define SCIM_PREDICTION_ENGINE_CONFIG_3x4_WORD_COMPLETION_POINT                   "/3x4/word_completion_point"
-#define SCIM_PREDICTION_ENGINE_CONFIG_3x4_SPELL_CORRECTION                        "/3x4/spell_correction"
-#define SCIM_PREDICTION_ENGINE_CONFIG_3x4_NEXT_WORD_PREDIECTION                   "/3x4/next_word_prediction"
-#define SCIM_PREDICTION_ENGINE_CONFIG_3x4_AUTO_SUBSTITUTION                       "/3x4/auto_substitution"
-#define SCIM_PREDICTION_ENGINE_CONFIG_3x4_MULTITAP_WORD_COMPLETION                "/3x4/multitap_word_completion"
-
-#define SCIM_PREDICTION_ENGINE_CONFIG_QWERTY_WORD_COMPLETION_POINT                "/QWERTY/word_completion_point"
-#define SCIM_PREDICTION_ENGINE_CONFIG_QWERTY_SPELL_CORRECTION                     "/QWERTY/spell_correction"
-#define SCIM_PREDICTION_ENGINE_CONFIG_QWERTY_NEXT_WORD_PREDIECTION                "/QWERTY/next_word_prediction"
-#define SCIM_PREDICTION_ENGINE_CONFIG_QWERTY_AUTO_SUBSTITUTION                    "/QWERTY/auto_substitution"
-#define SCIM_PREDICTION_ENGINE_CONFIG_QWERTY_REGIONAL_INPUT                       "/QWERTY/regional_input"
+#define SCIM_GLOBAL_CONFIG_PRELOAD_KEYBOARD_ISE                     "/PreloadKeyboardIse"
+#define SCIM_GLOBAL_CONFIG_LAUNCH_ISE_ON_REQUEST                    "/LaunchIseOnRequest"
+#define SCIM_GLOBAL_CONFIG_CHANGE_KEYBOARD_MODE_BY_TOUCH            "/ChangeKeyboardModeByTouch"
+#define SCIM_GLOBAL_CONFIG_SUPPORT_HW_KEYBOARD_MODE                 "/SupportHWKeyboardMode"
 
 #define ISF_CONFIG_HARDWARE_KEYBOARD_DETECT                         "/isf/hw_keyboard_detect"
 

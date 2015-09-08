@@ -260,14 +260,14 @@ KeyEvent::map_to_layout (KeyboardLayout new_layout) const
     return evt;
 }
 
-bool
+EAPI bool
 scim_key_to_string (String &str, const KeyEvent & key)
 {
     str = key.get_key_string ();
     return str.length () != 0;
 }
 
-bool
+EAPI bool
 scim_string_to_key (KeyEvent &key, const String & str)
 {
     std::vector <String> list;
@@ -296,11 +296,11 @@ scim_string_to_key (KeyEvent &key, const String & str)
                                          it->c_str (),
                                          __KeyNameLessByName ());
 
-        if (p != __scim_keys_by_name + SCIM_NUM_KEY_NAMES && strcmp (p->name, it->c_str ()) == 0) {
+        if (p != __scim_keys_by_name + SCIM_NUM_KEY_NAMES && p && p->name && strcmp (p->name, it->c_str ()) == 0) {
             key.code = p->value;
         } else if (it->length () >= 6 && (*it)[0] == '0' && ((*it)[1] == 'x' || (*it)[1] == 'X')){
             key.code = strtol (it->c_str () + 2, NULL, 16);
-        } else if (strcmp (p->name, "VoidSymbol") == 0) {
+        } else if (p && p->name && strcmp (p->name, "VoidSymbol") == 0) {
             key.code = SCIM_KEY_VoidSymbol;
         }
     }
@@ -308,7 +308,7 @@ scim_string_to_key (KeyEvent &key, const String & str)
     return key.code != 0;
 }
 
-bool
+EAPI bool
 scim_key_list_to_string (String &str, const std::vector<KeyEvent> & keylist)
 {
     std::vector<String> strlist;
@@ -323,7 +323,7 @@ scim_key_list_to_string (String &str, const std::vector<KeyEvent> & keylist)
     return str.length () != 0;
 }
 
-bool
+EAPI bool
 scim_string_to_key_list (std::vector<KeyEvent> &keylist, const String &str)
 {
     std::vector <String> strlist;
@@ -340,7 +340,7 @@ scim_string_to_key_list (std::vector<KeyEvent> &keylist, const String &str)
 }
 
 
-String
+EAPI String
 scim_keyboard_layout_to_string (KeyboardLayout layout)
 {
     if (layout >= 0 && layout < SCIM_KEYBOARD_NUM_LAYOUTS)
@@ -349,7 +349,7 @@ scim_keyboard_layout_to_string (KeyboardLayout layout)
     return String (__scim_keyboard_layout_ids_by_code [0].name);
 }
 
-KeyboardLayout
+EAPI KeyboardLayout
 scim_string_to_keyboard_layout (const String &str)
 {
     if (str == __scim_keyboard_layout_ids_by_code [0].name) return SCIM_KEYBOARD_Unknown;
@@ -367,7 +367,7 @@ scim_string_to_keyboard_layout (const String &str)
     return SCIM_KEYBOARD_Unknown;
 }
 
-String
+EAPI String
 scim_keyboard_layout_get_display_name (KeyboardLayout layout)
 {
     if (layout >= 0 && layout < SCIM_KEYBOARD_NUM_LAYOUTS)
@@ -376,7 +376,7 @@ scim_keyboard_layout_get_display_name (KeyboardLayout layout)
     return String (_(__scim_keyboard_layout_names [0]));
 }
 
-KeyboardLayout
+EAPI KeyboardLayout
 scim_get_default_keyboard_layout ()
 {
     String layout_name (__scim_keyboard_layout_ids_by_code [0].name);
@@ -385,7 +385,7 @@ scim_get_default_keyboard_layout ()
     return scim_string_to_keyboard_layout (layout_name);
 }
 
-void
+EAPI void
 scim_set_default_keyboard_layout (KeyboardLayout layout)
 {
     String layout_name = scim_keyboard_layout_to_string (layout);

@@ -2,7 +2,7 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2000 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  * Contact: Haifeng Deng <haifeng.deng@samsung.com>, Hengliang Luo <hl.luo@samsung.com>
  *
@@ -31,7 +31,7 @@ namespace scim
 typedef Slot1<void, int> IMControlClientSlotVoid;
 
 
-class IMControlClient
+class EAPI IMControlClient
 {
     class IMControlClientImpl;
     IMControlClientImpl *m_impl;
@@ -50,28 +50,14 @@ public:
     bool prepare                (void);
     bool send                   (void);
 
-    void show_ise (void *data, int length);
-    void hide_ise (void);
-    void show_control_panel (void);
-    void hide_control_panel (void);
-    void set_mode (int mode);
-
-    void set_imdata (const char* data, int len);
-    void get_imdata (char* data, int* len);
-    void get_ise_window_geometry (int* x, int* y, int* width, int* height);
-    void get_candidate_window_geometry (int* x, int* y, int* width, int* height);
-    void get_ise_language_locale (char **locale);
-    void set_return_key_type (int type);
-    void get_return_key_type (int &type);
-    void set_return_key_disable (int disabled);
-    void get_return_key_disable (int &disabled);
-    void set_layout (int layout);
-    void get_layout (int* layout);
-    void set_ise_language (int language);
     void set_active_ise_by_uuid (const char* uuid);
+    void get_active_ise (String &uuid);
     void get_ise_list (int* count, char*** iselist);
+    void get_ise_info (const char* uuid, String &name, String &language, int &type, int &option, String &module_name);
     void reset_ise_option (void);
-    void set_caps_mode (int mode);
+    void set_active_ise_to_default (void);
+    void set_initial_ise_by_uuid (const char* uuid);
+    void show_ise_selector ();
 };
 
 }

@@ -43,7 +43,7 @@ namespace scim {
  * @{
  */
 
-class FilterManager
+class EAPI FilterManager
 {
     class FilterManagerImpl;
     FilterManagerImpl *m_impl;

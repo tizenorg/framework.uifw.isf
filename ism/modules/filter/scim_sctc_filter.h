@@ -45,7 +45,7 @@ enum SCTCWorkMode
     SCTC_MODE_FORCE_TC_TO_SC
 };
 
-class SCTCFilterFactory : public FilterFactoryBase
+class EAPI SCTCFilterFactory : public FilterFactoryBase
 {
     bool   m_sc_ok;
     String m_sc_encoding;
@@ -69,7 +69,7 @@ public:
     virtual IMEngineInstancePointer create_instance (const String& encoding, int id = -1);
 };
 
-class SCTCFilterInstance : public FilterInstanceBase
+class EAPI SCTCFilterInstance : public FilterInstanceBase
 {
     SCTCFilterFactory *m_factory;
 

@@ -17,7 +17,8 @@ INCLUDES		= -I$(top_builddir) \
 			  -DSCIM_ICONDIR=\"@SCIM_ICONDIR@\" \
 			  -DSCIM_MODULE_PATH=\"@SCIM_MODULE_PATH@\" \
 			  -DSCIM_TEMPDIR=\"@SCIM_TEMPDIR@\" \
-			  -DSCIM_KEYBOARD_ICON_FILE=\"@SCIM_ICONDIR@/keyboard.png\"
+			  -DSCIM_KEYBOARD_ICON_FILE=\"@SCIM_ICONDIR@/keyboard.png\" \
+			  @ISF_BUILDING_DLL@
 
 if SCIM_BUILD_GTK2_IMMODULE
 CONFIG_GTK2_IMMODULE = im-scim.la
@@ -43,6 +44,6 @@ im_scim_la_LDFLAGS = -rpath $(moduledir) \
 		     -module \
 		     -lstdc++ \
 		     $(LD_VERSION_SCRIPT_OPTION) \
-		     -lgtk-x11-2.0 -lgdk-x11-2.0 -lglib-2.0 -lgobject-2.0 -lpango-1.0
+		     -L@GTK_LIBDIR@ -lgtk-x11-2.0 -lgdk-x11-2.0 -lglib-2.0 -lgobject-2.0 -lpango-1.0
 
 im_scim_la_LIBADD  = $(top_builddir)/ism/src/libscim@SCIM_EPOCH@.la

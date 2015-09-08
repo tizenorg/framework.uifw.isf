@@ -54,7 +54,7 @@ namespace scim {
 //! @class Slot
 //! @brief Base class for slots that can connect to scim::Signals.
 
-class Slot : public ReferencedObject
+class EAPI Slot : public ReferencedObject
 {
     Slot(const Slot&);
     Slot& operator=(const Slot&);

@@ -4,6 +4,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2004-2005 James Su <suzhe@tsinghua.org.cn>
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -21,6 +22,9 @@
  * Free Software Foundation, Inc., 59 Temple Place, Suite 330,
  * Boston, MA  02111-1307  USA
  *
+ * Modifications by Samsung Electronics Co., Ltd.
+ * 1. Call set_arg_info () before run_helper ()
+ *
  * $Id: scim_helper_launcher.cpp,v 1.6 2005/05/16 01:25:46 suzhe Exp $
  *
  */
@@ -32,6 +36,8 @@
 #include "scim_private.h"
 #include "scim.h"
 #include <privilege-control.h>
+#include <unistd.h>
+#include "ise_preexec.h"
 
 using namespace scim;
 
@@ -44,8 +50,6 @@ int main (int argc, char *argv [])
     String helper;
     String uuid;
     bool   daemon = false;
-
-    control_privilege ();
 
     char *p =  getenv ("DISPLAY");
     if (p) display = String (p);
@@ -113,8 +117,8 @@ int main (int argc, char *argv [])
                 std::vector<String> debug_mask_list;
                 scim_split_string_list (debug_mask_list, argv [i], ',');
                 DebugOutput::disable_debug (SCIM_DEBUG_AllMask);
-                for (size_t j=0; j<debug_mask_list.size (); j++)
-                    DebugOutput::enable_debug_by_name (debug_mask_list [j]);
+                for (size_t k=0; k<debug_mask_list.size (); k++)
+                    DebugOutput::enable_debug_by_name (debug_mask_list [k]);
             }
             continue;
         }
@@ -139,31 +143,40 @@ int main (int argc, char *argv [])
             continue;
         }
 
+        ISF_SAVE_LOG ("Invalid command line option: %d %s...\n", i, argv [i]);
+
         std::cerr << "Invalid command line option: " << argv [i] << "\n";
         return -1;
     }
 
     SCIM_DEBUG_MAIN(1) << "scim-helper-launcher: " << config << " " << display << " " << helper << " " << uuid << "\n";
+    ISF_SAVE_LOG ("Helper ISE (%s %s) is launching...\n", helper.c_str (), uuid.c_str ());
 
     if (!helper.length () || !uuid.length ()) {
         std::cerr << "Module name or Helper UUID is missing.\n";
         return -1;
     }
 
-    HelperModule helper_module (helper);
+    int ret = ise_preexec (helper.c_str (), uuid.c_str ());
+    if (ret < 0) {
+        ISF_SAVE_LOG ("ise_preexec failed (%s, %d)\n", helper.c_str (), ret);
 
-    if (!helper_module.valid () || helper_module.number_of_helpers () == 0) {
-        std::cerr << "Unable to load Helper module: " << helper << "\n";
+        std::cerr << "ise_preexec failed(" << helper << ret << ")\n";
         return -1;
     }
 
-    ConfigModule config_module (config);
+    perm_app_set_privilege ("isf", NULL, NULL);
 
-    ConfigPointer config_pointer;
+    HelperModule helper_module (helper);
 
-    if (config_module.valid ()) {
-        config_pointer = config_module.create_config ();
+    if (!helper_module.valid () || helper_module.number_of_helpers () == 0) {
+        ISF_SAVE_LOG ("Unable to load helper module(%s)\n", helper.c_str ());
+
+        std::cerr << "Unable to load helper module(" << helper << ")\n";
+        return -1;
     }
+
+    ConfigPointer config_pointer = ConfigBase::get (true, config);
 
     if (config_pointer.null ()) {
         config_pointer = new DummyConfig ();
@@ -171,12 +184,14 @@ int main (int argc, char *argv [])
 
 //    if (daemon) scim_daemon ();
 
+    helper_module.set_arg_info (argc, argv);
     helper_module.run_helper (uuid, config_pointer, display);
+    helper_module.unload ();
 
     if (!config_pointer.null ())
         config_pointer.reset ();
-
-    exit (0);
+    ConfigBase::set (0);
+    ISF_SAVE_LOG ("Helper ISE (%s) is destroyed!!!\n", uuid.c_str ());
 }
 
 /*

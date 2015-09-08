@@ -12,6 +12,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2004-2005 James Su <suzhe@tsinghua.org.cn>
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -29,6 +30,14 @@
  * Free Software Foundation, Inc., 59 Temple Place, Suite 330,
  * Boston, MA  02111-1307  USA
  *
+ * Modifications by Samsung Electronics Co., Ltd.
+ * 1. Add new interface APIs for keyboard ISE
+ *    a. expand_candidate (), contract_candidate () and set_candidate_style ()
+ *    b. set_keyboard_ise_by_uuid () and reset_keyboard_ise ()
+ *    c. get_surrounding_text () and delete_surrounding_text ()
+ *    d. show_preedit_string (), hide_preedit_string (), update_preedit_string () and update_preedit_caret ()
+ *    e. show_candidate_string (), hide_candidate_string () and update_candidate_string ()
+ *
  * $Id: scim_helper.h,v 1.16 2005/05/24 12:22:51 suzhe Exp $
  */
 
@@ -45,7 +54,7 @@ namespace scim {
  * The accessory classes to help develop and manage Client Helper objects.
  * @{
  */
-class HelperError: public Exception
+class EAPI HelperError: public Exception
 {
 public:
     HelperError (const String& what_arg)
@@ -99,9 +108,9 @@ const uint32 SCIM_HELPER_NEED_SCREEN_INFO        = (1<<3);
 const uint32 SCIM_HELPER_NEED_SPOT_LOCATION_INFO = (1<<4);
 
 /**
- * @brief ISE option indicates whether it should be full style
+ * @brief ISE option indicates whether helper ISE handles the keyboard keyevent
  */
-const uint32 ISM_ISE_FULL_STYLE                  = (1<<16);
+const uint32 ISM_HELPER_PROCESS_KEYBOARD_KEYEVENT = (1<<16);
 
 /**
  * @brief ISE option indicates whether it should be hidden in control panel.
@@ -175,20 +184,25 @@ typedef Slot2<void, const HelperAgent *, uint32 &>
 typedef Slot3<void, const HelperAgent *, int, uint32 &>
         HelperAgentSlotIntUint;
 
-typedef Slot3 <void, const HelperAgent *, char *, size_t &>
+typedef Slot3<void, const HelperAgent *, char *, size_t &>
         HelperAgentSlotRawVoid;
 
-typedef Slot3 <void, const HelperAgent *, char **, size_t &>
+typedef Slot3<void, const HelperAgent *, char **, size_t &>
         HelperAgentSlotGetRawVoid;
 
-typedef Slot4 <void, const HelperAgent *, int, char *, size_t &>
+typedef Slot4<void, const HelperAgent *, int, char *, size_t &>
         HelperAgentSlotIntRawVoid;
 
-typedef Slot3 <void, const HelperAgent *, int, char **>
+typedef Slot3<void, const HelperAgent *, int, char **>
         HelperAgentSlotIntGetStringVoid;
 
-typedef Slot2<void, const HelperAgent *, std::vector<uint32> &>
+typedef Slot2<void, const HelperAgent *, const std::vector<uint32> &>
         HelperAgentSlotUintVector;
+
+typedef Slot2<void, const HelperAgent *, LookupTable &>
+        HelperAgentSlotLookupTable;
+typedef Slot3<void, const HelperAgent *, KeyEvent &, uint32 &>
+        HelperAgentSlotKeyEventUint;
 
 /**
  * @brief The accessory class to write a Helper object.
@@ -196,7 +210,7 @@ typedef Slot2<void, const HelperAgent *, std::vector<uint32> &>
  * This class implements all Socket Transaction protocol between
  * Helper object and Panel.
  */
-class HelperAgent
+class EAPI HelperAgent
 {
     class HelperAgentImpl;
     HelperAgentImpl *m_impl;
@@ -353,6 +367,21 @@ public:
                                  const WideString   &wstr) const;
 
     /**
+     * @brief Commit a UTF-8 String to client application directly.
+     *
+     * @param ic The handle of the client Input Context to receive the commit string.
+     *        -1 means the currently focused Input Context.
+     * @param ic_uuid The UUID of the IMEngine used by the Input Context.
+     *        Empty means don't match.
+     * @param buf The byte array of UTF-8 string to be committed.
+     * @param buflen The buf size in bytes.
+     */
+    void commit_string          (int                 ic,
+                                 const String       &ic_uuid,
+                                 const char         *buf,
+                                 int                 buflen) const;
+
+    /**
      * @brief Request to show preedit string.
      *
      * @param ic The handle of the client Input Context to receive the request.
@@ -420,6 +449,59 @@ public:
                                  const AttributeList &attrs) const;
 
     /**
+     * @brief Update a new UTF-8 string for preedit.
+     *
+     * @param ic The handle of the client Input Context to receive the UTF-8 String.
+     *        -1 means the currently focused Input Context.
+     * @param ic_uuid The UUID of the IMEngine used by the Input Context.
+     *        Empty means don't match.
+     * @param buf The byte array of UTF-8 string to be updated.
+     * @param buflen The buf size in bytes.
+     * @param attrs The attribute list for preedit string.
+     */
+    void update_preedit_string  (int                 ic,
+                                 const String       &ic_uuid,
+                                 const char         *buf,
+                                 int                 buflen,
+                                 const AttributeList &attrs) const;
+
+    /**
+     * @brief Update a new WideString and caret for preedit.
+     *
+     * @param ic The handle of the client Input Context to receive the WideString.
+     *        -1 means the currently focused Input Context.
+     * @param ic_uuid The UUID of the IMEngine used by the Input Context.
+     *        Empty means don't match.
+     * @param wstr The WideString to be updated.
+     * @param attrs The attribute list for preedit string.
+     * @param caret The caret position in preedit string.
+     */
+    void update_preedit_string  (int                 ic,
+                                 const String       &ic_uuid,
+                                 const WideString   &wstr,
+                                 const AttributeList &attrs,
+                                 int                 caret) const;
+
+    /**
+     * @brief Update a new UTF-8 string and caret for preedit.
+     *
+     * @param ic The handle of the client Input Context to receive the UTF-8 String.
+     *        -1 means the currently focused Input Context.
+     * @param ic_uuid The UUID of the IMEngine used by the Input Context.
+     *        Empty means don't match.
+     * @param buf The byte array of UTF-8 string to be updated.
+     * @param buflen The buf size in bytes.
+     * @param attrs The attribute list for preedit string.
+     * @param caret The caret position in preedit string.
+     */
+    void update_preedit_string  (int                 ic,
+                                 const String       &ic_uuid,
+                                 const char         *buf,
+                                 int                 buflen,
+                                 const AttributeList &attrs,
+                                 int                 caret) const;
+
+    /**
      * @brief Update a new string for aux.
      *
      * @param str The string to be updated.
@@ -471,6 +553,22 @@ public:
      */
     void delete_surrounding_text  (int                          offset,
                                    int                          len) const;
+
+    /**
+     * @brief Request to get selection.
+     *
+     * @param uuid The helper ISE UUID.
+     */
+    void get_selection       (const String                &uuid) const;
+
+    /**
+     * @brief Request to selected text.
+     *
+     * @param start The start position in text.
+     * @param end The end position in text.
+     */
+    void set_selection       (int                          start,
+                              int                          end) const;
 
     /**
      * @brief Set candidate position in screen.
@@ -538,11 +636,42 @@ public:
     void contract_candidate       (void) const;
 
     /**
+     * @brief Send selected candidate string index number.
+     */
+    void select_candidate         (int index) const;
+
+    /**
+     * @brief Update ise exit status
+     */
+    void update_ise_exit          (void) const;
+
+    /**
      * @brief Update the preedit caret position in the preedit string.
      *
      * @param caret - the new position of the preedit caret.
      */
     void update_preedit_caret     (int                          caret) const;
+
+    /**
+     * @brief Set candidate style.
+     *
+     * @param portrait_line - the displayed line number for portrait.
+     * @param mode          - candidate window mode.
+     */
+    void set_candidate_style      (ISF_CANDIDATE_PORTRAIT_LINE_T portrait_line = ONE_LINE_CANDIDATE,
+                                   ISF_CANDIDATE_MODE_T          mode = FIXED_CANDIDATE_WINDOW) const;
+
+    /**
+     * @brief Request to reset keyboard ISE.
+     */
+    void reset_keyboard_ise       (void) const;
+
+    /**
+     * @brief Send a private command to an application
+     *
+     * @param command The private command sent from IME.
+     */
+    void send_private_command     (const String                &command) const;
 
 public:
     /**
@@ -651,6 +780,16 @@ public:
      * void update_surrounding_text (const HelperAgent *agent, int ic, const String &text, int cursor);
      */
     Connection signal_connect_update_surrounding_text (HelperAgentSlotInt        *slot);
+
+    /**
+     * @brief Connect a slot to Helper update selection signal.
+     *
+     * This signal is used to let the Helper get the selection.
+     *
+     * The prototype of the slot is:
+     * void update_selection (const HelperAgent *agent, int ic, const String &text);
+     */
+    Connection signal_connect_update_selection (HelperAgentSlotVoid        *slot);
 
     /**
      * @brief Connect a slot to Helper trigger property signal.
@@ -841,7 +980,7 @@ public:
      * The prototype of the slot is:
      * void set_caps_mode (const HelperAgent *agent, uint32 &mode);
      */
-    Connection signal_connect_set_caps_mode               (HelperAgentSlotUintVoid            *slot);
+    Connection signal_connect_set_caps_mode                     (HelperAgentSlotUintVoid            *slot);
 
     /**
      * @brief Connect a slot to Helper reset input context signal.
@@ -904,6 +1043,36 @@ public:
      * void candidate_more_window_hide (const HelperAgent *agent, int ic, const String &uuid);
      */
     Connection signal_connect_candidate_more_window_hide        (HelperAgentSlotVoid                *slot);
+
+    /**
+     * @brief Connect a slot to Helper candidate show signal.
+     *
+     * This signal is used to do candidate show.
+     *
+     * The prototype of the slot is:
+     * void candidate_show (const HelperAgent *agent, int ic, const String &uuid);
+     */
+    Connection signal_connect_candidate_show                    (HelperAgentSlotVoid                *slot);
+
+    /**
+     * @brief Connect a slot to Helper candidate hide signal.
+     *
+     * This signal is used to do candidate hide.
+     *
+     * The prototype of the slot is:
+     * void candidate_hide (const HelperAgent *agent,int ic, const String &uuid);
+     */
+    Connection signal_connect_candidate_hide                    (HelperAgentSlotVoid                *slot);
+
+    /**
+     * @brief Connect a slot to Helper update lookup table signal.
+     *
+     * This signal is used to do someting when update lookup table.
+     *
+     * The prototype of the slot is:
+     * void update_lookup_table (const HelperAgent *agent, int ic, const String &uuid, LookupTable &Table);
+     */
+    Connection signal_connect_update_lookup_table               (HelperAgentSlotLookupTable          *slot);
 
     /**
      * @brief Connect a slot to Helper select aux signal.
@@ -1014,6 +1183,62 @@ public:
      * void update_displayed_candidate_number (const HelperAgent *, int ic, const String &uuid, int number);
      */
     Connection signal_connect_update_displayed_candidate_number (HelperAgentSlotInt                 *slot);
+
+    /**
+     * @brief Connect a slot to Helper longpress candidate signal.
+     *
+     * This signal is used to do something when candidate is longpress.
+     *
+     * The prototype of the slot is:
+     * void longpress_candidate (const HelperAgent *agent, int ic, const String &uuid, int index);
+     */
+    Connection signal_connect_longpress_candidate               (HelperAgentSlotInt                 *slot);
+
+    /**
+     * @brief Connect a slot to Helper update candidate item layout signal.
+     *
+     * The prototype of the slot is:
+     * void update_candidate_item_layout (const HelperAgent *, const std::vector<uint32> &row_items);
+     */
+    Connection signal_connect_update_candidate_item_layout      (HelperAgentSlotUintVector          *slot);
+
+     /**
+     * @brief Connect a slot to Helper process key event signal.
+     *
+     * The prototype of the slot is:
+     * void process_key_event (const HelperAgent *, KeyEvent &key, uint32 &ret);
+     */
+    Connection signal_connect_process_key_event (HelperAgentSlotKeyEventUint *slot);
+
+    /**
+     * @brief Connect a slot to Helper set input mode signal.
+     *
+     * This signal is used to set Helper ISE input mode.
+     *
+     * The prototype of the slot is:
+     * void set_input_mode (const HelperAgent *agent, uint32 &input_mode);
+     */
+    Connection signal_connect_set_input_mode                        (HelperAgentSlotUintVoid            *slot);
+
+    /**
+     * @brief Connect a slot to Helper set input hint signal.
+     *
+     * This signal is used to set Helper ISE input hint.
+     *
+     * The prototype of the slot is:
+     * void set_input_hint (const HelperAgent *agent, uint32 &input_hint);
+     */
+    Connection signal_connect_set_input_hint                        (HelperAgentSlotUintVoid            *slot);
+
+    /**
+     * @brief Connect a slot to Helper update bidi direction signal.
+     *
+     * This signal is used to update Helper ISE bidi direction.
+     *
+     * The prototype of the slot is:
+     * void update_bidi_direction (const HelperAgent *agent, uint32 &bidi_direction);
+     */
+    Connection signal_connect_update_bidi_direction                 (HelperAgentSlotUintVoid            *slot);
 };
 
 /**  @} */

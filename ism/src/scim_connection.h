@@ -52,7 +52,7 @@ class Slot;
  * from a signal's connect() method.
  */
 
-class Node : public ReferencedObject
+class EAPI Node : public ReferencedObject
 {
     Pointer <Slot> slot_;
 
@@ -86,7 +86,7 @@ public:
  * a signal connection.
  */
 
-class Connection
+class EAPI Connection
 {
     mutable Pointer<Node> node_;
 

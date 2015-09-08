@@ -71,7 +71,7 @@ typedef void (*FrontEndModuleRunFunc)  (void);
  * This is a wrapper of scim::Module class, which is specially
  * for manipulating the frontend modules.
  */
-class FrontEndModule
+class EAPI FrontEndModule
 {
     Module       m_module;
 
@@ -139,7 +139,7 @@ public:
  * @param mod_list - the result list will be stored here.
  * @return the number of the modules, equal to mod_list.size ().
  */
-int scim_get_frontend_module_list (std::vector <String>& mod_list);
+EAPI int scim_get_frontend_module_list (std::vector <String>& mod_list);
 
 /** @} */
 

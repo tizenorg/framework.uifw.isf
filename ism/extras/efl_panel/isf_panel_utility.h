@@ -2,7 +2,7 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2000 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  * Contact: Haifeng Deng <haifeng.deng@samsung.com>, Hengliang Luo <hl.luo@samsung.com>
  *
@@ -31,7 +31,7 @@ using namespace scim;
 /////////////////////////////////////////////////////////////////////////////
 // Declaration of macro.
 /////////////////////////////////////////////////////////////////////////////
-#define ENGLISH_KEYBOARD_MODULE                         "English/Keyboard"
+#define COMPOSE_KEY_MODULE                         "COMPOSE_KEY_MODULE"
 
 
 #if SCIM_USE_STL_EXT_HASH_MAP
@@ -55,17 +55,19 @@ typedef enum {
 } LOAD_ISE_TYPE;
 
 void isf_get_all_languages (std::vector<String> &all_langs);
-void isf_get_all_ise_names_in_languages (std::vector<String> lang_list, std::vector<String> &ise_names);
+void isf_get_all_ises_in_languages (std::vector<String> lang_list, std::vector<String> &uuid_list, std::vector<String> &name_list);
 
-void isf_get_keyboard_ise (String &ise_uuid, String &ise_name, const ConfigPointer &config);
-void isf_get_keyboard_names_in_languages (std::vector<String> lang_list, std::vector<String> &keyboard_names);
-void isf_get_keyboard_uuids_in_languages (std::vector<String> lang_list, std::vector<String> &keyboard_uuids);
-
-void isf_get_helper_names_in_languages (std::vector<String> lang_list, std::vector<String> &helper_names);
+void isf_get_keyboard_ise (const ConfigPointer &config, String &ise_uuid, String &ise_name, uint32 &ise_option);
+void isf_get_keyboard_ises_in_languages (const std::vector<String> &lang_list, std::vector<String> &uuid_list, std::vector<String> &name_list, bool bCheckOption = true);
+void isf_get_helper_ises_in_languages (const std::vector<String> &lang_list, std::vector<String> &uuid_list, std::vector<String> &name_list);
 
 void isf_save_ise_information (void);
 void isf_load_ise_information (LOAD_ISE_TYPE type, const ConfigPointer &config);
 bool isf_update_ise_list (LOAD_ISE_TYPE type, const ConfigPointer &config);
+bool isf_update_ise_module (const String strModulePath, const ConfigPointer &config);
+String isf_get_normalized_language (String src_str);
+bool isf_add_helper_ise (HelperInfo helper_info, String module_name);
+bool isf_remove_helper_ise (const char *uuid, const ConfigPointer &config);
 
 #endif /* __ISF_PANEL_UTILITY_H */
 

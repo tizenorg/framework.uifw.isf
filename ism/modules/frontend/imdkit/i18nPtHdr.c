@@ -1443,7 +1443,7 @@ static void EncodingNegotiatonMessageProc (XIMS ims,
     if (byte_length > 0)
     {
         enc_nego->encodinginfo = (XIMStr *) malloc (sizeof (XIMStr)*10);
-        memset (enc_nego->encoding, 0, sizeof (XIMStr)*10);
+        memset (enc_nego->encodinginfo, 0, sizeof (XIMStr)*10);
         i = 0;
         while (FrameMgrIsIterLoopEnd (fm, &status) == False)
         {

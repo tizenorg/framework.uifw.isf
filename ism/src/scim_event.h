@@ -2009,7 +2009,7 @@ typedef std::vector<KeyEvent> KeyEventList;
  * @param key - the KeyEvent to be converted.
  * @return true if success.
  */
-bool scim_key_to_string (String &str, const KeyEvent & key);
+EAPI bool scim_key_to_string (String &str, const KeyEvent & key);
 
 /**
  * @brief Convert a string to a KeyEvent.
@@ -2017,7 +2017,7 @@ bool scim_key_to_string (String &str, const KeyEvent & key);
  * @param str - the string to be converted.
  * @return true if success.
  */
-bool scim_string_to_key (KeyEvent &key, const String & str);
+EAPI bool scim_string_to_key (KeyEvent &key, const String & str);
 
 /**
  * @brief Convert a set of KeyEvents to a string.
@@ -2025,7 +2025,7 @@ bool scim_string_to_key (KeyEvent &key, const String & str);
  * @param keylist - the keys to be converted.
  * @return true if success.
  */
-bool scim_key_list_to_string (String &str, const KeyEventList & keylist);
+EAPI bool scim_key_list_to_string (String &str, const KeyEventList & keylist);
 
 /**
  * @brief Covnert a string to a set of KeyEvents.
@@ -2033,28 +2033,28 @@ bool scim_key_list_to_string (String &str, const KeyEventList & keylist);
  * @param str - the string to be converted.
  * @return true if success.
  */
-bool scim_string_to_key_list (KeyEventList &keylist, const String &str);
+EAPI bool scim_string_to_key_list (KeyEventList &keylist, const String &str);
 
 /**
  * @brief Convert a Keyboard Layout enum value to its String name.
  * @param layout The Keyboard Layout type.
  * @return The name of this layout.
  */
-String scim_keyboard_layout_to_string (KeyboardLayout layout);
+EAPI String scim_keyboard_layout_to_string (KeyboardLayout layout);
 
 /**
  * @brief Convert a String name to the corresponding Keyboard Layout value.
  * @param str The Keyboard Layout name.
  * @return The Keyboard Layout type corresponding to this name, or SCIM_KEYBOARD_Unknown.
  */
-KeyboardLayout scim_string_to_keyboard_layout (const String &str);
+EAPI KeyboardLayout scim_string_to_keyboard_layout (const String &str);
 
 /**
  * @brief Get the display name of a Keyboard Layout enum value.
  * @param layout The Keyboard Layout type.
  * @return The localized display name of this layout.
  */
-String scim_keyboard_layout_get_display_name (KeyboardLayout layout);
+EAPI String scim_keyboard_layout_get_display_name (KeyboardLayout layout);
 
 /**
  * @brief Get default Keyboard Layout setting.
@@ -2065,7 +2065,7 @@ String scim_keyboard_layout_get_display_name (KeyboardLayout layout);
  * This function is mainly used by FrontEnds and Setup tools.
  * IMEngines should not use it.
  */
-KeyboardLayout scim_get_default_keyboard_layout ();
+EAPI KeyboardLayout scim_get_default_keyboard_layout ();
 
 /**
  * @brief Change the default Keyboard Layout setting.
@@ -2076,7 +2076,7 @@ KeyboardLayout scim_get_default_keyboard_layout ();
  * This function is mainly used by FrontEnds and Setup tools.
  * IMEngines should not use it.
  */
-void scim_set_default_keyboard_layout (KeyboardLayout layout);
+EAPI void scim_set_default_keyboard_layout (KeyboardLayout layout);
 
 /**
  * @brief The class to store a keyboard event.
@@ -2088,7 +2088,7 @@ void scim_set_default_keyboard_layout (KeyboardLayout layout);
  * It also contains the Keyboard Layout information. IMEngines can
  * map a KeyEvent to another layout by calling method #map_to_layout().
  */
-struct KeyEvent
+struct EAPI KeyEvent
 {
     uint32 code;    /**< key code */
     uint16 mask;    /**< modifier keys' mask */
@@ -2297,6 +2297,13 @@ struct KeyEvent
 
 };
 
+enum InputPanelStateEvent
+{
+    SCIM_INPUT_PANEL_STATE_SHOW,
+    SCIM_INPUT_PANEL_STATE_HIDE,
+    SCIM_INPUT_PANEL_STATE_WILL_SHOW,
+    SCIM_INPUT_PANEL_STATE_WILL_HIDE
+};
 /** @} */
 
 } // namespace scim

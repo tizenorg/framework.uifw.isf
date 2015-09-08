@@ -8,6 +8,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2004-2005 James Su <suzhe@tsinghua.org.cn>
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -24,6 +25,11 @@
  * License along with this program; if not, write to the
  * Free Software Foundation, Inc., 59 Temple Place, Suite 330,
  * Boston, MA  02111-1307  USA
+ *
+ * Modifications by Samsung Electronics Co., Ltd.
+ * 1. Add new interface APIs
+ *    a. get_helper_lang () and set_path_info ()
+ *    b. set_arg_info ()
  *
  * $Id: scim_helper_module.cpp,v 1.5 2005/01/05 13:41:10 suzhe Exp $
  *
@@ -47,7 +53,9 @@ HelperModule::HelperModule (const String &name)
     : m_number_of_helpers (0),
       m_get_helper_info (0),
       m_get_helper_lang (0),
-      m_run_helper (0)
+      m_run_helper (0),
+      m_set_arg_info (0),
+      m_set_path_info (0)
 {
     if (name.length ()) load (name);
 }
@@ -71,6 +79,12 @@ HelperModule::load (const String &name)
         m_run_helper =
             (HelperModuleRunHelperFunc) m_module.symbol ("scim_helper_module_run_helper");
 
+        m_set_arg_info =
+            (HelperModuleSetArgInfoFunc) m_module.symbol ("scim_helper_module_set_arg_info");
+
+        m_set_path_info =
+            (HelperModuleSetPathInfoFunc) m_module.symbol ("scim_helper_module_set_path_info");
+
         if (!m_number_of_helpers || !m_get_helper_info || !m_run_helper) {
             m_module.unload ();
             m_number_of_helpers = 0;
@@ -78,6 +92,10 @@ HelperModule::load (const String &name)
             m_get_helper_lang = 0;
             m_run_helper = 0;
             return false;
+        }
+
+        if (m_set_path_info) {
+            m_set_path_info (m_module.get_path ().c_str ());
         }
     } catch (...) {
         m_module.unload ();
@@ -140,7 +158,14 @@ HelperModule::run_helper (const String &uuid, const ConfigPointer &config, const
     m_run_helper (uuid, config, display);
 }
 
-int scim_get_helper_module_list (std::vector <String> &mod_list)
+void
+HelperModule::set_arg_info (int argc, char *argv []) const
+{
+    if (m_module.valid () && m_set_arg_info)
+        m_set_arg_info (argc, argv);
+}
+
+EAPI int scim_get_helper_module_list (std::vector <String> &mod_list)
 {
     return scim_get_module_list (mod_list, "Helper");
 }

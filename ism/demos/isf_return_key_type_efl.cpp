@@ -2,7 +2,7 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2000 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  * Contact: Shuo Liu <shuo0805.liu@samsung.com>, Jihoon Kim <jihoon48.kim@samsung.com>
  *
@@ -28,47 +28,20 @@
 
 static Evas_Object *_create_ef_layout (Evas_Object *parent, const char *label, const char *guide_text, Elm_Input_Panel_Return_Key_Type type)
 {
-    Evas_Object *ef = NULL;
-    ef = _create_ef (parent, label, guide_text);
-    Evas_Object *en = elm_object_part_content_get (ef, "elm.swallow.content");
+    Evas_Object *en;
+    Evas_Object *ef = create_ef (parent, label, guide_text, &en);
+    if (!ef || !en) return NULL;
+
     elm_entry_input_panel_return_key_type_set (en, type);
 
     return ef;
 }
 
-static void add_layout_to_conformant (void *data, Evas_Object *lay_in, const char *title)
-{
-   Evas_Object *scroller = NULL;
-   Evas_Object *win = NULL;
-   Evas_Object *conform = NULL;
-   struct appdata *ad = NULL;
-
-   ad = (struct appdata *) data;
-
-   win = ad->win_main;
-   // Enabling illume notification property for window
-   elm_win_conformant_set (win, EINA_TRUE);
-
-   // Creating conformant widget
-   conform = elm_conformant_add (win);
-   evas_object_size_hint_weight_set (conform, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
-   evas_object_show (conform);
-
-   scroller = elm_scroller_add (ad->naviframe);
-
-   elm_scroller_bounce_set (scroller, EINA_FALSE, EINA_TRUE);
-   evas_object_show (scroller);
-
-   elm_object_content_set (scroller, lay_in);
-   elm_object_content_set (conform, scroller);
-   elm_naviframe_item_push (ad->naviframe, title, NULL, NULL, conform, NULL);
-}
-
 static Evas_Object * create_inner_layout (void *data)
 {
     struct appdata *ad = (struct appdata *)data;
-    Evas_Object *bx = NULL ;
-    Evas_Object *ef = NULL ;
+    Evas_Object *bx = NULL;
+    Evas_Object *ef = NULL;
 
     Evas_Object *parent = ad->naviframe;
 
@@ -109,13 +82,17 @@ static Evas_Object * create_inner_layout (void *data)
     ef = _create_ef_layout (parent, _("SEND"), _("click to enter"), ELM_INPUT_PANEL_RETURN_KEY_TYPE_SEND);
     elm_box_pack_end (bx, ef);
 
+    /* SIGNIN */
+    ef = _create_ef_layout (parent, _("SIGNIN"), _("click to enter"), ELM_INPUT_PANEL_RETURN_KEY_TYPE_SIGNIN);
+    elm_box_pack_end (bx, ef);
+
     return bx;
 }
 
 void ise_return_key_type_bt (void *data, Evas_Object *obj, void *event_info)
 {
     Evas_Object *lay_inner = create_inner_layout (data);
-    add_layout_to_conformant (data, lay_inner, _("Return Key Type"));
+    add_layout_to_naviframe (data, lay_inner, _("Return Key Type"));
 }
 
 /*

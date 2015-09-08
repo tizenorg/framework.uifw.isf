@@ -2,7 +2,7 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2000 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  * Contact: Jihoon Kim <jihoon48.kim@samsung.com>, Haifeng Deng <haifeng.deng@samsung.com>
  *
@@ -23,6 +23,7 @@
  */
 
 #include <stdio.h>
+#include <dlog.h>
 #include "isf_imf_context.h"
 #include "isf_imf_control_ui.h"
 
@@ -71,10 +72,12 @@ extern "C"
         isf_imf_context_input_panel_caps_lock_mode_set,
         isf_imf_context_input_panel_geometry_get,
         isf_imf_context_input_panel_state_get,
-        isf_imf_context_input_panel_event_callback_add,
-        isf_imf_context_input_panel_event_callback_del,
+        NULL, /* input_panel_event_callback_add */
+        NULL, /* input_panel_event_callback_del */
         isf_imf_context_input_panel_language_locale_get,
-        isf_imf_context_candidate_window_geometry_get
+        isf_imf_context_candidate_window_geometry_get,
+        isf_imf_context_input_hint_set,
+        isf_imf_context_bidi_direction_set
     };
 
     static Ecore_IMF_Context *imf_module_create (void);
@@ -97,7 +100,7 @@ extern "C"
 
         ctxd = isf_imf_context_new ();
         if (!ctxd) {
-            printf ("isf_imf_context_new () failed!!!\n");
+            LOGW ("isf_imf_context_new () failed!!!\n");
             return NULL;
         }
 

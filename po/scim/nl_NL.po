@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: nl\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2012-05-19 16:44+0900\n"
+"POT-Creation-Date: 2014-09-25 11:23+0900\n"
 "PO-Revision-Date: 2007-03-17 18:54+0100\n"
 "Last-Translator: Ronald Stroethoff <stroet43@zonnet.nl>\n"
 "Language-Team: Nederlands\n"
@@ -19,766 +19,745 @@ msgstr ""
 "Plural-Forms:  nplurals=2; plural=(n != 1);\n"
 "X-Generator: KBabel 1.11.4\n"
 
-#: ism/src/scim_compose_key.cpp:126 ism/src/scim_imengine.cpp:668
-#: ism/src/scim_panel_agent.cpp:341 ism/src/scim_panel_agent.cpp:4016
-#: ism/src/scim_utility.cpp:702
-#: ism/extras/gtk2_immodule/gtkimcontextscim.cpp:1715
-msgid "English/Keyboard"
-msgstr "Nederlands/toetsenbord"
+#: ism/src/scim_compose_key.cpp:128 ism/src/scim_imengine.cpp:841
+#: ism/src/scim_panel_agent.cpp:390 ism/src/scim_panel_agent.cpp:4393
+#: ism/src/scim_utility.cpp:799
+#: ism/extras/gtk2_immodule/gtkimcontextscim.cpp:1730
+msgid "English Keyboard"
+msgstr "Nederlands toetsenbord"
 
 #. return WideString ();
-#: ism/src/scim_compose_key.cpp:145
-#, fuzzy
+#: ism/src/scim_compose_key.cpp:147
 msgid "English input service"
-msgstr "Engels (USA)"
+msgstr ""
 
-#: ism/src/scim_utility.cpp:703
+#: ism/src/scim_utility.cpp:800
 msgid "Amharic"
 msgstr "Amhaars"
 
-#: ism/src/scim_utility.cpp:704
+#: ism/src/scim_utility.cpp:801
 msgid "Arabic"
-msgstr "Arabisch"
+msgstr "عربي"
 
-#: ism/src/scim_utility.cpp:705 ism/src/scim_utility.cpp:894
+#: ism/src/scim_utility.cpp:802
 msgid "Arabic (Egypt)"
 msgstr "Arabisch (Egyptisch)"
 
-#: ism/src/scim_utility.cpp:706 ism/src/scim_utility.cpp:903
+#: ism/src/scim_utility.cpp:803
 msgid "Arabic (Lebanon)"
 msgstr "Arabisch (Libanees)"
 
-#: ism/src/scim_utility.cpp:707
+#: ism/src/scim_utility.cpp:804
+#, fuzzy
+msgid "Arabic (Israel)"
+msgstr "العربية"
+
+#: ism/src/scim_utility.cpp:805
 msgid "Assamese"
-msgstr "Assamitisch"
+msgstr "অসমীয়া"
 
-#: ism/src/scim_utility.cpp:708 ism/src/scim_utility.cpp:919
+#: ism/src/scim_utility.cpp:806 ism/src/scim_utility.cpp:964
 msgid "Azerbaijani"
-msgstr "Azerbeidzjaans"
+msgstr "Azərbaycan"
 
-#: ism/src/scim_utility.cpp:709
+#: ism/src/scim_utility.cpp:807
 msgid "Belarusian"
 msgstr "Witrussisch"
 
-#: ism/src/scim_utility.cpp:710 ism/src/scim_utility.cpp:875
+#: ism/src/scim_utility.cpp:808
 msgid "Bulgarian"
-msgstr "Bulgaars"
+msgstr "Български"
 
-#: ism/src/scim_utility.cpp:711 ism/src/scim_utility.cpp:712
-#: ism/src/scim_utility.cpp:914
+#: ism/src/scim_utility.cpp:809 ism/src/scim_utility.cpp:810
 msgid "Bengali"
-msgstr "Bengaals"
+msgstr "বাংলা"
 
-#: ism/src/scim_utility.cpp:713
+#: ism/src/scim_utility.cpp:811
 msgid "Bengali (India)"
 msgstr "Bengaals (India)"
 
-#: ism/src/scim_utility.cpp:714
+#: ism/src/scim_utility.cpp:812
 msgid "Tibetan"
 msgstr "Tibetaans"
 
-#: ism/src/scim_utility.cpp:715
+#: ism/src/scim_utility.cpp:813
 msgid "Bosnian"
-msgstr "Bosnisch"
+msgstr "Bosanski"
 
-#: ism/src/scim_utility.cpp:716 ism/src/scim_utility.cpp:854
+#: ism/src/scim_utility.cpp:814
 msgid "Catalan"
-msgstr "Catalaans"
+msgstr "Català"
 
-#: ism/src/scim_utility.cpp:717 ism/src/scim_utility.cpp:864
-#: ism/src/scim_keyboard_layout_data.h:4596
+#: ism/src/scim_utility.cpp:815 ism/src/scim_keyboard_layout_data.h:4596
 msgid "Czech"
-msgstr "Tschechisch"
+msgstr "Čeština"
 
-#: ism/src/scim_utility.cpp:718 ism/src/scim_utility.cpp:924
+#: ism/src/scim_utility.cpp:816 ism/src/scim_utility.cpp:966
 msgid "Welsh"
-msgstr "Welsh"
+msgstr "Cymraeg"
 
-#: ism/src/scim_utility.cpp:719 ism/src/scim_utility.cpp:855
-#: ism/src/scim_keyboard_layout_data.h:4598
+#: ism/src/scim_utility.cpp:817 ism/src/scim_keyboard_layout_data.h:4598
 msgid "Danish"
-msgstr "Deens"
+msgstr "Dansk"
 
-#: ism/src/scim_utility.cpp:720 ism/src/scim_utility.cpp:825
-#: ism/src/scim_keyboard_layout_data.h:4606
+#: ism/src/scim_utility.cpp:818 ism/src/scim_keyboard_layout_data.h:4606
 msgid "German"
-msgstr "Duits"
+msgstr "Deutsch"
 
-#: ism/src/scim_utility.cpp:721
+#: ism/src/scim_utility.cpp:819
 msgid "Divehi"
 msgstr "Divehi"
 
-#: ism/src/scim_utility.cpp:722 ism/src/scim_utility.cpp:874
-#: ism/src/scim_keyboard_layout_data.h:4609
+#: ism/src/scim_utility.cpp:820 ism/src/scim_keyboard_layout_data.h:4609
 msgid "Greek"
-msgstr "Grieks"
+msgstr "Ελληνικά"
 
-#: ism/src/scim_utility.cpp:723
+#: ism/src/scim_utility.cpp:821
 msgid "English"
-msgstr "Engels"
+msgstr "English"
 
-#: ism/src/scim_utility.cpp:724 ism/src/scim_utility.cpp:809
+#: ism/src/scim_utility.cpp:822
 msgid "English (Australian)"
-msgstr "Engels (Australie)"
+msgstr "English (Australian)"
 
-#: ism/src/scim_utility.cpp:725 ism/src/scim_utility.cpp:810
+#: ism/src/scim_utility.cpp:823
 msgid "English (Canadian)"
-msgstr "Engels (Canada)"
+msgstr "English (Canadian)"
 
-#: ism/src/scim_utility.cpp:726
-msgid "English (British)"
-msgstr "Engels (Groot Britannie)"
+#: ism/src/scim_utility.cpp:824
+msgid "English (United Kingdom)"
+msgstr "English (United Kingdom)"
 
-#: ism/src/scim_utility.cpp:727
+#: ism/src/scim_utility.cpp:825
 msgid "English (Ireland)"
-msgstr "Engels (Ierland)"
+msgstr "English (Ireland)"
 
-#: ism/src/scim_utility.cpp:728
-msgid "English (American)"
-msgstr "Engels (USA)"
+#: ism/src/scim_utility.cpp:826
+msgid "English (United States)"
+msgstr "English (United States)"
 
-#: ism/src/scim_utility.cpp:729 ism/src/scim_utility.cpp:730
+#: ism/src/scim_utility.cpp:827
+msgid "Esperanto"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:828 ism/src/scim_utility.cpp:829
 #: ism/src/scim_keyboard_layout_data.h:4622
 msgid "Spanish"
-msgstr "Spaans"
+msgstr "Español"
 
-#: ism/src/scim_utility.cpp:731
+#: ism/src/scim_utility.cpp:830
 msgid "Spanish (Mexico)"
-msgstr "Spaans (Mexico)"
+msgstr "Español (México)"
 
-#: ism/src/scim_utility.cpp:732 ism/src/scim_utility.cpp:871
-#: ism/src/scim_keyboard_layout_data.h:4601
+#: ism/src/scim_utility.cpp:831
+msgid "Spanish (United States)"
+msgstr "Español (Estados Unidos)"
+
+#: ism/src/scim_utility.cpp:832 ism/src/scim_keyboard_layout_data.h:4601
 msgid "Estonian"
-msgstr "Estlands"
+msgstr "Eesti"
 
-#: ism/src/scim_utility.cpp:733 ism/src/scim_utility.cpp:853
+#: ism/src/scim_utility.cpp:833
 msgid "Basque"
-msgstr "Baskisch"
+msgstr "Euskara"
 
-#: ism/src/scim_utility.cpp:734
+#: ism/src/scim_utility.cpp:834
 msgid "Persian"
-msgstr "Perzisch"
+msgstr "فارسی"
 
-#: ism/src/scim_utility.cpp:735 ism/src/scim_utility.cpp:858
-#: ism/src/scim_keyboard_layout_data.h:4602
+#: ism/src/scim_utility.cpp:835 ism/src/scim_keyboard_layout_data.h:4602
 msgid "Finnish"
-msgstr "Fins"
+msgstr "Suomi"
 
-#: ism/src/scim_utility.cpp:736 ism/src/scim_utility.cpp:819
-#: ism/src/scim_keyboard_layout_data.h:4603
+#: ism/src/scim_utility.cpp:836 ism/src/scim_keyboard_layout_data.h:4603
 msgid "French"
-msgstr "Frans"
+msgstr "Français"
 
-#: ism/src/scim_utility.cpp:737 ism/src/scim_utility.cpp:922
+#: ism/src/scim_utility.cpp:837
 msgid "Irish"
-msgstr "Iers"
+msgstr "Gaeilge"
 
-#: ism/src/scim_utility.cpp:738 ism/src/scim_utility.cpp:920
+#: ism/src/scim_utility.cpp:838
 msgid "Galician"
-msgstr "Galicisch"
+msgstr "Galego"
 
-#: ism/src/scim_utility.cpp:739 ism/src/scim_utility.cpp:915
+#: ism/src/scim_utility.cpp:839
 msgid "Gujarati"
-msgstr "Gujarati"
+msgstr "ગુજરાતી"
 
-#: ism/src/scim_utility.cpp:740 ism/src/scim_utility.cpp:749
-#: ism/src/scim_utility.cpp:891
+#: ism/src/scim_utility.cpp:840 ism/src/scim_utility.cpp:849
 msgid "Hebrew"
-msgstr "Hebreeuws"
+msgstr "עברית"
 
-#: ism/src/scim_utility.cpp:741 ism/src/scim_utility.cpp:910
+#: ism/src/scim_utility.cpp:841
 msgid "Hindi"
-msgstr "Hindi"
+msgstr "हिन्दी"
 
-#: ism/src/scim_utility.cpp:742 ism/src/scim_keyboard_layout_data.h:4595
+#: ism/src/scim_utility.cpp:842 ism/src/scim_keyboard_layout_data.h:4595
 msgid "Croatian"
-msgstr "Kroatisch"
+msgstr "Hrvatski"
 
-#: ism/src/scim_utility.cpp:743 ism/src/scim_utility.cpp:865
-#: ism/src/scim_keyboard_layout_data.h:4610
+#: ism/src/scim_utility.cpp:843 ism/src/scim_keyboard_layout_data.h:4610
 msgid "Hungarian"
-msgstr "Hongaars"
+msgstr "Magyar"
 
-#: ism/src/scim_utility.cpp:744
+#: ism/src/scim_utility.cpp:844
 msgid "Armenian"
-msgstr "Armeens"
+msgstr "Հայերեն"
 
-#: ism/src/scim_utility.cpp:745
+#: ism/src/scim_utility.cpp:845
 msgid "Interlingua"
 msgstr "Interlingua"
 
-#: ism/src/scim_utility.cpp:746
+#: ism/src/scim_utility.cpp:846
 msgid "Indonesian"
-msgstr "Indonesisch"
+msgstr "Bahasa Indonesia"
 
-#: ism/src/scim_utility.cpp:747 ism/src/scim_utility.cpp:857
-#: ism/src/scim_keyboard_layout_data.h:4628
+#: ism/src/scim_utility.cpp:847 ism/src/scim_keyboard_layout_data.h:4628
 msgid "Icelandic"
-msgstr "IJslands"
+msgstr "íslenska"
 
-#: ism/src/scim_utility.cpp:748 ism/src/scim_utility.cpp:830
-#: ism/src/scim_keyboard_layout_data.h:4611
+#: ism/src/scim_utility.cpp:848 ism/src/scim_keyboard_layout_data.h:4611
 msgid "Italian"
-msgstr "Italiaans"
+msgstr "Italiano"
 
-#: ism/src/scim_utility.cpp:750 ism/src/scim_utility.cpp:883
-#: ism/src/scim_keyboard_layout_data.h:4612
+#: ism/src/scim_utility.cpp:850 ism/src/scim_keyboard_layout_data.h:4612
 msgid "Japanese"
-msgstr "Japans"
+msgstr "日本語"
 
-#: ism/src/scim_utility.cpp:751 ism/src/scim_utility.cpp:918
+#: ism/src/scim_utility.cpp:851
 msgid "Georgian"
-msgstr "Georgisch"
+msgstr "ქართული"
 
-#: ism/src/scim_utility.cpp:752 ism/src/scim_utility.cpp:876
+#: ism/src/scim_utility.cpp:852
 msgid "Kazakh"
-msgstr "Kazachs"
+msgstr "Қазақ"
 
-#: ism/src/scim_utility.cpp:753
+#: ism/src/scim_utility.cpp:853
 msgid "Cambodian"
 msgstr "Cambojaans"
 
-#: ism/src/scim_utility.cpp:754
+#: ism/src/scim_utility.cpp:854
 msgid "Kannada"
-msgstr "Kannada"
+msgstr "ಕನ್ನಡ"
 
-#: ism/src/scim_utility.cpp:755 ism/src/scim_utility.cpp:884
+#: ism/src/scim_utility.cpp:855
 msgid "Korean"
-msgstr "Koreaans"
+msgstr "한국어"
 
-#: ism/src/scim_utility.cpp:756
+#: ism/src/scim_utility.cpp:856
+msgid "Lao"
+msgstr "ພາສາລາວ"
+
+#: ism/src/scim_utility.cpp:857
 msgid "Laothian"
-msgstr "Laothian"
+msgstr "ລາວ"
 
-#: ism/src/scim_utility.cpp:757 ism/src/scim_utility.cpp:873
-#: ism/src/scim_keyboard_layout_data.h:4629
+#: ism/src/scim_utility.cpp:858 ism/src/scim_keyboard_layout_data.h:4629
 msgid "Lithuanian"
-msgstr "Litouws"
+msgstr "Lietuvių"
 
-#: ism/src/scim_utility.cpp:758 ism/src/scim_utility.cpp:872
+#: ism/src/scim_utility.cpp:859
 msgid "Latvian"
-msgstr "Lets"
+msgstr "Latviešu"
 
-#: ism/src/scim_utility.cpp:759 ism/src/scim_utility.cpp:877
+#: ism/src/scim_utility.cpp:860
 msgid "Macedonian"
-msgstr "Macedonisch"
+msgstr "Македонски"
 
-#: ism/src/scim_utility.cpp:760 ism/src/scim_utility.cpp:916
+#: ism/src/scim_utility.cpp:861
 msgid "Malayalam"
-msgstr "Malayalam"
+msgstr "മലയാളം"
 
-#: ism/src/scim_utility.cpp:761
+#: ism/src/scim_utility.cpp:862
 msgid "Mongolian"
-msgstr "Mongools"
+msgstr "Монгол"
 
-#: ism/src/scim_utility.cpp:762 ism/src/scim_utility.cpp:912
+#: ism/src/scim_utility.cpp:863
 msgid "Marathi"
-msgstr "Marathi"
+msgstr "मराठी"
 
-#: ism/src/scim_utility.cpp:763
+#: ism/src/scim_utility.cpp:864
 msgid "Malay"
-msgstr "Maleis"
+msgstr "Bahasa Malaysia"
 
-#: ism/src/scim_utility.cpp:764
+#: ism/src/scim_utility.cpp:865
 msgid "Burmese"
-msgstr "Birmaans"
+msgstr "မြန်မာဘာသာ"
 
-#: ism/src/scim_utility.cpp:765
+#: ism/src/scim_utility.cpp:866
 msgid "Nepali"
-msgstr "Nepalees"
+msgstr "नेपाली"
 
-#: ism/src/scim_utility.cpp:766 ism/src/scim_utility.cpp:805
-#: ism/src/scim_keyboard_layout_data.h:4599
+#: ism/src/scim_utility.cpp:867 ism/src/scim_keyboard_layout_data.h:4599
 msgid "Dutch"
 msgstr "Nederlands"
 
-#: ism/src/scim_utility.cpp:767
+#: ism/src/scim_utility.cpp:868
 #, fuzzy
 msgid "Norwegian (Nynorsk)"
 msgstr "Noors (Nynorsk)"
 
-#: ism/src/scim_utility.cpp:768
-#, fuzzy
+#: ism/src/scim_utility.cpp:869
 msgid "Norwegian (Bokmal)"
-msgstr "Noors (Bokmal)"
+msgstr "Norsk (Bokmål)"
 
-#: ism/src/scim_utility.cpp:769
+#: ism/src/scim_utility.cpp:870
 msgid "Oriya"
 msgstr "Oriya"
 
-#: ism/src/scim_utility.cpp:770 ism/src/scim_utility.cpp:917
+#: ism/src/scim_utility.cpp:871
 msgid "Punjabi"
-msgstr "Punjabi"
+msgstr "ਪੰਜਾਬੀ"
 
-#: ism/src/scim_utility.cpp:771 ism/src/scim_utility.cpp:866
-#: ism/src/scim_keyboard_layout_data.h:4614
+#: ism/src/scim_utility.cpp:872 ism/src/scim_keyboard_layout_data.h:4614
 msgid "Polish"
-msgstr "Pools"
+msgstr "Polski"
 
-#: ism/src/scim_utility.cpp:772 ism/src/scim_utility.cpp:774
-#: ism/src/scim_utility.cpp:833 ism/src/scim_keyboard_layout_data.h:4615
+#: ism/src/scim_utility.cpp:873 ism/src/scim_utility.cpp:875
+#: ism/src/scim_keyboard_layout_data.h:4615
 msgid "Portuguese"
-msgstr "Portugees"
+msgstr "Português"
 
-#: ism/src/scim_utility.cpp:773 ism/src/scim_keyboard_layout_data.h:4616
+#: ism/src/scim_utility.cpp:874 ism/src/scim_keyboard_layout_data.h:4616
 msgid "Portuguese (Brazil)"
-msgstr "Portugees (Brazilie)"
+msgstr "Português (Brasil)"
 
-#: ism/src/scim_utility.cpp:775 ism/src/scim_utility.cpp:867
+#: ism/src/scim_utility.cpp:876
 msgid "Romanian"
-msgstr "Roemeens"
+msgstr "Română"
 
-#: ism/src/scim_utility.cpp:776 ism/src/scim_utility.cpp:878
-#: ism/src/scim_keyboard_layout_data.h:4618
+#: ism/src/scim_utility.cpp:877 ism/src/scim_keyboard_layout_data.h:4618
 msgid "Russian"
-msgstr "Russisch"
+msgstr "Русский"
 
-#: ism/src/scim_utility.cpp:777 ism/src/scim_utility.cpp:923
+#: ism/src/scim_utility.cpp:878 ism/src/scim_utility.cpp:879
+msgid "Sindhi"
+msgstr ""
+
+#: ism/src/scim_utility.cpp:880 ism/src/scim_utility.cpp:881
 msgid "Sinhala"
-msgstr "Singalees"
+msgstr "සිංහල"
 
-#: ism/src/scim_utility.cpp:778 ism/src/scim_utility.cpp:869
-#: ism/src/scim_keyboard_layout_data.h:4619
+#: ism/src/scim_utility.cpp:882 ism/src/scim_keyboard_layout_data.h:4619
 msgid "Slovak"
-msgstr "Slowaaks"
+msgstr "Slovenčina"
 
-#: ism/src/scim_utility.cpp:779 ism/src/scim_utility.cpp:870
-#: ism/src/scim_keyboard_layout_data.h:4621
+#: ism/src/scim_utility.cpp:883 ism/src/scim_keyboard_layout_data.h:4621
 msgid "Slovenian"
-msgstr "Sloveens"
+msgstr "Slovenščina"
 
-#: ism/src/scim_utility.cpp:780
+#: ism/src/scim_utility.cpp:884
 msgid "Albanian"
-msgstr "Albanees"
+msgstr "shqip"
 
-#: ism/src/scim_utility.cpp:781 ism/src/scim_utility.cpp:782
-#: ism/src/scim_utility.cpp:783
+#: ism/src/scim_utility.cpp:885 ism/src/scim_utility.cpp:886
+#: ism/src/scim_utility.cpp:887
 msgid "Serbian"
-msgstr "Servisch"
+msgstr "Srpski"
 
-#: ism/src/scim_utility.cpp:784 ism/src/scim_utility.cpp:786
-#: ism/src/scim_utility.cpp:862 ism/src/scim_keyboard_layout_data.h:4625
+#: ism/src/scim_utility.cpp:888 ism/src/scim_utility.cpp:890
+#: ism/src/scim_keyboard_layout_data.h:4625
 msgid "Swedish"
-msgstr "Zweeds"
+msgstr "Svenska"
 
-#: ism/src/scim_utility.cpp:785 ism/src/scim_utility.cpp:863
+#: ism/src/scim_utility.cpp:889
 msgid "Swedish (Finland)"
 msgstr "Zweeds (Finland)"
 
-#: ism/src/scim_utility.cpp:787 ism/src/scim_utility.cpp:913
+#: ism/src/scim_utility.cpp:891
 msgid "Tamil"
-msgstr "Tamil"
+msgstr "தமிழ்"
 
-#: ism/src/scim_utility.cpp:788 ism/src/scim_utility.cpp:911
+#: ism/src/scim_utility.cpp:892
 msgid "Telugu"
-msgstr "Telugu"
+msgstr "తెలుగు"
 
-#: ism/src/scim_utility.cpp:789 ism/src/scim_utility.cpp:890
+#: ism/src/scim_utility.cpp:893
 msgid "Thai"
-msgstr "Thais"
+msgstr "ภาษาไทย"
 
-#: ism/src/scim_utility.cpp:790 ism/src/scim_utility.cpp:881
-#: ism/src/scim_keyboard_layout_data.h:4626
+#: ism/src/scim_utility.cpp:894 ism/src/scim_keyboard_layout_data.h:4626
 msgid "Turkish"
-msgstr "Turks"
+msgstr "Türkçe"
 
-#: ism/src/scim_utility.cpp:791
+#: ism/src/scim_utility.cpp:895
 msgid "Uighur"
 msgstr "Oeigoers"
 
-#: ism/src/scim_utility.cpp:792 ism/src/scim_utility.cpp:880
-#: ism/src/scim_keyboard_layout_data.h:4630
+#: ism/src/scim_utility.cpp:896 ism/src/scim_keyboard_layout_data.h:4630
 msgid "Ukrainian"
-msgstr "Oekraïens"
+msgstr "Українська"
 
-#: ism/src/scim_utility.cpp:793 ism/src/scim_utility.cpp:908
+#: ism/src/scim_utility.cpp:897
 msgid "Urdu"
-msgstr "Urdu"
+msgstr "اردو"
 
-#: ism/src/scim_utility.cpp:794
+#: ism/src/scim_utility.cpp:898
 msgid "Uzbek"
-msgstr "Oezbeeks"
+msgstr "o'zbek tili"
 
-#: ism/src/scim_utility.cpp:795 ism/src/scim_utility.cpp:909
+#: ism/src/scim_utility.cpp:899
 msgid "Vietnamese"
-msgstr "Vietnamees"
+msgstr "Tiếng Việt"
 
-#: ism/src/scim_utility.cpp:796
+#: ism/src/scim_utility.cpp:900
 msgid "Walloon"
 msgstr "Waals"
 
-#: ism/src/scim_utility.cpp:797 ism/src/scim_utility.cpp:798
+#: ism/src/scim_utility.cpp:901 ism/src/scim_utility.cpp:902
 msgid "Yiddish"
 msgstr "Jiddisch"
 
-#: ism/src/scim_utility.cpp:799
+#: ism/src/scim_utility.cpp:903
 msgid "Chinese"
-msgstr "Chinees"
+msgstr "中文"
 
-#: ism/src/scim_utility.cpp:800 ism/src/scim_utility.cpp:802
+#: ism/src/scim_utility.cpp:904
 #, fuzzy
 msgid "Chinese (Simplified)"
 msgstr "Chinees (versimpeld)"
 
-#: ism/src/scim_utility.cpp:801
+#: ism/src/scim_utility.cpp:905
 #, fuzzy
 msgid "Chinese (Hongkong)"
-msgstr "Chinees (traditioneell)"
+msgstr "中文 (香港)"
 
-#: ism/src/scim_utility.cpp:803
+#: ism/src/scim_utility.cpp:906
 #, fuzzy
-msgid "Chinese (Traditional)"
-msgstr "Chinees (traditioneell)"
+msgid "Chinese (Singapore)"
+msgstr "中文 (香港)"
 
-#: ism/src/scim_utility.cpp:806
+#: ism/src/scim_utility.cpp:907
+#, fuzzy
+msgid "Chinese (Traditional_Taiwan)"
+msgstr "中文 (香港)"
+
+#: ism/src/scim_utility.cpp:909
 #, fuzzy
 msgid "Dutch (Belgian)"
-msgstr "Belgisch"
+msgstr "Nederlands (België)"
 
-#: ism/src/scim_utility.cpp:807
-#, fuzzy
-msgid "English (United States)"
-msgstr "Engels (US)"
-
-#: ism/src/scim_utility.cpp:808
-#, fuzzy
-msgid "English (United Kingdom)"
-msgstr "Engels (Canada)"
-
-#: ism/src/scim_utility.cpp:811
+#: ism/src/scim_utility.cpp:910
 #, fuzzy
 msgid "English (New Zealand)"
-msgstr "Engels (Ierland)"
+msgstr "English (New Zealand)"
 
-#: ism/src/scim_utility.cpp:812
-#, fuzzy
-msgid "English (Irish)"
-msgstr "Engels (Groot Britannie)"
-
-#: ism/src/scim_utility.cpp:813
+#: ism/src/scim_utility.cpp:911
 #, fuzzy
 msgid "English (South Africa)"
-msgstr "Engels (USA)"
+msgstr "English (South Africa)"
 
-#: ism/src/scim_utility.cpp:814
+#: ism/src/scim_utility.cpp:912
 #, fuzzy
 msgid "English (Jamaica)"
 msgstr "Engels (Canada)"
 
-#: ism/src/scim_utility.cpp:815
+#: ism/src/scim_utility.cpp:913
 #, fuzzy
 msgid "English (Belize)"
 msgstr "Engels (Groot Britannie)"
 
-#: ism/src/scim_utility.cpp:816
+#: ism/src/scim_utility.cpp:914
 #, fuzzy
 msgid "English (Trinidad)"
 msgstr "Engels (Groot Britannie)"
 
-#: ism/src/scim_utility.cpp:817
+#: ism/src/scim_utility.cpp:915
 #, fuzzy
 msgid "English (Zimbabwe)"
 msgstr "Engels (Canada)"
 
-#: ism/src/scim_utility.cpp:818
+#: ism/src/scim_utility.cpp:916
 #, fuzzy
 msgid "English (Philippines)"
-msgstr "Engels (Groot Britannie)"
+msgstr "English (Philippines)"
 
-#: ism/src/scim_utility.cpp:820
+#: ism/src/scim_utility.cpp:917
 #, fuzzy
 msgid "French (Belgian)"
 msgstr "Frans (Canada)"
 
-#: ism/src/scim_utility.cpp:821 ism/src/scim_keyboard_layout_data.h:4604
+#: ism/src/scim_utility.cpp:918 ism/src/scim_keyboard_layout_data.h:4604
 msgid "French (Canadian)"
-msgstr "Frans (Canada)"
+msgstr "Français (Canada)"
 
-#: ism/src/scim_utility.cpp:822
+#: ism/src/scim_utility.cpp:919
 #, fuzzy
 msgid "French (Swiss)"
-msgstr "Duits (Schwitsers)"
+msgstr "français (Suisse)"
 
-#: ism/src/scim_utility.cpp:823
+#: ism/src/scim_utility.cpp:920
 msgid "French (Luxembourg)"
 msgstr ""
 
-#: ism/src/scim_utility.cpp:824
+#: ism/src/scim_utility.cpp:921
 #, fuzzy
 msgid "French (Monaco)"
 msgstr "Frans (Canada)"
 
-#: ism/src/scim_utility.cpp:826 ism/src/scim_keyboard_layout_data.h:4608
+#: ism/src/scim_utility.cpp:922 ism/src/scim_keyboard_layout_data.h:4608
 msgid "German (Swiss)"
-msgstr "Duits (Schwitsers)"
+msgstr "Deutsch (Schweiz)"
 
-#: ism/src/scim_utility.cpp:827
+#: ism/src/scim_utility.cpp:923
 #, fuzzy
 msgid "German (Austrian)"
-msgstr "Engels (Australie)"
+msgstr "Deutsch (Österreich)"
 
-#: ism/src/scim_utility.cpp:828
+#: ism/src/scim_utility.cpp:924
 msgid "German (Luxembourg)"
 msgstr ""
 
-#: ism/src/scim_utility.cpp:829
+#: ism/src/scim_utility.cpp:925
 #, fuzzy
 msgid "German (Liechtenstein)"
 msgstr "Duits (Schwitsers)"
 
-#: ism/src/scim_utility.cpp:831
+#: ism/src/scim_utility.cpp:926
 #, fuzzy
 msgid "Italian (Swiss)"
 msgstr "Duits (Schwitsers)"
 
-#: ism/src/scim_utility.cpp:832
-#, fuzzy
-msgid "Portuguese (Brazilian)"
-msgstr "Portugees (Brazilie)"
-
-#: ism/src/scim_utility.cpp:834
-#, fuzzy
-msgid "Spanish (Traditional Sort)"
-msgstr "Spaans (Latijns Amerika)"
-
-#: ism/src/scim_utility.cpp:835
-#, fuzzy
-msgid "Spanish (Mexican)"
-msgstr "Spaans (Mexico)"
-
-#: ism/src/scim_utility.cpp:836
+#: ism/src/scim_utility.cpp:927
 #, fuzzy
 msgid "Spanish (Guatemala)"
 msgstr "Spaans (Latijns Amerika)"
 
-#: ism/src/scim_utility.cpp:837
+#: ism/src/scim_utility.cpp:928
 #, fuzzy
 msgid "Spanish (Costa Rica)"
 msgstr "Spaans (Latijns Amerika)"
 
-#: ism/src/scim_utility.cpp:838
+#: ism/src/scim_utility.cpp:929
 #, fuzzy
 msgid "Spanish (Panama)"
 msgstr "Spaans (Latijns Amerika)"
 
-#: ism/src/scim_utility.cpp:839
+#: ism/src/scim_utility.cpp:930
 #, fuzzy
 msgid "Spanish (Dominican Republic)"
 msgstr "Spaans (Latijns Amerika)"
 
-#: ism/src/scim_utility.cpp:840
+#: ism/src/scim_utility.cpp:931
 #, fuzzy
 msgid "Spanish (Venezuela)"
 msgstr "Spaans (Mexico)"
 
-#: ism/src/scim_utility.cpp:841
+#: ism/src/scim_utility.cpp:932
 #, fuzzy
 msgid "Spanish (Colombia)"
 msgstr "Spaans (Mexico)"
 
-#: ism/src/scim_utility.cpp:842
+#: ism/src/scim_utility.cpp:933
 #, fuzzy
 msgid "Spanish (Peru)"
 msgstr "Spaans (Mexico)"
 
-#: ism/src/scim_utility.cpp:843
+#: ism/src/scim_utility.cpp:934
 #, fuzzy
 msgid "Spanish (Argentina)"
 msgstr "Spaans (Mexico)"
 
-#: ism/src/scim_utility.cpp:844
+#: ism/src/scim_utility.cpp:935
 #, fuzzy
 msgid "Spanish (Ecuador)"
 msgstr "Spaans (Mexico)"
 
-#: ism/src/scim_utility.cpp:845
+#: ism/src/scim_utility.cpp:936
 #, fuzzy
 msgid "Spanish (Chile)"
 msgstr "Spaans (Mexico)"
 
-#: ism/src/scim_utility.cpp:846
+#: ism/src/scim_utility.cpp:937
 #, fuzzy
 msgid "Spanish (Uruguay)"
 msgstr "Spaans (Mexico)"
 
-#: ism/src/scim_utility.cpp:847
+#: ism/src/scim_utility.cpp:938
 #, fuzzy
 msgid "Spanish (Paraguay)"
 msgstr "Spaans (CP 850)"
 
-#: ism/src/scim_utility.cpp:848
+#: ism/src/scim_utility.cpp:939
 #, fuzzy
 msgid "Spanish (Bolivia)"
 msgstr "Spaans (Mexico)"
 
-#: ism/src/scim_utility.cpp:849
+#: ism/src/scim_utility.cpp:940
 msgid "Spanish (El Salvador)"
 msgstr ""
 
-#: ism/src/scim_utility.cpp:850
+#: ism/src/scim_utility.cpp:941
 #, fuzzy
 msgid "Spanish (Honduras)"
 msgstr "Spaans (Mexico)"
 
-#: ism/src/scim_utility.cpp:851
+#: ism/src/scim_utility.cpp:942
 #, fuzzy
 msgid "Spanish (Nicaragua)"
 msgstr "Spaans (Mexico)"
 
-#: ism/src/scim_utility.cpp:852
+#: ism/src/scim_utility.cpp:943
 #, fuzzy
 msgid "Spanish (Puerto Rico)"
 msgstr "Spaans (Mexico)"
 
-#: ism/src/scim_utility.cpp:856
+#: ism/src/scim_utility.cpp:944 ism/src/scim_utility.cpp:973
 msgid "Afrikaans"
-msgstr ""
+msgstr "Afrikaans"
 
-#: ism/src/scim_utility.cpp:859
-#, fuzzy
-msgid "Malay (Malaysia)"
-msgstr "Malayalam"
-
-#: ism/src/scim_utility.cpp:860
+#: ism/src/scim_utility.cpp:945
 msgid "Malay (Brunei Darussalam)"
 msgstr ""
 
-#: ism/src/scim_utility.cpp:861 ism/src/scim_keyboard_layout_data.h:4613
+#: ism/src/scim_utility.cpp:946 ism/src/scim_keyboard_layout_data.h:4613
 msgid "Norwegian"
-msgstr "Noors"
+msgstr "Norsk"
 
-#: ism/src/scim_utility.cpp:868
-#, fuzzy
+#: ism/src/scim_utility.cpp:947
 msgid "Serbian (Latin)"
-msgstr "Servisch"
+msgstr "Srpski (latinica)"
 
-#: ism/src/scim_utility.cpp:879
+#: ism/src/scim_utility.cpp:948
 msgid "Serbian (Cyrillic)"
-msgstr ""
+msgstr "Srpski (ćirilica)"
 
-#: ism/src/scim_utility.cpp:882
-msgid "Uzbek (Latin)"
-msgstr ""
-
-#: ism/src/scim_utility.cpp:885
-#, fuzzy
-msgid "Chinese (Taiwan)"
-msgstr "Chinees (traditioneell)"
-
-#: ism/src/scim_utility.cpp:886
-#, fuzzy
-msgid "Chinese (Hong Kong)"
-msgstr "Chinees (traditioneell)"
-
-#: ism/src/scim_utility.cpp:887
+#: ism/src/scim_utility.cpp:949
 #, fuzzy
 msgid "Chinese (Macau)"
 msgstr "Chinees (traditioneell)"
 
-#: ism/src/scim_utility.cpp:888
-#, fuzzy
-msgid "Chinese (PRC)"
-msgstr "Chinees"
-
-#: ism/src/scim_utility.cpp:889
-#, fuzzy
-msgid "Chinese (Singapore)"
-msgstr "Chinees (versimpeld)"
-
-#: ism/src/scim_utility.cpp:892
+#: ism/src/scim_utility.cpp:950
 msgid "Arabic (Saudi Arabia)"
 msgstr ""
 
-#: ism/src/scim_utility.cpp:893
+#: ism/src/scim_utility.cpp:951
 #, fuzzy
 msgid "Arabic (Iraq)"
 msgstr "Arabisch (Libanees)"
 
-#: ism/src/scim_utility.cpp:895
+#: ism/src/scim_utility.cpp:952
 #, fuzzy
 msgid "Arabic (Libya)"
 msgstr "Arabisch (Libanees)"
 
-#: ism/src/scim_utility.cpp:896
+#: ism/src/scim_utility.cpp:953
 #, fuzzy
 msgid "Arabic (Algeria)"
 msgstr "Arabisch (Libanees)"
 
-#: ism/src/scim_utility.cpp:897
+#: ism/src/scim_utility.cpp:954
 #, fuzzy
 msgid "Arabic (Morocco)"
 msgstr "Arabisch (Libanees)"
 
-#: ism/src/scim_utility.cpp:898
+#: ism/src/scim_utility.cpp:955
 #, fuzzy
 msgid "Arabic (Tunisia)"
 msgstr "Arabisch (Libanees)"
 
-#: ism/src/scim_utility.cpp:899
+#: ism/src/scim_utility.cpp:956
 #, fuzzy
 msgid "Arabic (Oman)"
 msgstr "Arabisch (Libanees)"
 
-#: ism/src/scim_utility.cpp:900
+#: ism/src/scim_utility.cpp:957
 #, fuzzy
 msgid "Arabic (Yemen)"
 msgstr "Arabisch (Libanees)"
 
-#: ism/src/scim_utility.cpp:901
+#: ism/src/scim_utility.cpp:958
 #, fuzzy
 msgid "Arabic (Syria)"
 msgstr "Arabisch (Egyptisch)"
 
-#: ism/src/scim_utility.cpp:902
+#: ism/src/scim_utility.cpp:959
 #, fuzzy
 msgid "Arabic (Jordan)"
 msgstr "Arabisch (Libanees)"
 
-#: ism/src/scim_utility.cpp:904
+#: ism/src/scim_utility.cpp:960
 #, fuzzy
 msgid "Arabic (Kuwait)"
 msgstr "Arabisch (Egyptisch)"
 
-#: ism/src/scim_utility.cpp:905
+#: ism/src/scim_utility.cpp:961
 #, fuzzy
 msgid "Arabic (UAE)"
 msgstr "Arabisch (Egyptisch)"
 
-#: ism/src/scim_utility.cpp:906
+#: ism/src/scim_utility.cpp:962
 #, fuzzy
 msgid "Arabic (Bahrain)"
 msgstr "Arabisch (Libanees)"
 
-#: ism/src/scim_utility.cpp:907
+#: ism/src/scim_utility.cpp:963
 #, fuzzy
 msgid "Arabic (Qatar)"
 msgstr "Arabisch (Egyptisch)"
 
-#: ism/src/scim_utility.cpp:921
+#: ism/src/scim_utility.cpp:965
 msgid "Hausa"
 msgstr ""
 
-#: ism/src/scim_utility.cpp:925
+#: ism/src/scim_utility.cpp:967
 msgid "Xhosa"
 msgstr ""
 
-#: ism/src/scim_utility.cpp:926
+#: ism/src/scim_utility.cpp:968
 msgid "Yoruba"
 msgstr ""
 
-#: ism/src/scim_utility.cpp:927
+#: ism/src/scim_utility.cpp:969
 msgid "Zulu"
 msgstr ""
 
-#: ism/src/scim_utility.cpp:1025
+#: ism/src/scim_utility.cpp:970
+msgid "Hinglish"
+msgstr "Hinglish"
+
+#: ism/src/scim_utility.cpp:971
+msgid "Sundanese"
+msgstr "Basa Sunda"
+
+#: ism/src/scim_utility.cpp:972
+msgid "Tagalog"
+msgstr "Tagalog"
+
+#: ism/src/scim_utility.cpp:974
+msgid "Javanese"
+msgstr "Basa Jawa"
+
+#: ism/src/scim_utility.cpp:975
+msgid "Khmer"
+msgstr "ខ្មែរ"
+
+#: ism/src/scim_utility.cpp:976
+msgid "Filipino"
+msgstr "Filipino"
+
+#: ism/src/scim_utility.cpp:977
+msgid "Myanmar"
+msgstr "ျမန္မာ"
+
+#: ism/src/scim_utility.cpp:978
+msgid "Odia"
+msgstr "ଓଡ଼ିଆ"
+
+#: ism/src/scim_utility.cpp:979 ism/src/scim_keyboard_layout_data.h:4624
+msgid "Spanish (Latin America)"
+msgstr "Español (América Latina)"
+
+#: ism/src/scim_utility.cpp:1077
 msgid "Other"
 msgstr "Overige"
 
 #: ism/src/scim_keyboard_layout_data.h:4592
-#: ism/modules/imengine/scim_socket_imengine.cpp:409
-#: ism/modules/imengine/scim_socket_imengine.cpp:466
-#: ism/modules/imengine/scim_socket_imengine.cpp:496
-#: ism/modules/imengine/scim_socket_imengine.cpp:526
+#: ism/modules/imengine/scim_socket_imengine.cpp:418
+#: ism/modules/imengine/scim_socket_imengine.cpp:477
+#: ism/modules/imengine/scim_socket_imengine.cpp:507
+#: ism/modules/imengine/scim_socket_imengine.cpp:537
 msgid "Unknown"
 msgstr "Onbekend"
 
@@ -817,10 +796,6 @@ msgstr "Slowaaks (qwerty)"
 #: ism/src/scim_keyboard_layout_data.h:4623
 msgid "Spanish (CP 850)"
 msgstr "Spaans (CP 850)"
-
-#: ism/src/scim_keyboard_layout_data.h:4624
-msgid "Spanish (Latin America)"
-msgstr "Spaans (Latijns Amerika)"
 
 #: ism/src/scim_keyboard_layout_data.h:4627
 msgid "English (UK)"
@@ -880,11 +855,11 @@ msgstr "VC->TC"
 msgid "TC->SC"
 msgstr "TC->VC"
 
-#: ism/extras/gtk2_immodule/gtkimcontextscim.cpp:1665
+#: ism/extras/gtk2_immodule/gtkimcontextscim.cpp:1680
 msgid "Smart Common Input Method platform "
 msgstr "Smart Common Invoer-methode Plattform "
 
-#: ism/extras/gtk2_immodule/gtkimcontextscim.cpp:1667
+#: ism/extras/gtk2_immodule/gtkimcontextscim.cpp:1682
 msgid ""
 "\n"
 "(C) 2002-2005 James Su <suzhe@tsinghua.org.cn>\n"
@@ -894,7 +869,7 @@ msgstr ""
 "(c) 2002-2005 James Su <suzhe@tsinghua.org.cn>\n"
 "\n"
 
-#: ism/extras/gtk2_immodule/gtkimcontextscim.cpp:1673
+#: ism/extras/gtk2_immodule/gtkimcontextscim.cpp:1688
 msgid ""
 ":\n"
 "\n"
@@ -902,7 +877,7 @@ msgstr ""
 ":\n"
 "\n"
 
-#: ism/extras/gtk2_immodule/gtkimcontextscim.cpp:1676
+#: ism/extras/gtk2_immodule/gtkimcontextscim.cpp:1691
 msgid ""
 "\n"
 "\n"
@@ -910,15 +885,46 @@ msgstr ""
 "\n"
 "\n"
 
-#: ism/extras/gtk_panel/scim_panel_gtk.cpp:951
-msgid "Enable"
-msgstr "Aanzetten"
+#: ism/extras/efl_panel/isf_panel_efl.cpp:2810
+#: ism/extras/efl_panel/isf_panel_efl.cpp:6038
+msgid "close button"
+msgstr ""
 
-#. gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_FIXED);
-#. gtk_tree_view_column_set_fixed_width (column, 232);
-#: ism/extras/gtk_panel/scim_panel_gtk.cpp:972
-msgid "Name"
-msgstr "Naam"
+#: ism/extras/efl_panel/isf_panel_efl.cpp:2817
+#: ism/extras/efl_panel/isf_panel_efl.cpp:6035
+msgid "more button"
+msgstr ""
+
+#: ism/extras/efl_panel/isf_panel_efl.cpp:3927
+#, c-format
+msgid "%s selected"
+msgstr "%s geselecteerd."
+
+#: ism/extras/efl_panel/isf_panel_efl.cpp:3930
+#, fuzzy, c-format
+msgid "Only %s available"
+msgstr "Alleen %s beschikbaar."
+
+#: ism/extras/efl_panel/isf_panel_efl.cpp:5530
+#: ism/extras/efl_panel/isf_panel_efl.cpp:5614
+#: ism/extras/efl_panel/isf_panel_efl.cpp:5620
+msgid "Input detected from hardware keyboard"
+msgstr "Invoer gedetecteerd vanaf hardwaretoetsenbord."
+
+#: ism/extras/efl_panel/isf_panel_efl.cpp:5530
+#: ism/extras/efl_panel/isf_panel_efl.cpp:5614
+msgid "Tap to use virtual keyboard"
+msgstr "Tik om virtueel toetsenbord te gebruiken."
+
+#: ism/extras/efl_panel/isf_panel_efl.cpp:5537
+#: ism/extras/efl_panel/isf_panel_efl.cpp:5751
+#: ism/extras/efl_panel/iseselector.cpp:217
+msgid "Select input method"
+msgstr "Invoermethode selecteren"
+
+#: ism/extras/efl_panel/iseselector.cpp:224
+msgid "Set up input methods"
+msgstr "Invoermethoden instellen"
 
 #: ism/utils/scimstringview.c:201
 msgid "Cursor Position"
@@ -1073,7 +1079,6 @@ msgid "Please enter a Key Code first."
 msgstr "Geef eerst een toets-code op."
 
 #: ism/utils/scimkeyselection.cpp:391
-#, fuzzy
 msgid ""
 "Press a key (or a key combination).\n"
 "This dialog will be closed \n"
@@ -1099,590 +1104,206 @@ msgid "The orientation of the tray."
 msgstr "De richting van de werkbalk."
 
 #. Normal Layout
-#: ism/demos/isf_layout_efl.cpp:184
+#: ism/demos/isf_layout_efl.cpp:214
 msgid "NORMAL LAYOUT"
 msgstr ""
 
-#: ism/demos/isf_layout_efl.cpp:184
+#: ism/demos/isf_layout_efl.cpp:214
 msgid "click to enter TEXT"
 msgstr ""
 
 #. Number Layout
-#: ism/demos/isf_layout_efl.cpp:188
+#: ism/demos/isf_layout_efl.cpp:218
 msgid "NUMBER LAYOUT"
 msgstr ""
 
-#: ism/demos/isf_layout_efl.cpp:188
+#: ism/demos/isf_layout_efl.cpp:218
 msgid "click to enter NUMBER"
 msgstr ""
 
 #. Email Layout
-#: ism/demos/isf_layout_efl.cpp:192
+#: ism/demos/isf_layout_efl.cpp:222
 msgid "EMAIL LAYOUT"
 msgstr ""
 
-#: ism/demos/isf_layout_efl.cpp:192
+#: ism/demos/isf_layout_efl.cpp:222
 msgid "click to enter EMAIL"
 msgstr ""
 
 #. URL Layout
-#: ism/demos/isf_layout_efl.cpp:196
+#: ism/demos/isf_layout_efl.cpp:226
 msgid "URL LAYOUT"
 msgstr ""
 
-#: ism/demos/isf_layout_efl.cpp:196
+#: ism/demos/isf_layout_efl.cpp:226
 msgid "click to enter URL"
 msgstr ""
 
 #. Phonenumber Layout
-#: ism/demos/isf_layout_efl.cpp:200
+#: ism/demos/isf_layout_efl.cpp:230
 msgid "PHONENUMBER LAYOUT"
 msgstr ""
 
-#: ism/demos/isf_layout_efl.cpp:200
+#: ism/demos/isf_layout_efl.cpp:230
 msgid "click to enter PHONENUMBER"
 msgstr ""
 
 #. IP Layout
-#: ism/demos/isf_layout_efl.cpp:204
+#: ism/demos/isf_layout_efl.cpp:234
 msgid "IP LAYOUT"
 msgstr ""
 
-#: ism/demos/isf_layout_efl.cpp:204
+#: ism/demos/isf_layout_efl.cpp:234
 msgid "click to enter IP"
 msgstr ""
 
 #. Month Layout
-#: ism/demos/isf_layout_efl.cpp:208
+#: ism/demos/isf_layout_efl.cpp:238
 msgid "MONTH LAYOUT"
 msgstr ""
 
-#: ism/demos/isf_layout_efl.cpp:208
+#: ism/demos/isf_layout_efl.cpp:238
 msgid "click to enter MONTH"
 msgstr ""
 
 #. Number Only Layout
-#: ism/demos/isf_layout_efl.cpp:212
+#: ism/demos/isf_layout_efl.cpp:242
 msgid "NUMBERONLY LAYOUT"
 msgstr ""
 
-#: ism/demos/isf_layout_efl.cpp:212
+#: ism/demos/isf_layout_efl.cpp:242
 msgid "click to enter NUMBERONLY"
 msgstr ""
 
-#: ism/demos/isf_layout_efl.cpp:230
+#. Number Only with signed Layout
+#: ism/demos/isf_layout_efl.cpp:246
+msgid "NUMBERONLY - SIGNED"
+msgstr ""
+
+#: ism/demos/isf_layout_efl.cpp:246
+msgid "click to enter NUMBERONLY WITH SIGNED"
+msgstr ""
+
+#. Number Only with decimal Layout
+#: ism/demos/isf_layout_efl.cpp:250
+msgid "NUMBERONLY - DECIMAL"
+msgstr ""
+
+#: ism/demos/isf_layout_efl.cpp:250
+msgid "click to enter NUMBERONLY WITH DECIMAL"
+msgstr ""
+
+#. Number Only with signed and decimal Layout
+#: ism/demos/isf_layout_efl.cpp:254
+msgid "NUMBERONLY - SIGNED AND DECIMAL"
+msgstr ""
+
+#: ism/demos/isf_layout_efl.cpp:254
+msgid "click to enter NUMBERONLY WITH SIGNED AND DECIMAL"
+msgstr ""
+
+#. Datetime Layout
+#: ism/demos/isf_layout_efl.cpp:258
+msgid "DATETIME LAYOUT"
+msgstr ""
+
+#: ism/demos/isf_layout_efl.cpp:258
+msgid "click to enter DATETIME"
+msgstr ""
+
+#. Password Layout
+#: ism/demos/isf_layout_efl.cpp:262
+msgid "PASSWORD LAYOUT"
+msgstr ""
+
+#: ism/demos/isf_layout_efl.cpp:262 ism/demos/isf_layout_efl.cpp:266
+msgid "click to enter PASSWORD"
+msgstr ""
+
+#. Password numberonly Layout
+#: ism/demos/isf_layout_efl.cpp:266
+msgid "PASSWORD NUMBERONLY LAYOUT"
+msgstr ""
+
+#. Emoticon Layout
+#: ism/demos/isf_layout_efl.cpp:270
+msgid "Emoticon LAYOUT"
+msgstr ""
+
+#: ism/demos/isf_layout_efl.cpp:270
+msgid "click to enter Emoticon"
+msgstr ""
+
+#. Terminal Layout
+#: ism/demos/isf_layout_efl.cpp:274
+msgid "TERMINAL LAYOUT"
+msgstr ""
+
+#: ism/demos/isf_layout_efl.cpp:274
+msgid "click to enter TERMINAL"
+msgstr ""
+
+#: ism/demos/isf_layout_efl.cpp:314
 msgid "Layout"
 msgstr ""
 
-#: ism/demos/isf_demo_efl.cpp:140
-msgid "Previous"
-msgstr ""
-
-#. bundle_add(ad->data, "navi_btn_left", NULL);
-#: ism/demos/isf_demo_efl.cpp:142
-#, fuzzy
-msgid "Next"
-msgstr "Tekst"
-
-#: ism/demos/isf_demo_efl.cpp:196
+#: ism/demos/isf_demo_efl.cpp:178
 msgid "ISF Demo"
 msgstr ""
 
-#: ism/demos/isf_entry_event_efl.cpp:151
+#: ism/demos/isf_entry_event_efl.cpp:149
 msgid "Entry Event"
 msgstr ""
 
-#: ism/demos/isf_event_efl.cpp:232
+#: ism/demos/isf_event_efl.cpp:231
 msgid "Label Event"
 msgstr ""
 
-#: ism/demos/isf_event_efl.cpp:262
+#: ism/demos/isf_event_efl.cpp:260
 msgid "Event"
 msgstr ""
 
-#: ism/demos/isf_imcontrol_efl.cpp:236
+#: ism/demos/isf_imcontrol_efl.cpp:288
 msgid "IM Control"
 msgstr ""
 
-#, fuzzy
-#~ msgid "RAW CODE"
-#~ msgstr "Unicode RAW CODE"
+#~ msgid "English (British)"
+#~ msgstr "Engels (Groot Britannie)"
 
-#~ msgid "(C) 2002-2006 James Su <suzhe@tsinghua.org.cn>"
-#~ msgstr "(c) 2002-2006 James Su <suzhe@tsinghua.org.cn>"
-
-#~ msgid ""
-#~ "Hot Keys:\n"
-#~ "\n"
-#~ "  Control+u:\n"
-#~ "    switch between Multibyte encoding and Unicode.\n"
-#~ "\n"
-#~ "  Esc:\n"
-#~ "    reset the input method.\n"
-#~ msgstr ""
-#~ "Sneltoetsen:\n"
-#~ "\n"
-#~ "  Control+u:\n"
-#~ "    Omschakelen tussen Multibyte-Codering en Unicode.\n"
-#~ "\n"
-#~ "  Esc:\n"
-#~ "    Invoer-methode terug zetten.\n"
-
-#~ msgid "The status of the current input method. Click to change it."
-#~ msgstr ""
-#~ "De status van de huidige invoer-methode. Klik op deze om het te "
-#~ "veranderen."
-
-#~ msgid "Unicode"
-#~ msgstr "Unicode"
-
-#~ msgid "Global Setup"
-#~ msgstr "Algemene instellingen"
-
-#~ msgid ""
-#~ "Setup the global options used by All FrontEnd modules, including X11 "
-#~ "FrontEnd, GTK IMModule, QT IMModule etc."
-#~ msgstr ""
-#~ "Algemene instellingen die door alle FrontEnd-modules gebruikt worden, "
-#~ "inclusief de X11 FrontEnd, GKT IMModule, QT IMModule, enz."
+#~ msgid "English (American)"
+#~ msgstr "Engels (USA)"
 
 #, fuzzy
-#~ msgid "_Trigger:"
-#~ msgstr "_Trigger:"
-
-#~ msgid "Select the trigger keys"
-#~ msgstr "Trigger-toetsen kiezen"
-
-#~ msgid ""
-#~ "The key events to turn on/off SCIM input method. Click on the button on "
-#~ "the right to edit it."
-#~ msgstr ""
-#~ "Toets-combinaties, waarmee de SCIM-invoer-methode wordt IN- en UIT-"
-#~ "geschakeld. Om dit te veranderen, klik op de rechterknop."
-
-#~ msgid "Turn _On:"
-#~ msgstr "_Inschakelen:"
-
-#~ msgid "Select the Turn On keys"
-#~ msgstr "Kies de inschakel toets."
-
-#~ msgid ""
-#~ "The key events to turn on SCIM input method. Click on the button on the "
-#~ "right to edit it."
-#~ msgstr ""
-#~ "Toetscombinatie om de invoer-methode SCIM inteschakelen.Klik op de "
-#~ "rechterknop om te veranderen."
-
-#~ msgid "Turn O_ff:"
-#~ msgstr "U_itschakelen"
-
-#~ msgid "Select the Turn Off keys"
-#~ msgstr "UIT-schakeltoetsen uitkiezen"
-
-#~ msgid ""
-#~ "The key events to turn off SCIM input method. Click on the button on the "
-#~ "right to edit it."
-#~ msgstr ""
-#~ "Toetscombinatie waarmee de invoer-methode SCIM uitgeschakeld wordt. Klik "
-#~ "op de rechterknop om te veranderen."
-
-#~ msgid "_Next input method:"
-#~ msgstr "_Volgende invoer-methode:"
-
-#~ msgid "Select the next input method keys"
-#~ msgstr ""
-#~ "Kies een toetscombinatie om naar de volgende invoer-methode te gaan."
-
-#~ msgid ""
-#~ "The key events to switch to the next input method. Click on the button on "
-#~ "the right to edit it."
-#~ msgstr ""
-#~ "Met deze toetscombinatie, gaat men naar de volgende invoer-methode. klik "
-#~ "op de rechterknop om te veranderen."
-
-#~ msgid "_Previous input method:"
-#~ msgstr "_Vorige invoer-methode:"
-
-#~ msgid "Select the previous input method keys"
-#~ msgstr "Kies de toetscombinatie om naar de vorige invoer-methode te gaan"
-
-#~ msgid ""
-#~ "The key events to switch to the previous input method. Click on the "
-#~ "button on the right to edit it."
-#~ msgstr ""
-#~ "Met deze toetscombinatie gaat men naar de vorige invoer-methode. Klik op "
-#~ "de rechterknop om te veranderen."
-
-#~ msgid "Show input method _menu:"
-#~ msgstr "Toon het keuze-menu voor invoer-methoden:"
-
-#~ msgid "Select the show input method menu keys"
-#~ msgstr "Kies de toetsen voor het tonen van het invoer-methode kies-menu"
-
-#~ msgid ""
-#~ "The key events to show the input method menu. Click on the button on the "
-#~ "right to edit it."
-#~ msgstr ""
-#~ "Toetscombinatie's voor het tonen van het invoer-methode kies-menu. Klik "
-#~ "rechts voor het instellen."
-
-#~ msgid "_Keyboard Layout:"
-#~ msgstr "_Toetsenbord layout:"
-
-#~ msgid ""
-#~ "You should choose your currently used keyboard layout here so that input "
-#~ "methods, who care about keyboard layout, could work correctly."
-#~ msgstr ""
-#~ "Kies hier de huidige gebruikte toetsenbord-layout, zodat invoer-methoden, "
-#~ "die van het toetsenbord-layout  afhankelijk zijn, goed werken."
-
-#~ msgid "_Embed Preedit String into client window"
-#~ msgstr "Invoer direkt in programma-venster tonen."
-
-#~ msgid ""
-#~ "If this option is checked, the preedit string will be displayed directly "
-#~ "in the client input window, rather than in a independent float window."
-#~ msgstr ""
-#~ "Wanneer voor deze optie gekozen is, wordt de invoer direkt in het "
-#~ "programma-venster getoond, in plaats van een extra invoer-venster."
-
-#~ msgid "_Share the same input method among all applications"
-#~ msgstr "Dezelfde invoer-methode voor alle programma's gebruiken."
-
-#~ msgid ""
-#~ "If this option is checked, then only one input method could be used by "
-#~ "all applications at the same time.Otherwise different input method could "
-#~ "be used by each application."
-#~ msgstr ""
-#~ "Wanneer dit gekozen is, wordt een en dezelfde invoer-methode voor alle "
-#~ "programma's gebruikt. Wanneer dit niet gekozen is, kan voor elke "
-#~ "programma een andere invoer-methode gekozen worden."
-
-#~ msgid "Hotkeys"
-#~ msgstr "Sneltoetsen"
-
-#~ msgid ""
-#~ "You can enable/disable input methods and set hotkeys for input methods "
-#~ "here."
-#~ msgstr ""
-#~ "Hier kunnen de geïnstalleerde invoer-methoden IN- en UIT-geschakeld "
-#~ "worden en hiervoor sneltoetsen gekozen worden."
-
-#~ msgid "The installed input method services:"
-#~ msgstr "Geïnstalleerde invoer-methoden:"
-
-#~ msgid "Edit _Hotkeys"
-#~ msgstr "_Sneltoetsen instellen"
-
-#~ msgid "Edit Hotkeys associated with the selected input method."
-#~ msgstr "Sneltoetsen voor de gekozen invoer-methode instellen."
-
-#~ msgid "Select _Filters"
-#~ msgstr "_Filter selecteren"
-
-#~ msgid "Select the Filters which will be attached to this input method."
-#~ msgstr "Kies de filter, die aan deze invoer-methode verbonden moet worden."
-
-#~ msgid "_Expand"
-#~ msgstr "Uitbreiden"
-
-#~ msgid "Expand all language categories."
-#~ msgstr "Alle taalgroepen uitbreiden."
-
-#~ msgid "_Collapse"
-#~ msgstr "Samenvouwen"
-
-#~ msgid "Collapse all language categories."
-#~ msgstr "Alle taalgroepen samenvouwen."
-
-#~ msgid "E_nable All"
-#~ msgstr "Alles _inschakelen"
-
-#~ msgid "Enable all input methods."
-#~ msgstr "Alle invoer-methoden inschakelen."
-
-#~ msgid "_Disable All"
-#~ msgstr "Alles _uitschakelen"
-
-#~ msgid "Disable all input methods."
-#~ msgstr "Alle invoer-methoden uitschakelen."
-
-#~ msgid "Filters"
-#~ msgstr "Filter"
-
-#~ msgid "Languages"
-#~ msgstr "Talen"
-
-#~ msgid "Description"
-#~ msgstr "Omschrijving"
-
-#~ msgid "Edit Hotkeys for %s"
-#~ msgstr "Sneltoetsen voor %s instellen"
-
-#~ msgid "Select Filters for %s"
-#~ msgstr "Filter voor %s selecteren"
-
-#~ msgid "Move _Up"
-#~ msgstr "Naar _boven"
-
-#~ msgid "Move _Down"
-#~ msgstr "Naar _onderen"
-
-#~ msgid "GTK"
-#~ msgstr "GTK"
-
-#~ msgid "A panel daemon based on GTK+-2.x library."
-#~ msgstr ""
-#~ "Een hulp-programma met panelen, gebaseert op de GTK+-2.x-bibliotheek."
-
-#~ msgid "On demand"
-#~ msgstr "Op verzoek"
-
-#~ msgid "Never"
-#~ msgstr "Nooit"
-
-#~ msgid "ToolBar"
-#~ msgstr "Werkbalk"
-
-#~ msgid "_Show:"
-#~ msgstr "_Toon:"
-
-#~ msgid "Auto s_nap"
-#~ msgstr "Auto s_nap"
-
-#~ msgid "Show _input method icon"
-#~ msgstr "Icoon voor invoer-methode tonen"
-
-#~ msgid "Show inp_ut method name"
-#~ msgstr "_Namen van de invoer-methoden tonen"
-
-#~ msgid "Hide time_out:"
-#~ msgstr "Ontzichtbaar maken na (sec):"
-
-#~ msgid "Show s_tick icon"
-#~ msgstr "Icoon altijd tonen"
-
-#~ msgid "Show m_enu icon"
-#~ msgstr "»_Menü« -icoon tonen"
-
-#~ msgid "Show _help icon"
-#~ msgstr "»_Help«-icoon tonen"
-
-#~ msgid "Show _property label"
-#~ msgstr "Eigenschappen-label tonen"
-
-#~ msgid "Input window"
-#~ msgstr "Invoer-venster"
-
-#~ msgid "E_mbedded lookup table"
-#~ msgstr "Interne opzoek-tabel"
-
-#~ msgid "_Vertical lookup table"
-#~ msgstr "_Vertikale opzoek-tabel"
-
-#~ msgid "Misc"
-#~ msgstr "Diversen"
-
-#~ msgid "Show tra_y icon"
-#~ msgstr "Toon tra_y icoon"
-
-#~ msgid "Stick _windows"
-#~ msgstr "Venster op plaats vastzetten"
-
-#~ msgid "_Font:"
-#~ msgstr "_Lettertype:"
-
-#~ msgid ""
-#~ "If option \"Always\" is selected, the toolbar will always be shown on the "
-#~ "screen. If option \"On demand\" is selected, it will only be shown when "
-#~ "SCIM is activated. If option \"Never\" is selected, it will never be "
-#~ "shown."
-#~ msgstr ""
-#~ "Wanneer \"Altijd\" is gekozen, wordt de werkbalk altijd op het scherm "
-#~ "getoond. Wanneer \"op verzoek\" is gekozen, wordt de werkbalk alleen "
-#~ "getoond wanneer SCIM aktief is. Wanneer \"Nooit\" is gekozen, wordt  de "
-#~ "werkbalk nooit getoond."
-
-#~ msgid ""
-#~ "If this option is checked, the toolbar will be snapped to the screen "
-#~ "border."
-#~ msgstr ""
-#~ "Wanneer deze optie is gekozen, wordt de werkbalk aan de rand van het "
-#~ "beeldscherm vastgeklikt"
-
-#~ msgid ""
-#~ "The toolbar will be hidden out after this timeout is elapsed. This option "
-#~ "is only valid when \"Always show\" is selected. Set to zero to disable "
-#~ "this behavior."
-#~ msgstr ""
-#~ "De werkbalk wordt ontzichtbaar na afloop van de ingestelde tijd. Deze "
-#~ "optie is alleen beschikbaar wanneer \"altijd tonen\" is gekozen.Zet de "
-#~ "tijd op nul (0) om dit gedrag uit te schakelen."
-
-#~ msgid ""
-#~ "If this option is checked, the input method icon will be showed on the "
-#~ "toolbar."
-#~ msgstr ""
-#~ "Wanneer deze optie is gekozen, wordt het icoon van de huidige invoer-"
-#~ "methode in de werkbalk getoond."
-
-#~ msgid ""
-#~ "If this option is checked, the input method name will be showed on the "
-#~ "toolbar."
-#~ msgstr ""
-#~ "Wanneer deze optie is gekozen, wordt de naam van de huidige invoer-"
-#~ "methode in de werkbalk getoond."
-
-#~ msgid ""
-#~ "If this option is checked, the stick icon will be showed on the toolbar."
-#~ msgstr ""
-#~ "Wanneer deze optie is gekozen, wordt het sticky-icoon op de werkbalk "
-#~ "getoond."
-
-#~ msgid ""
-#~ "If this option is checked, the menu icon will be showed on the toolbar."
-#~ msgstr ""
-#~ "Wanneer deze optie is gekozen, wordt het menu in de werkbalk getoond."
-
-#~ msgid ""
-#~ "If this option is checked, the help icon will be showed on the toolbar."
-#~ msgstr ""
-#~ "Wanneer deze optie is gekozen, wordt het hulp-icoon in de werkbalk "
-#~ "getoond."
-
-#~ msgid ""
-#~ "If this option is checked, the text label of input method properties will "
-#~ "be showed on the toolbar."
-#~ msgstr ""
-#~ "Wanneer deze optie is gekozen, wordt naam van de invoer-methode getoond "
-#~ "in de werkbalk."
-
-#~ msgid ""
-#~ "If this option is checked, the lookup table will be embedded into the "
-#~ "input window."
-#~ msgstr ""
-#~ "Wanneer deze optie is gekozen, wordt de opzoek-tabel in het invoer-"
-#~ "venster getoond"
-
-#~ msgid ""
-#~ "If this option is checked, the lookup table will be displayed vertically."
-#~ msgstr ""
-#~ "Wanneer deze optie is gekozen wordt de opzoek-tabel vertikaal getoond."
-
-#~ msgid ""
-#~ "If this option is checked, the tray icon will be showed on the desktop's "
-#~ "taskbar."
-#~ msgstr ""
-#~ "Wanneer deze optie is gekozen, zal het icoon van de werkbalk in het "
-#~ "systeemvak getoond."
-
-#~ msgid ""
-#~ "If this option is checked, the toolbar, input and lookup table windows "
-#~ "will be sticked to its original position."
-#~ msgstr ""
-#~ "Wanneer deze optie is gekozen, worden de werkbalk, het invoer-venster en "
-#~ "de opzoektabel op deze plaats vastgezet."
-
-#~ msgid "The font setting will be used in the input and lookup table windows."
-#~ msgstr ""
-#~ "Dit gekozen lettertype wordt in het invoer-venster en in het opzoek-tabel "
-#~ "gebruikt."
-
-#~ msgid "Select Interface Font"
-#~ msgstr "Interface-lettertype kiezen"
-
-#~ msgid "SCIM"
-#~ msgstr "SCIM"
-
-#~ msgid "FrontEnd"
-#~ msgstr "FrontEnd"
-
-#~ msgid "IMEngine"
-#~ msgstr "Invoer-methode"
-
-#~ msgid "Panel"
-#~ msgstr "Paneel"
-
-#~ msgid "Extra"
-#~ msgstr "Extra"
-
-#~ msgid "SCIM Input Method Setup"
-#~ msgstr "Instellingen voor de SCIM-invoer-methode"
-
-#~ msgid ""
-#~ " <span size=\"20000\">Smart Common Input Method platform</span> \n"
-#~ "\n"
-#~ "<span size=\"16000\" style=\"italic\">GUI Setup Utility</span>\n"
-#~ "\n"
-#~ "\n"
-#~ "\n"
-#~ "<span size=\"12000\">Copyright 2002-2004, James Su &lt;suzhe@tsinghua.org."
-#~ "cn&gt;</span>"
-#~ msgstr ""
-#~ " <span size=\"20000\">Smart Common Input Method-Plattform</span> \n"
-#~ "\n"
-#~ "<span size=\"16000\" style=\"italic\">GUI instellingen</span>\n"
-#~ "\n"
-#~ "\n"
-#~ "\n"
-#~ "<span size=\"12000\">Copyright 2002-2004, James Su &lt;suzhe@tsinghua.org."
-#~ "cn&gt;</span>"
-
-#~ msgid "<span size=\"x-large\">The Setup for %s modules.</span>"
-#~ msgstr "<span size=\"x-large\">Instellen van de %s-Module.</span>"
-
-#~ msgid "Are you sure you want to quit SCIM Setup?"
-#~ msgstr "Wilt U de setup van SCIM werkelijk verlaten?"
-
-#~ msgid ""
-#~ "Not all configuration can be reloaded on the fly. Don't forget to restart "
-#~ "SCIM in order to let all of the new configuration take effect."
-#~ msgstr ""
-#~ "Niet alle instellingen kunnen geladen worden. SCIM moet opnieuw gestart "
-#~ "worden om alle nieuwe instellingen te laden."
-
-#~ msgid "SCIM Setup"
-#~ msgstr "Instellen van SCIM"
-
-#~ msgid "Integrated Setup Utility based on GTK Widget library."
-#~ msgstr "Geïntegreerde setup dat op de GTK-widget bibiotheek is gebaseerd."
-
-#~ msgid "Setup utility for Smart Common Input Method platform"
-#~ msgstr "Setup voor de Smart Common Invoer-methode-Plattform"
-
-#~ msgid "SCIM Help"
-#~ msgstr "SCIM handboek"
-
-#~ msgid "Smart Common Input Method"
-#~ msgstr "Smart Common Invoer-methode"
-
-#~ msgid "Stick/unstick the input window and the toolbar."
-#~ msgstr "Invoer-venster en de werkbalk  vastzetten/verschuifbaar maken."
-
-#~ msgid "Show a brief help about SCIM and the current input method."
-#~ msgstr "Toepasselijke help voor SCIM en de huidige invoer-methode tonen."
-
-#~ msgid "Show command menu."
-#~ msgstr "Commandoregel tonen."
-
-#~ msgid ""
-#~ "\n"
-#~ "(C) 2002-2005 James Su <suzhe@tsinghua.org.cn>"
-#~ msgstr ""
-#~ "\n"
-#~ "(c) 2002-2005 James Su <suzhe@tsinghua.org.cn>"
-
-#~ msgid "Reload Configuration"
-#~ msgstr "Instellingen opnieuw laden"
-
-#~ msgid "Stick Windows"
-#~ msgstr "Venster vastzetten"
-
-#~ msgid "Hide Toolbar"
-#~ msgstr "Werkbalk ontzichtbaar maken"
-
-#~ msgid "Help ..."
-#~ msgstr "Help ..."
-
-#~ msgid "Exit"
-#~ msgstr "Afsluiten"
+#~ msgid "English (Irish)"
+#~ msgstr "Engels (Groot Britannie)"
+
+#, fuzzy
+#~ msgid "Portuguese (Brazilian)"
+#~ msgstr "Portugees (Brazilie)"
+
+#, fuzzy
+#~ msgid "Malay (Malaysia)"
+#~ msgstr "Malayalam"
+
+#, fuzzy
+#~ msgid "Chinese (PRC)"
+#~ msgstr "Chinees"
+
+#, fuzzy
+#~ msgid "Chinese (Taiwan)"
+#~ msgstr "Chinees (traditioneell)"
+
+#, fuzzy
+#~ msgid "Chinese (Hong Kong)"
+#~ msgstr "Chinees (traditioneell)"
+
+#, fuzzy
+#~ msgid "Spanish (Traditional Sort)"
+#~ msgstr "Spaans (Latijns Amerika)"
+
+#, fuzzy
+#~ msgid "Spanish (Mexican)"
+#~ msgstr "Spaans (Mexico)"
+
+#~ msgid "Virtual keyboard is on"
+#~ msgstr "Virtueel toetsenbord ingeschakeld"

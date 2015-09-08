@@ -8,6 +8,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -25,6 +26,9 @@
  * Free Software Foundation, Inc., 59 Temple Place, Suite 330,
  * Boston, MA  02111-1307  USA
  *
+ * Modifications by Samsung Electronics Co., Ltd.
+ * 1. Donot calculate checksum
+ *
  * $Id: scim_transaction.cpp,v 1.13.2.1 2006/06/07 09:27:57 suzhe Exp $
  *
  */
@@ -40,11 +44,17 @@
 
 namespace scim {
 
+//#define ENABLE_CHECKMSG
+
 #define SCIM_TRANS_MIN_BUFSIZE 512
 #define SCIM_TRANS_MAX_BUFSIZE (1048576*16)
 #define SCIM_TRANS_MAGIC       0x4d494353
-#define SCIM_TRANS_HEADER_SIZE (sizeof (uint32) * 4)
 
+#ifdef ENABLE_CHECKMSG
+#define SCIM_TRANS_HEADER_SIZE (sizeof (uint32) * 4)
+#else
+#define SCIM_TRANS_HEADER_SIZE (sizeof (uint32) * 3)
+#endif
 class TransactionHolder
 {
     mutable int    m_ref;
@@ -64,8 +74,37 @@ public:
             throw Exception ("TransactionHolder::TransactionHolder() Out of memory");
     }
 
+    TransactionHolder (TransactionHolder &other)
+        : m_ref (other.m_ref),
+          m_buffer_size (other.m_buffer_size),
+          m_write_pos (other.m_write_pos),
+          m_buffer ((unsigned char*) malloc (other.m_buffer_size)) {
+        if (!m_buffer)
+            throw Exception ("TransactionHolder::TransactionHolder() Out of memory");
+
+        if (m_buffer_size && m_buffer)
+            memcpy (m_buffer, other.m_buffer, m_buffer_size);
+    }
+
     ~TransactionHolder () {
         free (m_buffer);
+    }
+
+    const TransactionHolder & operator = (const TransactionHolder &other) {
+        m_ref = other.m_ref;
+        m_buffer_size = other.m_buffer_size;
+        m_write_pos = other.m_write_pos;
+        if (m_buffer)
+            free (m_buffer);
+
+        m_buffer = (unsigned char*) malloc (other.m_buffer_size);
+        if (!m_buffer)
+            throw Exception ("TransactionHolder::TransactionHolder() Out of memory");
+
+        if (m_buffer_size && m_buffer)
+            memcpy (m_buffer, other.m_buffer, m_buffer_size);
+
+        return *this;
     }
 
     bool valid () const {
@@ -150,7 +189,9 @@ Transaction::write_to_socket (const Socket &socket, uint32 signature) const
         scim_uint32tobytes (m_holder->m_buffer, signature);
         scim_uint32tobytes (m_holder->m_buffer + sizeof (uint32), SCIM_TRANS_MAGIC);
         scim_uint32tobytes (m_holder->m_buffer + sizeof (uint32) * 2, m_holder->m_write_pos - SCIM_TRANS_HEADER_SIZE);
+#ifdef ENABLE_CHECKMSG
         scim_uint32tobytes (m_holder->m_buffer + sizeof (uint32) * 3, m_holder->calc_checksum ());
+#endif
         return socket.write (m_holder->m_buffer, m_holder->m_write_pos) == (int) m_holder->m_write_pos;
     }
     return false;
@@ -162,7 +203,6 @@ Transaction::read_from_socket (const Socket &socket, int timeout)
     if (socket.valid () && valid ()) {
         unsigned char buf [sizeof (uint32) * 2];
         uint32 sign1, sign2;
-        uint32 checksum;
         int size;
         int nbytes;
 
@@ -184,13 +224,13 @@ Transaction::read_from_socket (const Socket &socket, int timeout)
         } else {
             size = (int) sign2;
         }
-
+#ifdef ENABLE_CHECKMSG
         nbytes = socket.read_with_timeout (buf, sizeof (uint32), timeout);
         if (((uint32)nbytes) < sizeof (uint32))
             return false;
 
-        checksum = scim_bytestouint32 (buf);
-
+        uint32 checksum = scim_bytestouint32 (buf);
+#endif
         if (size <= 0 || size > SCIM_TRANS_MAX_BUFSIZE)
             return false;
 
@@ -198,7 +238,7 @@ Transaction::read_from_socket (const Socket &socket, int timeout)
 
         m_holder->request_buffer_size (size);
 
-        while (size != 0) {
+        while (size > 0) {
             nbytes = socket.read_with_timeout (m_holder->m_buffer + m_holder->m_write_pos, size, timeout);
             if (nbytes <= 0) {
                 m_holder->m_write_pos = SCIM_TRANS_HEADER_SIZE;
@@ -209,10 +249,12 @@ Transaction::read_from_socket (const Socket &socket, int timeout)
             m_holder->m_write_pos += nbytes;
         }
 
+#ifdef ENABLE_CHECKMSG
         if (checksum != m_holder->calc_checksum ()) {
             m_holder->m_write_pos = SCIM_TRANS_HEADER_SIZE;
             return false;
         }
+#endif
 
         return true;
     }
@@ -236,8 +278,9 @@ Transaction::write_to_buffer (void *buf, size_t bufsize) const
         scim_uint32tobytes (cbuf, 0);
         scim_uint32tobytes (cbuf + sizeof (uint32), SCIM_TRANS_MAGIC);
         scim_uint32tobytes (cbuf + sizeof (uint32) * 2, m_holder->m_write_pos - SCIM_TRANS_HEADER_SIZE);
+#ifdef ENABLE_CHECKMSG
         scim_uint32tobytes (cbuf + sizeof (uint32) * 3, m_holder->calc_checksum ());
-
+#endif
         return true;
     }
     return false;
@@ -254,17 +297,21 @@ Transaction::read_from_buffer (const void *buf, size_t bufsize)
         scim_bytestouint32 (cbuf + sizeof (uint32) * 2) <= bufsize - SCIM_TRANS_HEADER_SIZE) {
 
         uint32 size = scim_bytestouint32 (cbuf + sizeof (uint32) * 2) + SCIM_TRANS_HEADER_SIZE;
+#ifdef ENABLE_CHECKMSG
         uint32 checksum = scim_bytestouint32 (cbuf + sizeof (uint32) * 3);
-
+#endif
         if (m_holder->m_buffer_size < size)
             m_holder->request_buffer_size (size - m_holder->m_buffer_size);
 
         memcpy (m_holder->m_buffer, buf, size);
 
         m_holder->m_write_pos = SCIM_TRANS_HEADER_SIZE;
-
+#ifdef ENABLE_CHECKMSG
         if (checksum == m_holder->calc_checksum ())
             return true;
+#else
+        return true;
+#endif
     }
     return false;
 }
@@ -415,7 +462,7 @@ Transaction::put_data (const LookupTable &table)
     unsigned char stat = 0;
     size_t i;
 
-    m_holder->request_buffer_size (4);
+    m_holder->request_buffer_size (6);
 
     //Can be page up.
     if (table.get_current_page_start ())
@@ -436,9 +483,10 @@ Transaction::put_data (const LookupTable &table)
 
     m_holder->m_buffer [m_holder->m_write_pos++] = (unsigned char) SCIM_TRANS_DATA_LOOKUP_TABLE;
     m_holder->m_buffer [m_holder->m_write_pos++] = stat;
-    m_holder->m_buffer [m_holder->m_write_pos++] = (unsigned char) table.get_current_page_size ();
-    m_holder->m_buffer [m_holder->m_write_pos++] = (unsigned char) table.get_cursor_pos_in_current_page ();
-
+    scim_uint16tobytes (m_holder->m_buffer + m_holder->m_write_pos, (uint16) table.get_current_page_size ());
+    m_holder->m_write_pos += sizeof (uint16);
+    scim_uint16tobytes (m_holder->m_buffer + m_holder->m_write_pos, (uint16) table.get_cursor_pos_in_current_page ());
+    m_holder->m_write_pos += sizeof (uint16);
     // Store page labels.
     for (i = 0; i < ((uint32)table.get_current_page_size ()); ++i)
         put_data (table.get_candidate_label (i));
@@ -510,6 +558,25 @@ Transaction::put_data (const char *raw, size_t bufsize)
     m_holder->request_buffer_size (bufsize + sizeof (uint32) + 1);
 
     m_holder->m_buffer [m_holder->m_write_pos++] = (unsigned char) SCIM_TRANS_DATA_RAW;
+
+    scim_uint32tobytes (m_holder->m_buffer + m_holder->m_write_pos, (uint32) bufsize);
+
+    m_holder->m_write_pos += sizeof (uint32);
+
+    memcpy (m_holder->m_buffer + m_holder->m_write_pos, raw, bufsize);
+
+    m_holder->m_write_pos += bufsize;
+}
+
+void
+Transaction::put_dataw (const char *raw, size_t bufsize)
+{
+    if (!raw || !bufsize)
+        return;
+
+    m_holder->request_buffer_size (bufsize + sizeof (uint32) + 1);
+
+    m_holder->m_buffer [m_holder->m_write_pos++] = (unsigned char) SCIM_TRANS_DATA_WSTRING;
 
     scim_uint32tobytes (m_holder->m_buffer + m_holder->m_write_pos, (uint32) bufsize);
 
@@ -715,9 +782,13 @@ TransactionReader::TransactionReader (const TransactionReader &reader)
 {
 }
 
-const TransactionReader &
+TransactionReader &
 TransactionReader::operator = (const TransactionReader &reader)
 {
+    if (m_impl)
+        delete (m_impl);
+    m_impl = new TransactionReaderImpl ();
+
     m_impl->attach (reader.m_impl->m_holder);
     m_impl->m_read_pos = reader.m_impl->m_read_pos;
     return *this;
@@ -1050,7 +1121,7 @@ TransactionReader::get_data (CommonLookupTable &table)
 
         std::vector<WideString> labels;
 
-        if (m_impl->m_holder->m_write_pos < (m_impl->m_read_pos + 4))
+        if (m_impl->m_holder->m_write_pos < (m_impl->m_read_pos + 6))
             return false;
 
         table.clear ();
@@ -1060,11 +1131,11 @@ TransactionReader::get_data (CommonLookupTable &table)
         stat = m_impl->m_holder->m_buffer [m_impl->m_read_pos];
         m_impl->m_read_pos ++;
 
-        page_size = (uint32) m_impl->m_holder->m_buffer [m_impl->m_read_pos];
-        m_impl->m_read_pos ++;
+        page_size = (uint32)scim_bytestouint16 (m_impl->m_holder->m_buffer + m_impl->m_read_pos);
+        m_impl->m_read_pos += sizeof (uint16);
 
-        cursor_pos = (uint32) m_impl->m_holder->m_buffer [m_impl->m_read_pos];
-        m_impl->m_read_pos ++;
+        cursor_pos = (uint32)scim_bytestouint16 (m_impl->m_holder->m_buffer + m_impl->m_read_pos);
+        m_impl->m_read_pos += sizeof (uint16);
 
         if (page_size > SCIM_LOOKUP_TABLE_MAX_PAGESIZE ||
             (cursor_pos >= page_size && page_size > 0)) {
@@ -1387,6 +1458,8 @@ TransactionReader::skip_data ()
                 m_impl->m_read_pos += (len + sizeof (uint32) + 1);
                 return true;
             }
+            default :
+                break;
         }
     }
     return false;

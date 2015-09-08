@@ -4,6 +4,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2004-2005 James Su <suzhe@tsinghua.org.cn>
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -20,6 +21,9 @@
  * License along with this program; if not, write to the
  * Free Software Foundation, Inc., 59 Temple Place, Suite 330,
  * Boston, MA  02111-1307  USA
+ *
+ * Modifications by Samsung Electronics Co., Ltd.
+ * 1. Add SCIM_CSCDIR for custom global file
  *
  * $Id: scim_global_config.cpp,v 1.7 2005/09/29 10:51:25 suzhe Exp $
  */
@@ -138,6 +142,13 @@ __initialize_config ()
                            String (SCIM_PATH_DELIM_STRING) +
                            String ("global");
 
+    // Load second system configure file for localization
+    String sys_conf_file2 = String (SCIM_SYSCONFDIR) +
+                            String (SCIM_PATH_DELIM_STRING) +
+                            String ("scim") +
+                            String (SCIM_PATH_DELIM_STRING) +
+                            String ("conf/global");
+
     String usr_conf_file = scim_get_home_dir () +
                            String (SCIM_PATH_DELIM_STRING) +
                            String (".scim") +
@@ -145,10 +156,18 @@ __initialize_config ()
                            String ("global");
 
     std::ifstream sys_is (sys_conf_file.c_str ());
+    std::ifstream sys_is2 (sys_conf_file2.c_str ());
     std::ifstream usr_is (usr_conf_file.c_str ());
 
     if (sys_is) {
         __parse_config (sys_is, __config_repository.sys);
+        __config_repository.initialized = true;
+    } else {
+        std::cerr << __func__ << " Cannot open(" << sys_conf_file << ")\n";
+    }
+
+    if (sys_is2) {
+        __parse_config (sys_is2, __config_repository.sys);
         __config_repository.initialized = true;
     }
 
@@ -156,20 +175,9 @@ __initialize_config ()
         __parse_config (usr_is, __config_repository.usr);
         __config_repository.initialized = true;
     }
-
-    // Load second system configure file for localization
-    String sys_conf_file2 = String (SCIM_SYSCONFDIR) +
-                            String (SCIM_PATH_DELIM_STRING) +
-                            String ("scim") +
-                            String (SCIM_PATH_DELIM_STRING) +
-                            String ("conf/global");
-    std::ifstream sys_is2 (sys_conf_file2.c_str ());
-    if (sys_is2) {
-        __parse_config (sys_is2, __config_repository.sys);
-    }
 }
 
-String
+EAPI String
 scim_global_config_read (const String &key, const String &defVal)
 {
     if (!__config_repository.initialized) __initialize_config ();
@@ -189,7 +197,7 @@ scim_global_config_read (const String &key, const String &defVal)
     return defVal;
 }
 
-int
+EAPI int
 scim_global_config_read (const String &key, int defVal)
 {
     if (!__config_repository.initialized) __initialize_config ();
@@ -210,7 +218,7 @@ scim_global_config_read (const String &key, int defVal)
     return defVal;
 }
 
-bool
+EAPI bool
 scim_global_config_read (const String &key, bool defVal)
 {
     if (!__config_repository.initialized) __initialize_config ();
@@ -235,7 +243,7 @@ scim_global_config_read (const String &key, bool defVal)
     return defVal;
 }
 
-double
+EAPI double
 scim_global_config_read (const String &key, double defVal)
 {
     if (!__config_repository.initialized) __initialize_config ();
@@ -256,7 +264,7 @@ scim_global_config_read (const String &key, double defVal)
     return defVal;
 }
 
-std::vector <String>
+EAPI std::vector <String>
 scim_global_config_read (const String &key, const std::vector <String> &defVal)
 {
     if (!__config_repository.initialized) __initialize_config ();
@@ -280,7 +288,7 @@ scim_global_config_read (const String &key, const std::vector <String> &defVal)
     return defVal;
 }
 
-std::vector <int>
+EAPI std::vector <int>
 scim_global_config_read (const String &key, const std::vector <int> &defVal)
 {
     if (!__config_repository.initialized) __initialize_config ();
@@ -310,7 +318,7 @@ scim_global_config_read (const String &key, const std::vector <int> &defVal)
     return defVal;
 }
 
-void
+EAPI void
 scim_global_config_write (const String &key, const String &val)
 {
     if (!__config_repository.initialized) __initialize_config ();
@@ -321,7 +329,7 @@ scim_global_config_write (const String &key, const String &val)
     }
 }
 
-void
+EAPI void
 scim_global_config_write (const String &key, int val)
 {
     if (!__config_repository.initialized) __initialize_config ();
@@ -334,7 +342,7 @@ scim_global_config_write (const String &key, int val)
     }
 }
 
-void
+EAPI void
 scim_global_config_write (const String &key, bool val)
 {
     if (!__config_repository.initialized) __initialize_config ();
@@ -345,7 +353,7 @@ scim_global_config_write (const String &key, bool val)
     }
 }
 
-void
+EAPI void
 scim_global_config_write (const String &key, double val)
 {
     if (!__config_repository.initialized) __initialize_config ();
@@ -358,7 +366,7 @@ scim_global_config_write (const String &key, double val)
     }
 }
 
-void
+EAPI void
 scim_global_config_write (const String &key, const std::vector <String> &val)
 {
     if (!__config_repository.initialized) __initialize_config ();
@@ -369,7 +377,7 @@ scim_global_config_write (const String &key, const std::vector <String> &val)
     }
 }
 
-void
+EAPI void
 scim_global_config_write (const String &key, const std::vector <int> &val)
 {
     if (!__config_repository.initialized) __initialize_config ();
@@ -386,7 +394,7 @@ scim_global_config_write (const String &key, const std::vector <int> &val)
     }
 }
 
-void
+EAPI void
 scim_global_config_reset (const String &key)
 {
     if (!__config_repository.initialized) __initialize_config ();
@@ -397,13 +405,7 @@ scim_global_config_reset (const String &key)
     }
 }
 
-void
-scim_global_config_update ()
-{
-    __initialize_config ();
-}
-
-bool
+EAPI bool
 scim_global_config_flush ()
 {
     if (!__config_repository.initialized)
@@ -421,7 +423,9 @@ scim_global_config_flush ()
                            String ("global");
 
     if (access (usr_conf_dir.c_str (), R_OK | W_OK) != 0) {
-        mkdir (usr_conf_dir.c_str (), S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
+        if (mkdir (usr_conf_dir.c_str (), S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) != 0)
+            return false;
+
         if (access (usr_conf_dir.c_str (), R_OK | W_OK) != 0)
             return false;
     }
@@ -447,6 +451,9 @@ scim_global_config_flush ()
             usr_os << it->first << " = " << it->second << "\n";
         }
         __config_repository.updated.clear ();
+
+        sync();
+
         return true;
     }
 

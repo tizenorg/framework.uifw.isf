@@ -2,7 +2,7 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2000 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  * Contact: Haifeng Deng <haifeng.deng@samsung.com>, Hengliang Luo <hl.luo@samsung.com>
  *
@@ -59,7 +59,7 @@ int main (int argc, char *argv[])
     int isetype = 0;
     int uninstall = 0;
 
-    control_privilege ();
+    perm_app_set_privilege ("isf", NULL, NULL);
 
     int i = 1;
     while (i < argc) {
@@ -125,10 +125,10 @@ int main (int argc, char *argv[])
 
     char *lang_str = vconf_get_str (VCONFKEY_LANGSET);
 
-    if (strlen (lang_str)) {
+    if (lang_str && strlen (lang_str)) {
         setenv ("LANG", lang_str, 1);
         setlocale (LC_MESSAGES, lang_str);
-        free(lang_str);
+        free (lang_str);
     } else {
         setenv ("LANG", "en_US.utf8", 1);
         setlocale (LC_MESSAGES, "en_US.utf8");

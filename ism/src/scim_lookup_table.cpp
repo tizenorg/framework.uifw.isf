@@ -4,6 +4,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -20,6 +21,9 @@
  * License along with this program; if not, write to the
  * Free Software Foundation, Inc., 59 Temple Place, Suite 330,
  * Boston, MA  02111-1307  USA
+ *
+ * Modifications by Samsung Electronics Co., Ltd.
+ * 1. Add add_attributes () and remove_attributes () in CommonLookupTable class
  *
  * $Id: scim_lookup_table.cpp,v 1.32 2005/05/13 04:21:29 suzhe Exp $
  *
@@ -301,7 +305,7 @@ CommonLookupTable::CommonLookupTable (int page_size)
     char buf [2] = { 0, 0 };
     for (int i = 0; i < 9; ++i) {
         buf [0] = '1' + i;
-        labels.push_back (utf8_mbstowcs (buf));
+        labels.push_back (utf8_mbstowcs (String (buf)));
     }
 
     labels.push_back (utf8_mbstowcs ("0"));

@@ -49,7 +49,7 @@ namespace scim {
  * scim::ConfigBase and its derived classes must throw
  * scim::ConfigError object when error.
  */
-class ConfigError: public Exception
+class EAPI ConfigError: public Exception
 {
 public:
     ConfigError (const String& what_arg)
@@ -85,7 +85,7 @@ typedef Signal1<void, const ConfigPointer &> ConfigSignalVoid;
  * All of the SCIM objects which have configuration data should
  * use this interface to store and load them.
  */
-class ConfigBase : public ReferencedObject
+class EAPI ConfigBase : public ReferencedObject
 {
     ConfigSignalVoid m_signal_reload;
 
@@ -373,7 +373,7 @@ public:
  * The read methods will just return false and the default value (if available).
  * The write methods will do nothing.
  */
-class DummyConfig : public ConfigBase
+class EAPI DummyConfig : public ConfigBase
 {
 
 public:

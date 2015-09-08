@@ -46,22 +46,22 @@
 using namespace scim;
 
 extern "C" {
-    void scim_module_init (void)
+    EAPI void scim_module_init (void)
     {
         SCIM_DEBUG_CONFIG(1) << "Initializing Socket Config module...\n";
     }
 
-    void scim_module_exit (void)
+    EAPI void scim_module_exit (void)
     {
         SCIM_DEBUG_CONFIG(1) << "Exiting Socket Config module...\n";
     }
 
-    void scim_config_module_init ()
+    EAPI void scim_config_module_init ()
     {
         SCIM_DEBUG_CONFIG(1) << "Initializing Socket Config module (more)...\n";
     }
 
-    ConfigPointer scim_config_module_create_config ()
+    EAPI ConfigPointer scim_config_module_create_config ()
     {
         SCIM_DEBUG_CONFIG(1) << "Creating a Socket Config instance...\n";
         return new SocketConfig ();
@@ -632,7 +632,8 @@ SocketConfig::open_connection () const
 
     // Connect to SocketFrontEnd.
     if (!m_socket_client.connect (socket_address)) {
-        for (int i = 0; i < 6; ++i) {
+        /* Retry connecting considering the ANR timeout */
+        for (int i = 0; i < 3; ++i) {
             if (m_socket_client.connect (socket_address))
                 break;
             scim_usleep (100000);

@@ -38,8 +38,8 @@ namespace scim {
 /*  Node
  */
 
-Node::Node(Slot *slot)
-    : slot_(slot)
+Node::Node(Slot *l_slot)
+    : slot_(l_slot)
 {
 }
 

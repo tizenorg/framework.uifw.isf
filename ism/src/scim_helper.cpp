@@ -8,6 +8,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2004-2005 James Su <suzhe@tsinghua.org.cn>
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -25,6 +26,14 @@
  * Free Software Foundation, Inc., 59 Temple Place, Suite 330,
  * Boston, MA  02111-1307  USA
  *
+ * Modifications by Samsung Electronics Co., Ltd.
+ * 1. Add new interface APIs for keyboard ISE
+ *    a. expand_candidate (), contract_candidate () and set_candidate_style ()
+ *    b. set_keyboard_ise_by_uuid () and reset_keyboard_ise ()
+ *    c. get_surrounding_text () and delete_surrounding_text ()
+ *    d. show_preedit_string (), hide_preedit_string (), update_preedit_string () and update_preedit_caret ()
+ *    e. show_candidate_string (), hide_candidate_string () and update_candidate_string ()
+ *
  * $Id: scim_helper.cpp,v 1.13 2005/05/24 12:22:51 suzhe Exp $
  *
  */
@@ -36,9 +45,12 @@
 #define Uses_SCIM_EVENT
 
 #include <string.h>
+#include <unistd.h>
 
 #include "scim_private.h"
 #include "scim.h"
+
+EAPI scim::CommonLookupTable g_helper_candidate_table;
 
 namespace scim {
 
@@ -87,8 +99,14 @@ typedef Signal4 <void, const HelperAgent *, int, char *, size_t &>
 typedef Signal3 <void, const HelperAgent *, int, char **>
         HelperAgentSignalIntGetStringVoid;
 
-typedef Signal2<void, const HelperAgent *, std::vector<uint32> &>
+typedef Signal2<void, const HelperAgent *, const std::vector<uint32> &>
         HelperAgentSignalUintVector;
+
+typedef Signal2<void, const HelperAgent *, LookupTable &>
+        HelperAgentSignalLookupTable;
+
+typedef Signal3<void, const HelperAgent *, KeyEvent &, uint32 &>
+        HelperAgentSignalKeyEventUint;
 
 class HelperAgent::HelperAgentImpl
 {
@@ -100,6 +118,7 @@ public:
     uint32       magic;
     uint32       magic_active;
     int          timeout;
+    uint32       focused_ic;
 
     HelperAgentSignalVoid           signal_exit;
     HelperAgentSignalVoid           signal_attach_input_context;
@@ -109,12 +128,15 @@ public:
     HelperAgentSignalIntInt         signal_update_spot_location;
     HelperAgentSignalInt            signal_update_cursor_position;
     HelperAgentSignalInt            signal_update_surrounding_text;
+    HelperAgentSignalVoid           signal_update_selection;
     HelperAgentSignalString         signal_trigger_property;
     HelperAgentSignalTransaction    signal_process_imengine_event;
     HelperAgentSignalVoid           signal_focus_out;
     HelperAgentSignalVoid           signal_focus_in;
     HelperAgentSignalIntRawVoid     signal_ise_show;
     HelperAgentSignalVoid           signal_ise_hide;
+    HelperAgentSignalVoid           signal_candidate_show;
+    HelperAgentSignalVoid           signal_candidate_hide;
     HelperAgentSignalSize           signal_get_geometry;
     HelperAgentSignalUintVoid       signal_set_mode;
     HelperAgentSignalUintVoid       signal_set_language;
@@ -128,7 +150,6 @@ public:
     HelperAgentSignalUintVoid           signal_set_layout;
     HelperAgentSignalUintVoid           signal_get_layout;
     HelperAgentSignalUintVoid           signal_set_caps_mode;
-    HelperAgentSignalUintVector         signal_get_layout_list;
     HelperAgentSignalVoid               signal_reset_input_context;
     HelperAgentSignalIntInt             signal_update_candidate_ui;
     HelperAgentSignalRect               signal_update_candidate_geometry;
@@ -136,11 +157,13 @@ public:
     HelperAgentSignalStringVector       signal_update_keyboard_ise_list;
     HelperAgentSignalVoid               signal_candidate_more_window_show;
     HelperAgentSignalVoid               signal_candidate_more_window_hide;
+    HelperAgentSignalLookupTable        signal_update_lookup_table;
     HelperAgentSignalInt                signal_select_aux;
     HelperAgentSignalInt                signal_select_candidate;
     HelperAgentSignalVoid               signal_candidate_table_page_up;
     HelperAgentSignalVoid               signal_candidate_table_page_down;
     HelperAgentSignalInt                signal_update_candidate_table_page_size;
+    HelperAgentSignalUintVector         signal_update_candidate_item_layout;
     HelperAgentSignalInt                signal_select_associate;
     HelperAgentSignalVoid               signal_associate_table_page_up;
     HelperAgentSignalVoid               signal_associate_table_page_down;
@@ -148,9 +171,14 @@ public:
     HelperAgentSignalVoid               signal_reset_ise_context;
     HelperAgentSignalUintVoid           signal_turn_on_log;
     HelperAgentSignalInt                signal_update_displayed_candidate_number;
+    HelperAgentSignalInt                signal_longpress_candidate;
+    HelperAgentSignalKeyEventUint       signal_process_key_event;
+    HelperAgentSignalUintVoid           signal_set_input_mode;
+    HelperAgentSignalUintVoid           signal_set_input_hint;
+    HelperAgentSignalUintVoid           signal_update_bidi_direction;
 
 public:
-    HelperAgentImpl () : magic (0), magic_active (0), timeout (-1) { }
+    HelperAgentImpl () : magic (0), magic_active (0), timeout (-1), focused_ic ((uint32) -1) { }
 };
 
 HelperAgent::HelperAgent ()
@@ -185,44 +213,54 @@ HelperAgent::open_connection (const HelperInfo &info,
 
     if (!address.valid ())
         return -1;
-    bool ret;
-    int  i;
-    ret = m_impl->socket.connect (address);
-    if (ret == false) {
+
+    int i = 0;
+    std::cerr << " Connecting to PanelAgent server.";
+    ISF_LOG (" Connecting to PanelAgent server.\n");
+    while (!m_impl->socket.connect (address)) {
+        std::cerr << ".";
         scim_usleep (100000);
-        std::cerr << " Re-connecting to PanelAgent server.";
-        ISF_LOG (" Re-connecting to PanelAgent server.\n");
-        for (i = 0; i < 200; ++i) {
-            if (m_impl->socket.connect (address)) {
-                ret = true;
-                break;
-            }
-            std::cerr << ".";
-            scim_usleep (100000);
+        if (++i == 200) {
+            std::cerr << "m_impl->socket.connect () is failed!!!\n";
+            ISF_LOG ("m_impl->socket.connect () is failed!!!\n");
+            return -1;
         }
-        std::cerr << " Connected :" << i << "\n";
-        ISF_LOG ("  Connected :%d\n", i);
     }
+    std::cerr << " Connected :" << i << "\n";
+    ISF_LOG ("  Connected :%d\n", i);
+    ISF_SAVE_LOG ("Connection to PanelAgent succeeded, %d\n", i);
 
-    if (ret == false)
-    {
-        std::cerr << "m_impl->socket.connect () is failed!!!\n";
-        ISF_LOG ("m_impl->socket.connect () is failed!!!\n");
-        return -1;
-    }
-
-    if (!scim_socket_open_connection (magic,
+    /* Let's retry 10 times when failed */
+    int open_connection_retries = 0;
+    while (!scim_socket_open_connection (magic,
                                       String ("Helper"),
                                       String ("Panel"),
                                       m_impl->socket,
                                       timeout)) {
-        m_impl->socket.close ();
-        std::cerr << "scim_socket_open_connection () is failed!!!\n";
-        ISF_LOG ("scim_socket_open_connection () is failed!!!\n");
-        return -1;
+        if (++open_connection_retries > 10) {
+            m_impl->socket.close ();
+            std::cerr << "scim_socket_open_connection () is failed!!!\n";
+            ISF_LOG ("scim_socket_open_connection () is failed!!!\n");
+            ISF_SAVE_LOG ("scim_socket_open_connection failed, %d\n", timeout);
+
+            return -1;
+        }
+
+        /* Retry after re-connecting the socket */
+        if (m_impl->socket.is_connected ())
+            close_connection ();
+
+        /* This time, just retry atmost 2 seconds */
+        i = 0;
+        while (!m_impl->socket.connect (address) && ++i < 10) {
+            scim_usleep (200000);
+        }
+
     }
 
     ISF_LOG ("scim_socket_open_connection () is successful.\n");
+    ISF_SAVE_LOG ("scim_socket_open_connection successful\n");
+
     m_impl->send.clear ();
     m_impl->send.put_command (SCIM_TRANS_CMD_REQUEST);
     m_impl->send.put_data (magic);
@@ -268,6 +306,8 @@ HelperAgent::open_connection (const HelperInfo &info,
         }
     }
 
+    ISF_SAVE_LOG ("Trying connect() with Helper_Active\n");
+
     /* connect to the panel agent as the active helper client */
     if (!m_impl->socket_active.connect (address)) return -1;
     if (!scim_socket_open_connection (magic,
@@ -276,10 +316,9 @@ HelperAgent::open_connection (const HelperInfo &info,
                                       m_impl->socket_active,
                                       timeout)) {
         m_impl->socket_active.close ();
+        ISF_SAVE_LOG ("Helper_Active scim_socket_open_connection() failed %d\n", timeout);
         return -1;
     }
-
-    m_impl->socket_active.set_nonblock_mode ();
 
     m_impl->magic_active = magic;
 
@@ -294,6 +333,7 @@ HelperAgent::open_connection (const HelperInfo &info,
     m_impl->send.put_data (info.option);
 
     if (!m_impl->send.write_to_socket (m_impl->socket_active, magic)) {
+        ISF_SAVE_LOG ("Helper_Active write_to_socket() failed\n");
         m_impl->socket_active.close ();
         return -1;
     }
@@ -387,6 +427,7 @@ HelperAgent::filter_event ()
     while (m_impl->recv.get_command (cmd)) {
         switch (cmd) {
             case SCIM_TRANS_CMD_EXIT:
+                ISF_SAVE_LOG ("Helper ISE received SCIM_TRANS_CMD_EXIT message\n");
                 m_impl->signal_exit (this, ic, ic_uuid);
                 break;
             case SCIM_TRANS_CMD_RELOAD_CONFIG:
@@ -421,6 +462,13 @@ HelperAgent::filter_event ()
                     m_impl->signal_update_surrounding_text (this, ic, text, (int) cursor);
                 break;
             }
+            case ISM_TRANS_CMD_UPDATE_SELECTION:
+            {
+                String text;
+                if (m_impl->recv.get_data (text))
+                    m_impl->signal_update_selection (this, ic, text);
+                break;
+            }
             case SCIM_TRANS_CMD_TRIGGER_PROPERTY:
             {
                 String property;
@@ -444,15 +492,19 @@ HelperAgent::filter_event ()
             case SCIM_TRANS_CMD_FOCUS_OUT:
             {
                 m_impl->signal_focus_out (this, ic, ic_uuid);
+                m_impl->focused_ic = (uint32) -1;
                 break;
             }
             case SCIM_TRANS_CMD_FOCUS_IN:
             {
                 m_impl->signal_focus_in (this, ic, ic_uuid);
+                m_impl->focused_ic = ic;
                 break;
             }
-            case ISM_TRANS_CMD_SHOW_ISE:
+            case ISM_TRANS_CMD_SHOW_ISE_PANEL:
             {
+                ISF_SAVE_LOG ("Helper ISE received ISM_TRANS_CMD_SHOW_ISE_PANEL message\n");
+
                 char   *data = NULL;
                 size_t  len;
                 if (m_impl->recv.get_data (&data, len))
@@ -461,8 +513,10 @@ HelperAgent::filter_event ()
                     delete [] data;
                 break;
             }
-            case ISM_TRANS_CMD_HIDE_ISE:
+            case ISM_TRANS_CMD_HIDE_ISE_PANEL:
             {
+                ISF_SAVE_LOG ("Helper ISE received ISM_TRANS_CMD_HIDE_ISE_PANEL message\n");
+
                 m_impl->signal_ise_hide (this, ic, ic_uuid);
                 break;
             }
@@ -567,24 +621,24 @@ HelperAgent::filter_event ()
                 m_impl->send.write_to_socket (m_impl->socket);
                 break;
             }
+            case SCIM_TRANS_CMD_PROCESS_KEY_EVENT:
+            {
+                KeyEvent key;
+                uint32 ret = 0;
+                if (m_impl->recv.get_data (key))
+                    m_impl->signal_process_key_event(this, key, ret);
+                m_impl->send.clear ();
+                m_impl->send.put_command (SCIM_TRANS_CMD_REPLY);
+                m_impl->send.put_data (ret);
+                m_impl->send.write_to_socket (m_impl->socket);
+                break;
+            }
             case ISM_TRANS_CMD_SET_LAYOUT:
             {
                 uint32 layout;
 
                 if (m_impl->recv.get_data (layout))
                     m_impl->signal_set_layout (this, layout);
-                break;
-            }
-            case ISM_TRANS_CMD_GET_LAYOUT_LIST:
-            {
-                std::vector<uint32> list;
-                list.clear();
-
-                m_impl->signal_get_layout_list (this, list);
-                m_impl->send.clear ();
-                m_impl->send.put_command (SCIM_TRANS_CMD_REPLY);
-                m_impl->send.put_data (list);
-                m_impl->send.write_to_socket (m_impl->socket);
                 break;
             }
             case ISM_TRANS_CMD_GET_LAYOUT:
@@ -596,6 +650,14 @@ HelperAgent::filter_event ()
                 m_impl->send.put_command (SCIM_TRANS_CMD_REPLY);
                 m_impl->send.put_data (layout);
                 m_impl->send.write_to_socket (m_impl->socket);
+                break;
+            }
+            case ISM_TRANS_CMD_SET_INPUT_MODE:
+            {
+                uint32 input_mode;
+
+                if (m_impl->recv.get_data (input_mode))
+                    m_impl->signal_set_input_mode (this, input_mode);
                 break;
             }
             case ISM_TRANS_CMD_SET_CAPS_MODE:
@@ -694,6 +756,29 @@ HelperAgent::filter_event ()
                     m_impl->signal_update_candidate_table_page_size (this, ic, ic_uuid, size);
                 break;
             }
+            case ISM_TRANS_CMD_CANDIDATE_SHOW:
+            {
+                m_impl->signal_candidate_show (this, ic, ic_uuid);
+                break;
+            }
+            case ISM_TRANS_CMD_CANDIDATE_HIDE:
+            {
+                m_impl->signal_candidate_hide (this, ic, ic_uuid);
+                break;
+            }
+            case ISM_TRANS_CMD_UPDATE_LOOKUP_TABLE:
+            {
+                if (m_impl->recv.get_data (g_helper_candidate_table))
+                    m_impl->signal_update_lookup_table (this, g_helper_candidate_table);
+                break;
+            }
+            case ISM_TRANS_CMD_UPDATE_CANDIDATE_ITEM_LAYOUT:
+            {
+                std::vector<uint32> row_items;
+                if (m_impl->recv.get_data (row_items))
+                    m_impl->signal_update_candidate_item_layout (this, row_items);
+                break;
+            }
             case ISM_TRANS_CMD_SELECT_ASSOCIATE:
             {
                 uint32 item;
@@ -735,6 +820,29 @@ HelperAgent::filter_event ()
                 uint32 size;
                 if (m_impl->recv.get_data (size))
                     m_impl->signal_update_displayed_candidate_number (this, ic, ic_uuid, size);
+                break;
+            }
+            case ISM_TRANS_CMD_LONGPRESS_CANDIDATE:
+            {
+                uint32 index;
+                if (m_impl->recv.get_data (index))
+                    m_impl->signal_longpress_candidate (this, ic, ic_uuid, index);
+                break;
+            }
+            case ISM_TRANS_CMD_SET_INPUT_HINT:
+            {
+                uint32 input_hint;
+
+                if (m_impl->recv.get_data (input_hint))
+                    m_impl->signal_set_input_hint (this, input_hint);
+                break;
+            }
+            case ISM_TRANS_CMD_UPDATE_BIDI_DIRECTION:
+            {
+                uint32 bidi_direction;
+
+                if (m_impl->recv.get_data (bidi_direction))
+                    m_impl->signal_update_bidi_direction (this, bidi_direction);
                 break;
             }
             default:
@@ -848,7 +956,11 @@ HelperAgent::send_key_event (int            ic,
         m_impl->send.put_command (SCIM_TRANS_CMD_REQUEST);
         m_impl->send.put_data (m_impl->magic_active);
         m_impl->send.put_command (SCIM_TRANS_CMD_PANEL_SEND_KEY_EVENT);
-        m_impl->send.put_data ((uint32)ic);
+        if (ic == -1) {
+            m_impl->send.put_data (m_impl->focused_ic);
+        } else {
+            m_impl->send.put_data ((uint32)ic);
+        }
         m_impl->send.put_data (ic_uuid);
         m_impl->send.put_data (key);
         m_impl->send.write_to_socket (m_impl->socket_active, m_impl->magic_active);
@@ -874,7 +986,11 @@ HelperAgent::forward_key_event (int            ic,
         m_impl->send.put_command (SCIM_TRANS_CMD_REQUEST);
         m_impl->send.put_data (m_impl->magic_active);
         m_impl->send.put_command (SCIM_TRANS_CMD_FORWARD_KEY_EVENT);
-        m_impl->send.put_data ((uint32)ic);
+        if (ic == -1) {
+            m_impl->send.put_data (m_impl->focused_ic);
+        } else {
+            m_impl->send.put_data ((uint32)ic);
+        }
         m_impl->send.put_data (ic_uuid);
         m_impl->send.put_data (key);
         m_impl->send.write_to_socket (m_impl->socket_active, m_impl->magic_active);
@@ -900,9 +1016,35 @@ HelperAgent::commit_string (int               ic,
         m_impl->send.put_command (SCIM_TRANS_CMD_REQUEST);
         m_impl->send.put_data (m_impl->magic_active);
         m_impl->send.put_command (SCIM_TRANS_CMD_COMMIT_STRING);
-        m_impl->send.put_data ((uint32)ic);
+        if (ic == -1) {
+            m_impl->send.put_data (m_impl->focused_ic);
+        } else {
+            m_impl->send.put_data ((uint32)ic);
+        }
         m_impl->send.put_data (ic_uuid);
         m_impl->send.put_data (wstr);
+        m_impl->send.write_to_socket (m_impl->socket_active, m_impl->magic_active);
+    }
+}
+
+void
+HelperAgent::commit_string (int               ic,
+                            const String     &ic_uuid,
+                            const  char      *buf,
+                            int               buflen) const
+{
+    if (m_impl->socket_active.is_connected ()) {
+        m_impl->send.clear ();
+        m_impl->send.put_command (SCIM_TRANS_CMD_REQUEST);
+        m_impl->send.put_data (m_impl->magic_active);
+        m_impl->send.put_command (SCIM_TRANS_CMD_COMMIT_STRING);
+        if (ic == -1) {
+            m_impl->send.put_data (m_impl->focused_ic);
+        } else {
+            m_impl->send.put_data ((uint32)ic);
+        }
+        m_impl->send.put_data (ic_uuid);
+        m_impl->send.put_dataw (buf, buflen);
         m_impl->send.write_to_socket (m_impl->socket_active, m_impl->magic_active);
     }
 }
@@ -1059,6 +1201,37 @@ HelperAgent::update_preedit_string (int                  ic,
                                     const WideString    &str,
                                     const AttributeList &attrs) const
 {
+    update_preedit_string (ic, ic_uuid, str, attrs, -1);
+}
+
+void
+HelperAgent::update_preedit_string (int                  ic,
+                                    const String        &ic_uuid,
+                                    const char         *buf,
+                                    int                 buflen,
+                                    const AttributeList &attrs) const
+{
+    update_preedit_string (ic, ic_uuid, buf, buflen, attrs, -1);
+}
+
+/**
+ * @brief Update a new WideString for preedit.
+ *
+ * @param ic The handle of the client Input Context to receive the WideString.
+ *        -1 means the currently focused Input Context.
+ * @param ic_uuid The UUID of the IMEngine used by the Input Context.
+ *        Empty means don't match.
+ * @param wstr The WideString to be updated.
+ * @param attrs The attribute list for preedit string.
+ * @param caret The caret position in preedit string.
+ */
+void
+HelperAgent::update_preedit_string (int                  ic,
+                                    const String        &ic_uuid,
+                                    const WideString    &str,
+                                    const AttributeList &attrs,
+                                    int            caret) const
+{
     if (m_impl->socket_active.is_connected ()) {
         m_impl->send.clear ();
         m_impl->send.put_command (SCIM_TRANS_CMD_REQUEST);
@@ -1068,6 +1241,29 @@ HelperAgent::update_preedit_string (int                  ic,
         m_impl->send.put_data (ic_uuid);
         m_impl->send.put_data (str);
         m_impl->send.put_data (attrs);
+        m_impl->send.put_data (caret);
+        m_impl->send.write_to_socket (m_impl->socket_active, m_impl->magic_active);
+    }
+}
+
+void
+HelperAgent::update_preedit_string (int                 ic,
+                                    const String       &ic_uuid,
+                                    const char         *buf,
+                                    int                 buflen,
+                                    const AttributeList &attrs,
+                                    int            caret) const
+{
+    if (m_impl->socket_active.is_connected ()) {
+        m_impl->send.clear ();
+        m_impl->send.put_command (SCIM_TRANS_CMD_REQUEST);
+        m_impl->send.put_data (m_impl->magic_active);
+        m_impl->send.put_command (SCIM_TRANS_CMD_UPDATE_PREEDIT_STRING);
+        m_impl->send.put_data ((uint32)ic);
+        m_impl->send.put_data (ic_uuid);
+        m_impl->send.put_dataw (buf, buflen);
+        m_impl->send.put_data (attrs);
+        m_impl->send.put_data (caret);
         m_impl->send.write_to_socket (m_impl->socket_active, m_impl->magic_active);
     }
 }
@@ -1211,6 +1407,62 @@ HelperAgent::delete_surrounding_text (int offset, int len) const
 }
 
 /**
+ * @brief Request to get selection text.
+ *
+ * @param uuid The helper ISE UUID.
+ */
+void
+HelperAgent::get_selection (const String &uuid) const
+{
+    if (m_impl->socket_active.is_connected ()) {
+        m_impl->send.clear ();
+        m_impl->send.put_command (SCIM_TRANS_CMD_REQUEST);
+        m_impl->send.put_data (m_impl->magic_active);
+        m_impl->send.put_command (SCIM_TRANS_CMD_GET_SELECTION);
+        m_impl->send.put_data (uuid);
+        m_impl->send.write_to_socket (m_impl->socket_active, m_impl->magic_active);
+    }
+}
+
+/**
+ * @brief Request to select text.
+ *
+ * @param start The start position in text.
+ * @param end The end position in text.
+ */
+void
+HelperAgent::set_selection (int start, int end) const
+{
+    if (m_impl->socket_active.is_connected ()) {
+        m_impl->send.clear ();
+        m_impl->send.put_command (SCIM_TRANS_CMD_REQUEST);
+        m_impl->send.put_data (m_impl->magic_active);
+        m_impl->send.put_command (SCIM_TRANS_CMD_SET_SELECTION);
+        m_impl->send.put_data (start);
+        m_impl->send.put_data (end);
+        m_impl->send.write_to_socket (m_impl->socket_active, m_impl->magic_active);
+    }
+}
+
+/**
+ * @brief Send a private command to an application.
+ *
+ * @param command The private command sent from IME.
+ */
+void
+HelperAgent::send_private_command (const String &command) const
+{
+    if (m_impl->socket_active.is_connected ()) {
+        m_impl->send.clear ();
+        m_impl->send.put_command (SCIM_TRANS_CMD_REQUEST);
+        m_impl->send.put_data (m_impl->magic_active);
+        m_impl->send.put_command (SCIM_TRANS_CMD_SEND_PRIVATE_COMMAND);
+        m_impl->send.put_data (command);
+        m_impl->send.write_to_socket (m_impl->socket_active, m_impl->magic_active);
+    }
+}
+
+/**
  * @brief Request to get uuid list of all keyboard ISEs.
  *
  * @param uuid The helper ISE UUID.
@@ -1244,6 +1496,27 @@ HelperAgent::set_candidate_position (int left, int top) const
         m_impl->send.put_command (ISM_TRANS_CMD_SET_CANDIDATE_POSITION);
         m_impl->send.put_data (left);
         m_impl->send.put_data (top);
+        m_impl->send.write_to_socket (m_impl->socket_active, m_impl->magic_active);
+    }
+}
+
+/**
+ * @brief Set candidate style.
+ *
+ * @param portrait_line - the displayed line number for portrait mode.
+ * @param mode          - candidate window mode.
+ */
+void
+HelperAgent::set_candidate_style (ISF_CANDIDATE_PORTRAIT_LINE_T portrait_line,
+                                  ISF_CANDIDATE_MODE_T          mode) const
+{
+    if (m_impl->socket_active.is_connected ()) {
+        m_impl->send.clear ();
+        m_impl->send.put_command (SCIM_TRANS_CMD_REQUEST);
+        m_impl->send.put_data (m_impl->magic_active);
+        m_impl->send.put_command (ISM_TRANS_CMD_SET_CANDIDATE_UI);
+        m_impl->send.put_data (portrait_line);
+        m_impl->send.put_data (mode);
         m_impl->send.write_to_socket (m_impl->socket_active, m_impl->magic_active);
     }
 }
@@ -1367,6 +1640,52 @@ HelperAgent::contract_candidate (void) const
         m_impl->send.put_command (SCIM_TRANS_CMD_REQUEST);
         m_impl->send.put_data (m_impl->magic_active);
         m_impl->send.put_command (ISM_TRANS_CMD_CONTRACT_CANDIDATE);
+        m_impl->send.write_to_socket (m_impl->socket_active, m_impl->magic_active);
+    }
+}
+
+/**
+ * @brief Send selected candidate string index number.
+ */
+void
+HelperAgent::select_candidate (int index) const
+{
+    if (m_impl->socket_active.is_connected ()) {
+        m_impl->send.clear ();
+        m_impl->send.put_command (SCIM_TRANS_CMD_REQUEST);
+        m_impl->send.put_data (m_impl->magic_active);
+        m_impl->send.put_command (ISM_TRANS_CMD_SELECT_CANDIDATE);
+        m_impl->send.put_data (index);
+        m_impl->send.write_to_socket (m_impl->socket_active, m_impl->magic_active);
+    }
+}
+
+/**
+ * @brief Update our ISE is exiting.
+ */
+void
+HelperAgent::update_ise_exit (void) const
+{
+    if (m_impl->socket_active.is_connected ()) {
+        m_impl->send.clear ();
+        m_impl->send.put_command (SCIM_TRANS_CMD_REQUEST);
+        m_impl->send.put_data (m_impl->magic_active);
+        m_impl->send.put_command (ISM_TRANS_CMD_UPDATE_ISE_EXIT);
+        m_impl->send.write_to_socket (m_impl->socket_active, m_impl->magic_active);
+    }
+}
+
+/**
+ * @brief Request to reset keyboard ISE.
+ */
+void
+HelperAgent::reset_keyboard_ise (void) const
+{
+    if (m_impl->socket_active.is_connected ()) {
+        m_impl->send.clear ();
+        m_impl->send.put_command (SCIM_TRANS_CMD_REQUEST);
+        m_impl->send.put_data (m_impl->magic_active);
+        m_impl->send.put_command (ISM_TRANS_CMD_PANEL_RESET_KEYBOARD_ISE);
         m_impl->send.write_to_socket (m_impl->socket_active, m_impl->magic_active);
     }
 }
@@ -1508,6 +1827,20 @@ Connection
 HelperAgent::signal_connect_update_surrounding_text (HelperAgentSlotInt *slot)
 {
     return m_impl->signal_update_surrounding_text.connect (slot);
+}
+
+/**
+ * @brief Connect a slot to Helper update selection signal.
+ *
+ * This signal is used to let the Helper get the selection.
+ *
+ * The prototype of the slot is:
+ * void update_selection (const HelperAgent *agent, int ic, const String &text);
+ */
+Connection
+HelperAgent::signal_connect_update_selection (HelperAgentSlotVoid *slot)
+{
+    return m_impl->signal_update_selection.connect (slot);
 }
 
 /**
@@ -1722,6 +2055,20 @@ HelperAgent::signal_connect_set_return_key_disable (HelperAgentSlotUintVoid *slo
 }
 
 /**
+ * @brief Connect a slot to Helper process key event signal.
+ *
+ * This signal is used to send keyboard key event to Helper ISE.
+ *
+ * The prototype of the slot is:
+ * void process_key_event (const HelperAgent *agent, uint32 &ret);
+ */
+Connection
+HelperAgent::signal_connect_process_key_event (HelperAgentSlotKeyEventUint *slot)
+{
+    return m_impl->signal_process_key_event.connect (slot);
+}
+
+/**
  * @brief Connect a slot to Helper get return key disable signal.
  *
  * This signal is used to get return key disable from Helper ISE.
@@ -1761,6 +2108,48 @@ Connection
 HelperAgent::signal_connect_get_layout (HelperAgentSlotUintVoid *slot)
 {
     return m_impl->signal_get_layout.connect (slot);
+}
+
+/**
+ * @brief Connect a slot to Helper set input mode signal.
+ *
+ * This signal is used to set Helper ISE input mode.
+ *
+ * The prototype of the slot is:
+ * void set_input_mode (const HelperAgent *agent, uint32 &input_mode);
+ */
+Connection
+HelperAgent::signal_connect_set_input_mode (HelperAgentSlotUintVoid *slot)
+{
+    return m_impl->signal_set_input_mode.connect (slot);
+}
+
+/**
+ * @brief Connect a slot to Helper set input hint signal.
+ *
+ * This signal is used to set Helper ISE input hint.
+ *
+ * The prototype of the slot is:
+ * void set_input_hint (const HelperAgent *agent, uint32 &input_hint);
+ */
+Connection
+HelperAgent::signal_connect_set_input_hint (HelperAgentSlotUintVoid *slot)
+{
+    return m_impl->signal_set_input_hint.connect (slot);
+}
+
+/**
+ * @brief Connect a slot to Helper set BiDi direction signal.
+ *
+ * This signal is used to set Helper ISE BiDi direction.
+ *
+ * The prototype of the slot is:
+ * void update_bidi_direction (const HelperAgent *agent, uint32 &bidi_direction);
+ */
+Connection
+HelperAgent::signal_connect_update_bidi_direction (HelperAgentSlotUintVoid *slot)
+{
+    return m_impl->signal_update_bidi_direction.connect (slot);
 }
 
 /**
@@ -1864,6 +2253,48 @@ HelperAgent::signal_connect_candidate_more_window_hide (HelperAgentSlotVoid *slo
 }
 
 /**
+ * @brief Connect a slot to Helper candidate show signal.
+ *
+ * This signal is used to do candidate show.
+ *
+ * The prototype of the slot is:
+ * void candidate_show (const HelperAgent *agent, int ic, const String &uuid);
+ */
+Connection
+HelperAgent::signal_connect_candidate_show (HelperAgentSlotVoid *slot)
+{
+    return m_impl->signal_candidate_show.connect (slot);
+}
+
+/**
+ * @brief Connect a slot to Helper candidate hide signal.
+ *
+ * This signal is used to do candidate hide.
+ *
+ * The prototype of the slot is:
+ * void candidate_hide (const HelperAgent *agent, int ic, const String &uuid);
+ */
+Connection
+HelperAgent::signal_connect_candidate_hide (HelperAgentSlotVoid *slot)
+{
+    return m_impl->signal_candidate_hide.connect (slot);
+}
+
+/**
+ * @brief Connect a slot to Helper update lookup table signal.
+ *
+ * This signal is used to do someting when update lookup table.
+ *
+ * The prototype of the slot is:
+ * void update_lookup_table (const HelperAgent *agent, int ic, const String &uuid ,LookupTable &table);
+ */
+Connection
+HelperAgent::signal_connect_update_lookup_table (HelperAgentSlotLookupTable *slot)
+{
+    return m_impl->signal_update_lookup_table.connect (slot);
+}
+
+/**
  * @brief Connect a slot to Helper select aux signal.
  *
  * This signal is used to do something when aux is selected.
@@ -1931,6 +2362,18 @@ Connection
 HelperAgent::signal_connect_update_candidate_table_page_size (HelperAgentSlotInt *slot)
 {
     return m_impl->signal_update_candidate_table_page_size.connect (slot);
+}
+
+/**
+ * @brief Connect a slot to Helper update candidate item layout signal.
+ *
+ * The prototype of the slot is:
+ * void update_candidate_item_layout (const HelperAgent *, const std::vector<uint32> &row_items);
+ */
+Connection
+HelperAgent::signal_connect_update_candidate_item_layout (HelperAgentSlotUintVector *slot)
+{
+    return m_impl->signal_update_candidate_item_layout.connect (slot);
 }
 
 /**
@@ -2015,6 +2458,20 @@ Connection
 HelperAgent::signal_connect_update_displayed_candidate_number (HelperAgentSlotInt *slot)
 {
     return m_impl->signal_update_displayed_candidate_number.connect (slot);
+}
+
+/**
+ * @brief Connect a slot to Helper longpress candidate signal.
+ *
+ * This signal is used to do something when candidate is longpress.
+ *
+ * The prototype of the slot is:
+ * void longpress_candidate (const HelperAgent *agent, int ic, const String &uuid, int index);
+ */
+Connection
+HelperAgent::signal_connect_longpress_candidate (HelperAgentSlotInt *slot)
+{
+    return m_impl->signal_longpress_candidate.connect (slot);
 }
 
 } /* namespace scim */

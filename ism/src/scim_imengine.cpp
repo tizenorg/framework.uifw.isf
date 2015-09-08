@@ -8,6 +8,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -24,6 +25,14 @@
  * License along with this program; if not, write to the
  * Free Software Foundation, Inc., 59 Temple Place, Suite 330,
  * Boston, MA  02111-1307  USA
+ *
+ * Modifications by Samsung Electronics Co., Ltd.
+ * 1. Add new interface APIs for keyboard ISE
+ *    a. select_aux (), set_prediction_allow () and set_layout ()
+ *    b. update_candidate_item_layout (), update_cursor_position () and update_displayed_candidate_number ()
+ *    c. candidate_more_window_show (), candidate_more_window_hide () and longpress_candidate ()
+ *    d. set_imdata () and reset_option ()
+ * 2. Add get_option () in IMEngineFactoryBase class
  *
  * $Id: scim_imengine.cpp,v 1.15 2005/04/08 15:24:11 suzhe Exp $
  *
@@ -67,6 +76,9 @@ typedef Signal2<void, IMEngineInstanceBase*,const LookupTable&>
 typedef Signal3<void, IMEngineInstanceBase*,const String&,const Transaction&>
         IMEngineSignalStringTransaction;
 
+typedef Signal4<void, IMEngineInstanceBase*,const WideString&,const AttributeList&,int>
+        IMEngineSignalWideStringAttributeListInt;
+
 typedef Signal3<void, IMEngineInstanceBase*,const WideString&,const AttributeList&>
         IMEngineSignalWideStringAttributeList;
 
@@ -75,6 +87,15 @@ typedef Signal5<bool, IMEngineInstanceBase*,WideString&,int&,int,int>
 
 typedef Signal3<bool, IMEngineInstanceBase*,int,int>
         IMEngineSignalDeleteSurroundingText;
+
+typedef Signal2<bool, IMEngineInstanceBase*,WideString&>
+        IMEngineSignalGetSelection;
+
+typedef Signal3<bool, IMEngineInstanceBase*,int,int>
+        IMEngineSignalSetSelection;
+
+typedef Signal3<void, IMEngineInstanceBase*,ISF_CANDIDATE_PORTRAIT_LINE_T,ISF_CANDIDATE_MODE_T>
+        IMEngineSignalCandidateStyle;
 
 class IMEngineFactoryBase::IMEngineFactoryBaseImpl
 {
@@ -99,7 +120,7 @@ public:
     IMEngineSignalVoid                    m_signal_hide_lookup_table;
 
     IMEngineSignalInt                     m_signal_update_preedit_caret;
-    IMEngineSignalWideStringAttributeList m_signal_update_preedit_string;
+    IMEngineSignalWideStringAttributeListInt m_signal_update_preedit_string;
     IMEngineSignalWideStringAttributeList m_signal_update_aux_string;
     IMEngineSignalWideString              m_signal_commit_string;
     IMEngineSignalLookupTable             m_signal_update_lookup_table;
@@ -118,6 +139,15 @@ public:
     IMEngineSignalGetSurroundingText      m_signal_get_surrounding_text;
     IMEngineSignalDeleteSurroundingText   m_signal_delete_surrounding_text;
 
+    IMEngineSignalGetSelection            m_signal_get_selection;
+    IMEngineSignalSetSelection            m_signal_set_selection;
+
+    IMEngineSignalVoid                    m_signal_expand_candidate;
+    IMEngineSignalVoid                    m_signal_contract_candidate;
+
+    IMEngineSignalCandidateStyle          m_signal_set_candidate_style;
+
+    IMEngineSignalString                  m_signal_send_private_command;
 
     int    m_id;
     void * m_frontend_data;
@@ -177,6 +207,12 @@ void
 IMEngineFactoryBase::load_resource ()
 {
     return ;
+}
+
+unsigned int
+IMEngineFactoryBase::get_option () const
+{
+    return 0;
 }
 
 String
@@ -254,12 +290,10 @@ IMEngineFactoryBase::set_languages (const String& languages)
     if (all_locales.length ())
         set_locales (all_locales);
 
-    if (lang_list.size ())
-    {
-        for(size_t i = 0;i<lang_list.size();i++)
-        {
+    if (lang_list.size ()) {
+        for (size_t i = 0; i < lang_list.size (); i++) {
             valid_lang = scim_validate_language (lang_list [i]);
-            valid_langlist.push_back(valid_lang);
+            valid_langlist.push_back (valid_lang);
         }
         m_impl->m_language = scim_combine_string_list (valid_langlist);
     }
@@ -372,6 +406,51 @@ IMEngineInstanceBase::set_layout (unsigned int layout)
 }
 
 void
+IMEngineInstanceBase::set_input_hint (unsigned int input_hint)
+{
+}
+
+void
+IMEngineInstanceBase::update_bidi_direction (unsigned int bidi_direction)
+{
+}
+
+void
+IMEngineInstanceBase::update_candidate_item_layout (const std::vector<unsigned int> &row_items)
+{
+}
+
+void
+IMEngineInstanceBase::update_cursor_position (unsigned int cursor_pos)
+{
+}
+
+void
+IMEngineInstanceBase::update_displayed_candidate_number (unsigned int number)
+{
+}
+
+void
+IMEngineInstanceBase::candidate_more_window_show (void)
+{
+}
+
+void
+IMEngineInstanceBase::candidate_more_window_hide (void)
+{
+}
+
+void
+IMEngineInstanceBase::longpress_candidate (unsigned int index)
+{
+}
+
+void
+IMEngineInstanceBase::set_imdata (const char *data, unsigned int len)
+{
+}
+
+void
 IMEngineInstanceBase::reset_option ()
 {
 }
@@ -449,7 +528,7 @@ IMEngineInstanceBase::signal_connect_update_preedit_caret (IMEngineSlotInt *slot
 }
 
 Connection
-IMEngineInstanceBase::signal_connect_update_preedit_string (IMEngineSlotWideStringAttributeList *slot)
+IMEngineInstanceBase::signal_connect_update_preedit_string (IMEngineSlotWideStringAttributeListInt *slot)
 {
     return m_impl->m_signal_update_preedit_string.connect (slot);
 }
@@ -526,6 +605,42 @@ IMEngineInstanceBase::signal_connect_delete_surrounding_text (IMEngineSlotDelete
     return m_impl->m_signal_delete_surrounding_text.connect (slot);
 }
 
+Connection
+IMEngineInstanceBase::signal_connect_get_selection (IMEngineSlotGetSelection *slot)
+{
+    return m_impl->m_signal_get_selection.connect (slot);
+}
+
+Connection
+IMEngineInstanceBase::signal_connect_set_selection (IMEngineSlotSetSelection *slot)
+{
+    return m_impl->m_signal_set_selection.connect (slot);
+}
+
+Connection
+IMEngineInstanceBase::signal_connect_expand_candidate (IMEngineSlotVoid *slot)
+{
+    return m_impl->m_signal_expand_candidate.connect (slot);
+}
+
+Connection
+IMEngineInstanceBase::signal_connect_contract_candidate (IMEngineSlotVoid *slot)
+{
+    return m_impl->m_signal_contract_candidate.connect (slot);
+}
+
+Connection
+IMEngineInstanceBase::signal_connect_set_candidate_style (IMEngineSlotCandidateStyle *slot)
+{
+    return m_impl->m_signal_set_candidate_style.connect (slot);
+}
+
+Connection
+IMEngineInstanceBase::signal_connect_send_private_command (IMEngineSlotString *slot)
+{
+    return m_impl->m_signal_send_private_command.connect (slot);
+}
+
 void
 IMEngineInstanceBase::show_preedit_string ()
 {
@@ -572,7 +687,15 @@ void
 IMEngineInstanceBase::update_preedit_string (const WideString    &str,
                                              const AttributeList &attrs)
 {
-    m_impl->m_signal_update_preedit_string (this, str, attrs);
+    m_impl->m_signal_update_preedit_string (this, str, attrs, -1);
+}
+
+void
+IMEngineInstanceBase::update_preedit_string (const WideString    &str,
+                                             const AttributeList &attrs,
+                                             int            caret)
+{
+    m_impl->m_signal_update_preedit_string (this, str, attrs, caret);
 }
 
 void
@@ -657,6 +780,51 @@ IMEngineInstanceBase::delete_surrounding_text (int offset, int len)
     return m_impl->m_signal_delete_surrounding_text (this, offset, len);
 }
 
+bool
+IMEngineInstanceBase::get_selection (WideString &text)
+{
+    if (m_impl->m_signal_get_selection (this, text))
+        return true;
+
+    return false;
+}
+
+bool
+IMEngineInstanceBase::set_selection (int start, int end)
+{
+    return m_impl->m_signal_set_selection (this, start, end);
+}
+
+void
+IMEngineInstanceBase::expand_candidate (void)
+{
+    m_impl->m_signal_expand_candidate (this);
+}
+
+void
+IMEngineInstanceBase::contract_candidate (void)
+{
+    m_impl->m_signal_contract_candidate (this);
+}
+
+void
+IMEngineInstanceBase::set_candidate_style (ISF_CANDIDATE_PORTRAIT_LINE_T portrait_line,
+                                           ISF_CANDIDATE_MODE_T          mode)
+{
+    m_impl->m_signal_set_candidate_style (this, portrait_line, mode);
+}
+
+void
+IMEngineInstanceBase::set_autocapital_type (int mode)
+{
+}
+
+void
+IMEngineInstanceBase::send_private_command (const String &command)
+{
+    m_impl->m_signal_send_private_command (this, command);
+}
+
 // implementation of DummyIMEngine
 DummyIMEngineFactory::DummyIMEngineFactory ()
 {
@@ -670,7 +838,7 @@ DummyIMEngineFactory::~DummyIMEngineFactory ()
 WideString
 DummyIMEngineFactory::get_name () const
 {
-    return utf8_mbstowcs (_("English/Keyboard"));
+    return utf8_mbstowcs (_("English Keyboard"));
 }
 
 WideString

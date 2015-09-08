@@ -74,6 +74,9 @@ initialize_modifier_bits (Display *display)
     __current_hyper_mask   = 0;
     __current_numlock_mask = 0;
 
+    if (!mods)
+        return;
+
     /* We skip the first three sets for Shift, Lock, and Control.  The
        remaining sets are for Mod1, Mod2, Mod3, Mod4, and Mod5.  */
     for (i = 3; i < 8; i++) {
@@ -125,7 +128,7 @@ initialize_modifier_bits (Display *display)
     XFreeModifiermap (mods);
 }
 
-KeyEvent
+EAPI KeyEvent
 scim_x11_keyevent_x11_to_scim (Display *display, const XKeyEvent &xkey)
 {
     KeyEvent  scimkey;
@@ -157,7 +160,7 @@ scim_x11_keyevent_x11_to_scim (Display *display, const XKeyEvent &xkey)
     return scimkey;
 }
 
-XKeyEvent
+EAPI XKeyEvent
 scim_x11_keyevent_scim_to_x11 (Display *display, const KeyEvent &scimkey)
 {
     XKeyEvent xkey;
@@ -187,7 +190,7 @@ scim_x11_keyevent_scim_to_x11 (Display *display, const KeyEvent &scimkey)
     return xkey;
 }
 
-uint16
+EAPI uint16
 scim_x11_keymask_x11_to_scim (Display *display, unsigned int xkeystate)
 {
     uint16 mask = 0;
@@ -195,7 +198,7 @@ scim_x11_keymask_x11_to_scim (Display *display, unsigned int xkeystate)
     initialize_modifier_bits (display);
 
     // Check Meta mask first, because it's maybe a mask combination.
-    if (__current_meta_mask && (xkeystate & __current_meta_mask) == __current_meta_mask) {
+    if (__current_meta_mask && (int)(xkeystate & __current_meta_mask) == __current_meta_mask) {
         mask |= SCIM_KEY_MetaMask;
         xkeystate &= ~__current_meta_mask;
     }
@@ -215,29 +218,29 @@ scim_x11_keymask_x11_to_scim (Display *display, unsigned int xkeystate)
         xkeystate &= ~ControlMask;
     }
 
-    if (__current_alt_mask && (xkeystate & __current_alt_mask) == __current_alt_mask) {
+    if (__current_alt_mask && ((int)xkeystate & __current_alt_mask) == __current_alt_mask) {
         mask |= SCIM_KEY_AltMask;
         xkeystate &= ~__current_alt_mask;
     }
 
-    if (__current_super_mask && (xkeystate & __current_super_mask) == __current_super_mask) {
+    if (__current_super_mask && ((int)xkeystate & __current_super_mask) == __current_super_mask) {
         mask |= SCIM_KEY_SuperMask;
         xkeystate &= ~__current_super_mask;
     }
 
-    if (__current_hyper_mask && (xkeystate & __current_hyper_mask) == __current_hyper_mask) {
+    if (__current_hyper_mask && ((int)xkeystate & __current_hyper_mask) == __current_hyper_mask) {
         mask |= SCIM_KEY_HyperMask;
         xkeystate &= ~__current_hyper_mask;
     }
 
-    if (__current_numlock_mask && (xkeystate & __current_numlock_mask) == __current_numlock_mask) {
+    if (__current_numlock_mask && (int)(xkeystate & __current_numlock_mask) == __current_numlock_mask) {
         mask |= SCIM_KEY_NumLockMask;
     }
 
     return mask;
 }
 
-unsigned int scim_x11_keymask_scim_to_x11 (Display *display, uint16 scimkeymask)
+EAPI unsigned int scim_x11_keymask_scim_to_x11 (Display *display, uint16 scimkeymask)
 {
     unsigned int state = 0;
 

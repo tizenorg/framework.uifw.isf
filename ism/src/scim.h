@@ -35,6 +35,7 @@
  */
 
 /* Define the macros */
+#define Uses_SCIM_VISIBILITY
 #define Uses_SCIM_TYPES
 #define Uses_SCIM_UTILITY
 #define Uses_SCIM_GLOBAL_CONFIG
@@ -281,6 +282,10 @@
 #endif
 
 /* Include SCIM Headers */
+#ifdef Uses_SCIM_VISIBILITY
+    #include <scim_visibility.h>
+#endif
+
 #ifdef Uses_SCIM_TYPES
     #include <scim_types.h>
 #endif

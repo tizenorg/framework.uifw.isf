@@ -143,8 +143,8 @@ String
 DebugOutput::serial_number ()
 {
     static unsigned int serial = 0;
-    char buf [40];
-    snprintf (buf, 40, "<%08u>:", serial ++);
+    char buf [64] = {0};
+    snprintf (buf, 63, "<%08u>:", serial ++);
     return String (buf);
 }
 

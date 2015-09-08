@@ -4,6 +4,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -21,6 +22,15 @@
  * Free Software Foundation, Inc., 59 Temple Place, Suite 330,
  * Boston, MA  02111-1307  USA
  *
+ * Modifications by Samsung Electronics Co., Ltd.
+ * 1. Dynamic load keyboard ISE
+ * 2. Add new interface APIs for keyboard ISE
+ *    a. expand_candidate (), contract_candidate () and set_candidate_style ()
+ *    b. select_aux (), set_prediction_allow () and set_layout ()
+ *    c. update_candidate_item_layout (), update_cursor_position () and update_displayed_candidate_number ()
+ *    d. candidate_more_window_show (), candidate_more_window_hide () and longpress_candidate ()
+ *    e. set_imdata () and reset_option ()
+ *
  * $Id: scim_frontend.cpp,v 1.44 2005/06/26 16:35:33 suzhe Exp $
  *
  */
@@ -33,10 +43,13 @@ namespace scim {
 
 #if SCIM_USE_STL_EXT_HASH_MAP
 typedef __gnu_cxx::hash_map <int, IMEngineInstancePointer, __gnu_cxx::hash <int> >  IMEngineInstanceRepository;
+typedef __gnu_cxx::hash_map <int, int, __gnu_cxx::hash <int> >                      IMEngineInstanceRefCount;
 #elif SCIM_USE_STL_HASH_MAP
 typedef std::hash_map <int, IMEngineInstancePointer, std::::hash <int> >            IMEngineInstanceRepository;
+typedef std::hash_map <int, int, std::::hash <int> >                                IMEngineInstanceRefCount;
 #else
 typedef std::map <int, IMEngineInstancePointer>                                     IMEngineInstanceRepository;
+typedef std::map <int, int>                                                         IMEngineInstanceRefCount;
 #endif
 
 class FrontEndBase::FrontEndBaseImpl
@@ -45,6 +58,7 @@ public:
     FrontEndBase               *m_frontend;
     BackEndPointer              m_backend;
     IMEngineInstanceRepository  m_instance_repository;
+    IMEngineInstanceRefCount    m_instance_ref_count;
 
     int                         m_instance_count;
 public:
@@ -89,8 +103,8 @@ public:
         m_frontend->update_preedit_caret (si->get_id (), caret);
     }
 
-    void slot_update_preedit_string (IMEngineInstanceBase * si, const WideString & str, const AttributeList & attrs) {
-        m_frontend->update_preedit_string (si->get_id (), str, attrs);
+    void slot_update_preedit_string (IMEngineInstanceBase * si, const WideString & str, const AttributeList & attrs, int caret) {
+        m_frontend->update_preedit_string (si->get_id (), str, attrs, caret);
     }
 
     void slot_update_aux_string     (IMEngineInstanceBase * si, const WideString & str, const AttributeList & attrs) {
@@ -139,6 +153,30 @@ public:
 
     bool slot_delete_surrounding_text(IMEngineInstanceBase * si, int offset, int len) {
         return m_frontend->delete_surrounding_text (si->get_id (), offset, len);
+    }
+
+    bool slot_get_selection  (IMEngineInstanceBase * si, WideString &text) {
+        return m_frontend->get_selection (si->get_id (), text);
+    }
+
+    bool slot_set_selection(IMEngineInstanceBase * si, int start, int end) {
+        return m_frontend->set_selection (si->get_id (), start, end);
+    }
+
+    void slot_expand_candidate      (IMEngineInstanceBase * si) {
+        m_frontend->expand_candidate (si->get_id ());
+    }
+
+    void slot_contract_candidate    (IMEngineInstanceBase * si) {
+        m_frontend->contract_candidate (si->get_id ());
+    }
+
+    void slot_set_candidate_style   (IMEngineInstanceBase * si, ISF_CANDIDATE_PORTRAIT_LINE_T portrait_line, ISF_CANDIDATE_MODE_T mode) {
+        m_frontend->set_candidate_style (si->get_id (), portrait_line, mode);
+    }
+
+    void slot_send_private_command(IMEngineInstanceBase * si, const String & command) {
+        m_frontend->send_private_command (si->get_id (), command);
     }
 
     void attach_instance (const IMEngineInstancePointer &si)
@@ -195,6 +233,24 @@ public:
 
         si->signal_connect_delete_surrounding_text (
             slot (this, &FrontEndBase::FrontEndBaseImpl::slot_delete_surrounding_text));
+
+        si->signal_connect_get_selection (
+            slot (this, &FrontEndBase::FrontEndBaseImpl::slot_get_selection));
+
+        si->signal_connect_set_selection (
+            slot (this, &FrontEndBase::FrontEndBaseImpl::slot_set_selection));
+
+        si->signal_connect_expand_candidate (
+            slot (this, &FrontEndBase::FrontEndBaseImpl::slot_expand_candidate));
+
+        si->signal_connect_contract_candidate (
+            slot (this, &FrontEndBase::FrontEndBaseImpl::slot_contract_candidate));
+
+        si->signal_connect_set_candidate_style (
+            slot (this, &FrontEndBase::FrontEndBaseImpl::slot_set_candidate_style));
+
+        si->signal_connect_send_private_command (
+            slot (this, &FrontEndBase::FrontEndBaseImpl::slot_send_private_command));
     }
 };
 
@@ -380,22 +436,34 @@ FrontEndBase::new_instance (const ConfigPointer &config, const String &sf_uuid, 
         std::cerr << "IMEngineFactory " << sf_uuid << " does not support encoding " << encoding << "\n";
         return -1;
     }
-
-    IMEngineInstancePointer si = factory->create_instance (encoding, m_impl->m_instance_count);
-
-    if (si.null ()) {
-        std::cerr << "IMEngineFactory " << sf_uuid << " failed to create new instance!\n";
-        return -1;
+    IMEngineInstancePointer si;
+    bool ret = false;
+    IMEngineInstanceRepository::iterator it = m_impl->m_instance_repository.begin ();
+    for (; it != m_impl->m_instance_repository.end (); it++) {
+        if(sf_uuid == get_instance_uuid (it->first)) {
+            si = it->second;
+            ret = true;
+            break;
+        }
     }
+    if (ret == false) {
+        si = factory->create_instance (encoding, m_impl->m_instance_count);
+        if (si.null ()) {
+            std::cerr << "IMEngineFactory " << sf_uuid << " failed to create new instance!\n";
+            return -1;
+        }
 
-    ++m_impl->m_instance_count;
+        ++m_impl->m_instance_count;
 
-    if (m_impl->m_instance_count < 0)
-        m_impl->m_instance_count = 0;
+        if (m_impl->m_instance_count < 0)
+            m_impl->m_instance_count = 0;
 
-    m_impl->m_instance_repository [si->get_id ()] = si;
-
-    m_impl->attach_instance (si);
+        m_impl->m_instance_repository [si->get_id ()] = si;
+        m_impl->m_instance_ref_count [si->get_id ()] = 1;
+        m_impl->attach_instance (si);
+    } else {
+        m_impl->m_instance_ref_count [si->get_id ()] = ++m_impl->m_instance_ref_count [si->get_id ()];
+    }
 
     return si->get_id ();
 }
@@ -416,13 +484,22 @@ FrontEndBase::replace_instance (int si_id, const String &sf_uuid)
             return true;
 
         String encoding = it->second->get_encoding ();
-        if (sf->validate_encoding (encoding)) {
-            IMEngineInstancePointer si = sf->create_instance (encoding, si_id);
-            if (!si.null ()) {
-                it->second = si;
-                m_impl->attach_instance (it->second);
+        if (!sf->validate_encoding (encoding)) {
+            std::cerr << "IMEngineFactory " << sf_uuid << " does not support encoding " << encoding << "\n";
+            return false;
+        }
+        IMEngineInstanceRepository::iterator it1;
+        for (it1 = m_impl->m_instance_repository.begin (); it1 != m_impl->m_instance_repository.end (); it1++) {
+            if (it1->second->get_factory_uuid () == sf_uuid) {
+                it->second = it1->second;
                 return true;
             }
+        }
+        IMEngineInstancePointer si = sf->create_instance (encoding, si_id);
+        if (!si.null ()) {
+            it->second = si;
+            m_impl->attach_instance (it->second);
+            return true;
         }
     }
 
@@ -437,44 +514,44 @@ FrontEndBase::delete_instance (int id)
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << " id:" << id << "\n";
 
     String del_uuid;
-    bool ret = false;
-
     dump_instances ();
-
     IMEngineInstanceRepository::iterator it = m_impl->m_instance_repository.find (id);
-
     if (it != m_impl->m_instance_repository.end ()) {
         SCIM_DEBUG_FRONTEND(1) << "delete_instance:" << it->second->get_factory_uuid () << "\n";
-        del_uuid = it->second->get_factory_uuid ();
-        m_impl->m_instance_repository.erase (it);
-        ret = true;
-    }
-
-    if (ret) {
-        std::vector<String> use_uuids;
-
-        use_uuids.clear ();
-        for (it = m_impl->m_instance_repository.begin (); it != m_impl->m_instance_repository.end (); it++) {
-            std::vector<String>::iterator it2 = use_uuids.begin ();
-
-            for (; it2 != use_uuids.end (); it2++) {
-                if (*it2 == it->second->get_factory_uuid ())
-                    break;
+        int ref_count = m_impl->m_instance_ref_count [id];
+        m_impl->m_instance_ref_count [id] = --ref_count;
+        if (ref_count <= 0) {
+            del_uuid = it->second->get_factory_uuid ();
+            m_impl->m_instance_repository.erase (it);
+            IMEngineInstanceRefCount::iterator ref_count_it = m_impl->m_instance_ref_count.find(id);
+            if (ref_count_it != m_impl->m_instance_ref_count.end ()) {
+                m_impl->m_instance_ref_count.erase (ref_count_it);
             }
+            std::vector<String> use_uuids;
+            use_uuids.clear ();
+            for (it = m_impl->m_instance_repository.begin (); it != m_impl->m_instance_repository.end (); it++) {
+                std::vector<String>::iterator it2 = use_uuids.begin ();
+                for (; it2 != use_uuids.end (); it2++) {
+                    if (*it2 == it->second->get_factory_uuid ())
+                        break;
+                }
 
-            if (it2 == use_uuids.end ())
-                use_uuids.push_back (it->second->get_factory_uuid ());
+                if (it2 == use_uuids.end ())
+                    use_uuids.push_back (it->second->get_factory_uuid ());
+            }
+            m_impl->m_backend->release_module (use_uuids, del_uuid);
         }
-        m_impl->m_backend->release_module (use_uuids, del_uuid);
+        return true;
     }
-
-    return ret;
+    std::cerr << "Cannot find IMEngine Instance " << id << " to delete.\n";
+    return false;
 }
 
 void
 FrontEndBase::delete_all_instances ()
 {
     m_impl->m_instance_repository.clear ();
+    m_impl->m_instance_ref_count.clear ();
 }
 
 String
@@ -658,6 +735,86 @@ FrontEndBase::set_layout (int id, unsigned int layout) const
 }
 
 void
+FrontEndBase::set_input_hint (int id, unsigned int input_hint) const
+{
+    IMEngineInstancePointer si = m_impl->find_instance (id);
+
+    if (!si.null ()) si->set_input_hint (input_hint);
+}
+
+void
+FrontEndBase::update_bidi_direction (int id, unsigned int bidi_direction) const
+{
+    IMEngineInstancePointer si = m_impl->find_instance (id);
+
+    if (!si.null ()) si->update_bidi_direction (bidi_direction);
+}
+
+void
+FrontEndBase::update_candidate_item_layout (int id, const std::vector<unsigned int> &row_items) const
+{
+    IMEngineInstancePointer si = m_impl->find_instance (id);
+
+    if (!si.null ()) si->update_candidate_item_layout (row_items);
+}
+
+void
+FrontEndBase::update_cursor_position (int id, unsigned int cursor_pos) const
+{
+    IMEngineInstancePointer si = m_impl->find_instance (id);
+
+    if (!si.null ()) si->update_cursor_position (cursor_pos);
+}
+
+void
+FrontEndBase::update_displayed_candidate_number (int id, unsigned int number) const
+{
+    IMEngineInstancePointer si = m_impl->find_instance (id);
+
+    if (!si.null ()) si->update_displayed_candidate_number (number);
+}
+
+void
+FrontEndBase::candidate_more_window_show (int id) const
+{
+    IMEngineInstancePointer si = m_impl->find_instance (id);
+
+    if (!si.null ()) si->candidate_more_window_show ();
+}
+
+void
+FrontEndBase::candidate_more_window_hide (int id) const
+{
+    IMEngineInstancePointer si = m_impl->find_instance (id);
+
+    if (!si.null ()) si->candidate_more_window_hide ();
+}
+
+void
+FrontEndBase::longpress_candidate (int id, unsigned int index) const
+{
+    IMEngineInstancePointer si = m_impl->find_instance (id);
+
+    if (!si.null ()) si->longpress_candidate (index);
+}
+
+void
+FrontEndBase::set_imdata (int id, const char *data, unsigned int len) const
+{
+    IMEngineInstancePointer si = m_impl->find_instance (id);
+
+    if (!si.null ()) si->set_imdata (data, len);
+}
+
+void
+FrontEndBase::set_autocapital_type (int id, int mode) const
+{
+    IMEngineInstancePointer si = m_impl->find_instance (id);
+
+    if (!si.null ()) si->set_autocapital_type (mode);
+}
+
+void
 FrontEndBase::reset_option (int id) const
 {
     IMEngineInstancePointer si = m_impl->find_instance (id);
@@ -718,7 +875,7 @@ FrontEndBase::update_preedit_caret  (int id, int caret)
 {
 }
 void
-FrontEndBase::update_preedit_string (int id, const WideString & str, const AttributeList & attrs)
+FrontEndBase::update_preedit_string (int id, const WideString & str, const AttributeList & attrs, int caret)
 {
 }
 void
@@ -771,6 +928,32 @@ FrontEndBase::delete_surrounding_text  (int id, int offset, int len)
 {
     return false;
 }
+bool
+FrontEndBase::get_selection  (int id, WideString &text)
+{
+    return false;
+}
+bool
+FrontEndBase::set_selection  (int id, int start, int end)
+{
+    return false;
+}
+void
+FrontEndBase::expand_candidate (int id)
+{
+}
+void
+FrontEndBase::contract_candidate (int id)
+{
+}
+void
+FrontEndBase::set_candidate_style (int id, ISF_CANDIDATE_PORTRAIT_LINE_T portrait_line, ISF_CANDIDATE_MODE_T mode)
+{
+}
+void
+FrontEndBase::send_private_command  (int id, const String & command)
+{
+}
 void
 FrontEndBase::dump_instances (void)
 {
@@ -778,7 +961,9 @@ FrontEndBase::dump_instances (void)
     IMEngineInstanceRepository::iterator it = m_impl->m_instance_repository.begin ();
     for (; it != m_impl->m_instance_repository.end (); it++) {
         String name = get_instance_uuid (it->first);
-        SCIM_DEBUG_FRONTEND(1) << "\t" << name << "-----" << it->first << "\n";
+        IMEngineInstanceRefCount::iterator it_ref = m_impl->m_instance_ref_count.find(it->first);
+        SCIM_DEBUG_FRONTEND(1) << "\t" << name << "--- id->" << it->first << " ref->"
+            << (it_ref==m_impl->m_instance_ref_count.end ()?0:it_ref->second) << "\n";
     }
 
     return;

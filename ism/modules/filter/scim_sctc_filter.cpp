@@ -100,7 +100,7 @@ static WideString __tc_to_sc (const WideString &tc);
 
 //Module Interface
 extern "C" {
-    void scim_module_init (void)
+    EAPI void scim_module_init (void)
     {
         //Initialize encoding information.
         __sc_encodings.push_back ("GB2312");
@@ -112,16 +112,16 @@ extern "C" {
         __tc_encodings.push_back ("EUC-TW");
     }
 
-    void scim_module_exit (void)
+    EAPI void scim_module_exit (void)
     {
     }
 
-    unsigned int scim_filter_module_init (const ConfigPointer &config)
+    EAPI unsigned int scim_filter_module_init (const ConfigPointer &config)
     {
         return 1;
     }
 
-    FilterFactoryPointer scim_filter_module_create_filter (unsigned int index)
+    EAPI FilterFactoryPointer scim_filter_module_create_filter (unsigned int index)
     {
         if (index == 0)
             return new SCTCFilterFactory ();
@@ -129,7 +129,7 @@ extern "C" {
         return FilterFactoryPointer (0);
     }
 
-    bool scim_filter_module_get_filter_info (unsigned int index, FilterInfo &info)
+    EAPI bool scim_filter_module_get_filter_info (unsigned int index, FilterInfo &info)
     {
         if (index == 0) {
             info = __filter_info;

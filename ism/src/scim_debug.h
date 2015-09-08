@@ -86,7 +86,7 @@ namespace scim {
 /**
  * @brief The class to filter and redirect the debug messages.
  */
-class DebugOutput
+class EAPI DebugOutput
 {
 private:
     static uint32          current_verbose;

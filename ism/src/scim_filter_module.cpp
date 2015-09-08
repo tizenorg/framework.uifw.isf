@@ -119,7 +119,7 @@ FilterModule::number_of_filters () const
 }
 
 
-int scim_get_filter_module_list (std::vector <String>& engine_list)
+EAPI int scim_get_filter_module_list (std::vector <String>& engine_list)
 {
     return scim_get_module_list (engine_list, "Filter");
 }

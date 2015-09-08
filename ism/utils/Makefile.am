@@ -55,6 +55,7 @@ libscim_gtkutils@SCIM_EPOCH@_la_LDFLAGS= -version-info $(SCIM_CURRENT):$(SCIM_RE
 				  -rpath $(libdir) \
 				  @LIBTOOL_EXPORT_OPTIONS@ \
 				  @LTLIBINTL@ \
+				  -L@GTK_LIBDIR@ \
 				  -lgtk-x11-2.0 -lgdk-x11-2.0 -lpango-1.0 -lglib-2.0 -lgobject-2.0
 
 libscim_gtkutils@SCIM_EPOCH@_la_LIBADD = $(top_builddir)/ism/src/libscim@SCIM_EPOCH@.la $(X11_UTILS)
@@ -70,6 +71,6 @@ libscim_x11utils@SCIM_EPOCH@_la_LDFLAGS = -version-info $(SCIM_CURRENT):$(SCIM_R
                                           -rpath $(libdir) \
                                           @LIBTOOL_EXPORT_OPTIONS@ \
                                           @LTLIBINTL@ \
-                                          @X_LIBS@ 
+                                          @X_LIBS@
 
 libscim_x11utils@SCIM_EPOCH@_la_LIBAD   = $(top_builddir)/ism/src/libscim@SCIM_EPOCH@.la

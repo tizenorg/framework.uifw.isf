@@ -10,3 +10,7 @@
 /InitialIseType = 1
 /InitialIseUuid = 12aa3425-f88d-45f4-a509-cee8dfe904e3
 /InitialIseName = Tizen Keyboard
+/PreloadKeyboardIse = true
+/LaunchIseOnRequest = false
+/ChangeKeyboardModeByTouch = false
+/SupportHWKeyboardMode = true

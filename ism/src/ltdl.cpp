@@ -297,7 +297,7 @@ strdup(const char *str)
       tmp = LT_DLMALLOC (char, 1+ strlen (str));
       if (tmp)
 	{
-	  strcpy(tmp, str);
+	  strncpy(tmp, str, 1+ strlen (str));
 	}
     }
 
@@ -2010,7 +2010,7 @@ presym_open (lt_user_data loader_data, const char *filename)
 	{
 	  if (!syms->address && strcmp(syms->name, filename) == 0)
 	    {
-	      module = (lt_module) syms;
+	      module = syms->address;
 	      goto done;
 	    }
 	  ++syms;
@@ -2422,7 +2422,7 @@ tryall_dlopen_module (
   if (!filename)
     return 1;
 
-  sprintf (filename, "%.*s/%s", (int) dirname_len, dirname, dlname);
+  snprintf (filename, dirname_len + 1 + filename_len + 1, "%.*s/%s", (int) dirname_len, dirname, dlname);
 
   /* Now that we have combined DIRNAME and MODULENAME, if there is
      also a PREFIX to contend with, simply recurse with the arguments
@@ -2621,7 +2621,7 @@ foreach_dirinpath (
       {
 	size_t lendir = LT_STRLEN (dir_name);
 
-	if (lendir +1 +lenbase >= filenamesize)
+	if ((int)(lendir +1 +lenbase) >= filenamesize)
 	{
 	  LT_DLFREE (filename);
 	  filenamesize	= lendir +1 +lenbase +1; /* "/d" + '/' + "f" + '\0' */
@@ -2630,14 +2630,14 @@ foreach_dirinpath (
 	    goto cleanup;
 	}
 
-	assert (filenamesize > lendir);
-	strcpy (filename, dir_name);
+	assert (filenamesize > (int)lendir);
+	strncpy (filename, dir_name, filenamesize);
 
 	if (base_name && *base_name)
 	  {
 	    if (filename[lendir -1] != '/')
 	      filename[lendir++] = '/';
-	    strcpy (filename +lendir, base_name);
+	      strncpy (filename + lendir, base_name, filenamesize - lendir);
 	  }
 
 	if ((result = (*func) (filename, data1, data2)))
@@ -3076,7 +3076,7 @@ try_dlopen (
 
       /* canonicalize the module name */
       {
-        size_t i;
+        int i;
         for (i = 0; i < ext - base_name; ++i)
 	  {
 	    if (isalnum ((int)(base_name[i])))
@@ -3121,7 +3121,7 @@ try_dlopen (
 	    }
 #endif
 #ifdef LTDL_SYSSEARCHPATH
-	  if (!file && sys_search_path)
+	  if (!file)
 	    {
 	      file = find_file (sys_search_path, base_name, &dir);
 	    }
@@ -3226,6 +3226,7 @@ try_dlopen (
 		  last_libname = lt_estrdup (last_libname + 1);
 		  if (!last_libname)
 		    {
+		      fclose (file);
 		      ++errors;
 		      goto cleanup;
 		    }
@@ -3399,7 +3400,7 @@ lt_dlopenext (
   assert (filename);
 
   len = LT_STRLEN (filename);
-  ext = strrchr ((char *)filename, '.');
+  ext = strrchr (const_cast<char*>(filename), '.');
 
   /* If FILENAME already bears a suitable extension, there is no need
      to try appending additional extensions.  */
@@ -3413,12 +3414,12 @@ lt_dlopenext (
     }
 
   /* First try appending ARCHIVE_EXT.  */
-  tmp = LT_EMALLOC (char, len + LT_STRLEN (archive_ext) + 1);
+  tmp = LT_EMALLOC (char, len + strlen (archive_ext) + 1);
   if (!tmp)
     return 0;
 
-  strcpy (tmp, filename);
-  strcat (tmp, archive_ext);
+  strncpy (tmp, filename, len + strlen (archive_ext) + 1);
+  strncat (tmp, archive_ext, (len + strlen (archive_ext) + 1) - strlen (tmp) - 1);
   errors = try_dlopen (&handle, tmp);
 
   /* If we found FILENAME, stop searching -- whether we were able to
@@ -3434,21 +3435,21 @@ lt_dlopenext (
 
 #ifdef LTDL_SHLIB_EXT
   /* Try appending SHLIB_EXT.   */
-  if (LT_STRLEN (shlib_ext) > LT_STRLEN (archive_ext))
+  if (strlen (shlib_ext) > strlen (archive_ext))
     {
       LT_DLFREE (tmp);
-      tmp = LT_EMALLOC (char, len + LT_STRLEN (shlib_ext) + 1);
+      tmp = LT_EMALLOC (char, len + strlen (shlib_ext) + 1);
       if (!tmp)
 	return 0;
 
-      strcpy (tmp, filename);
+      strncpy (tmp, filename, len + strlen (shlib_ext) + 1);
     }
   else
     {
       tmp[len] = LT_EOS_CHAR;
     }
 
-  strcat(tmp, shlib_ext);
+  strncat(tmp, shlib_ext,(len + strlen (shlib_ext) + 1) - strlen (tmp) - 1);
   errors = try_dlopen (&handle, tmp);
 
   /* As before, if the file was found but loading failed, return now
@@ -3570,8 +3571,8 @@ lt_argz_insertdir (
 
   assert (buf);
 
-  strcpy  (buf, dirnam);
-  strcat  (buf, "/");
+  strncpy  (buf, dirnam, 1+ buf_len);
+  strncat  (buf, "/", (1+ buf_len) - strlen(buf) - 1);
   strncat (buf, dp->d_name, end_offset);
   buf[buf_len] = LT_EOS_CHAR;
 
@@ -3602,8 +3603,9 @@ list_files_by_dir (
   if (dirp)
     {
       struct dirent *dp	= 0;
+      struct dirent entry;
 
-      while ((dp = readdir (dirp)))
+      while ((readdir_r (dirp, &entry, &dp) == 0 && dp))
 	if (dp->d_name[0] != '.')
 	  if (lt_argz_insertdir (pargz, pargz_len, dirnam, dp))
 	    {
@@ -3802,10 +3804,12 @@ lt_dlsym (
   if (lensym + LT_SYMBOL_OVERHEAD < LT_SYMBOL_LENGTH)
     {
       sym = lsym;
+      lensym = LT_SYMBOL_LENGTH;
     }
   else
     {
       sym = LT_EMALLOC (char, lensym + LT_SYMBOL_OVERHEAD + 1);
+      lensym = lensym + LT_SYMBOL_OVERHEAD + 1;
       if (!sym)
 	{
 	  LT_DLMUTEX_SETERROR (LT_DLSTRERROR (BUFFER_OVERFLOW));
@@ -3823,16 +3827,16 @@ lt_dlsym (
       /* this is a libtool module */
       if (handle->loader->sym_prefix)
 	{
-	  strcpy(sym, handle->loader->sym_prefix);
-	  strcat(sym, handle->info.name);
+	  strncpy(sym, handle->loader->sym_prefix, lensym - 1);
+	  strncat(sym, handle->info.name, lensym - strlen(sym) - 1);
 	}
       else
 	{
-	  strcpy(sym, handle->info.name);
+	  strncpy(sym, handle->info.name, lensym - 1);
 	}
 
-      strcat(sym, "_LTX_");
-      strcat(sym, symbol);
+      strncat(sym, "_LTX_", lensym - strlen(sym) - 1);
+      strncat(sym, symbol, lensym - strlen(sym) - 1);
 
       /* try "modulename_LTX_symbol" */
       address = handle->loader->find_sym (data, handle->module, sym);
@@ -3850,12 +3854,12 @@ lt_dlsym (
   /* otherwise try "symbol" */
   if (handle->loader->sym_prefix)
     {
-      strcpy(sym, handle->loader->sym_prefix);
-      strcat(sym, symbol);
+      strncpy(sym, handle->loader->sym_prefix, lensym - 1);
+      strncat(sym, symbol, lensym - strlen(sym) - 1);
     }
   else
     {
-      strcpy(sym, symbol);
+      strncpy(sym, symbol, lensym - 1);
     }
 
   address = handle->loader->find_sym (data, handle->module, sym);
@@ -3929,7 +3933,7 @@ lt_dlpath_insertdir (
   if (before)
     {
       assert (*ppath <= before);
-      assert (before - *ppath <= strlen (*ppath));
+      assert (before - *ppath <= (int)strlen (*ppath));
 
       before = before - *ppath + argz;
     }
@@ -3991,7 +3995,7 @@ lt_dlinsertsearchdir (
     {
       LT_DLMUTEX_LOCK ();
       if (lt_dlpath_insertdir (&user_search_path,
-			       (char *) before, search_dir) != 0)
+			       const_cast<char*>(before), search_dir) != 0)
 	{
 	  ++errors;
 	}
@@ -4387,7 +4391,7 @@ lt_dlloader_name (
   if (place)
     {
       LT_DLMUTEX_LOCK ();
-      name = place ? place->loader_name : 0;
+      name = place->loader_name;
       LT_DLMUTEX_UNLOCK ();
     }
   else
@@ -4407,7 +4411,7 @@ lt_dlloader_data (
   if (place)
     {
       LT_DLMUTEX_LOCK ();
-      data = place ? &(place->dlloader_data) : 0;
+      data = &(place->dlloader_data);
       LT_DLMUTEX_UNLOCK ();
     }
   else

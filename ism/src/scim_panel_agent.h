@@ -13,6 +13,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2004-2005 James Su <suzhe@tsinghua.org.cn>
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -29,6 +30,24 @@
  * License along with this program; if not, write to the
  * Free Software Foundation, Inc., 59 Temple Place, Suite 330,
  * Boston, MA  02111-1307  USA
+ *
+ * Modifications by Samsung Electronics Co., Ltd.
+ * 1. Add new signals
+ *    a. m_signal_set_keyboard_ise and m_signal_get_keyboard_ise
+ *    b. m_signal_focus_in and m_signal_focus_out
+ *    c. m_signal_expand_candidate, m_signal_contract_candidate and m_signal_set_candidate_ui
+ *    d. m_signal_get_ise_list, m_signal_get_keyboard_ise_list, m_signal_update_ise_geometry and m_signal_get_ise_information
+ *    e. m_signal_set_active_ise_by_uuid and m_signal_get_ise_info_by_uuid
+ *    f. m_signal_accept_connection, m_signal_close_connection and m_signal_exit
+ * 2. Add new interface APIs in PanelClient class
+ *    a. get_helper_manager_id (), has_helper_manager_pending_event () and filter_helper_manager_event ()
+ *    b. update_candidate_panel_event (), update_input_panel_event () and select_aux ()
+ *    c. candidate_more_window_show () and candidate_more_window_hide ()
+ *    d. update_displayed_candidate_number () and update_candidate_item_layout ()
+ *    e. stop_helper (), send_longpress_event () and update_ise_list ()
+ *    f. filter_event (), filter_exception_event () and get_server_id ()
+ * 3. Donot use thread to receive message
+ * 4. Monitor socket frontend for self-recovery function
  *
  * $Id: scim_panel_agent.h,v 1.2 2005/06/11 14:50:31 suzhe Exp $
  */
@@ -48,12 +67,6 @@ namespace scim {
  * @{
  */
 
-typedef enum
-{
-    TOOLBAR_KEYBOARD_MODE = 0,  /* Hardware keyboard ISE */
-    TOOLBAR_HELPER_MODE         /* Software keyboard ISE */
-} TOOLBAR_MODE_T;
-
 typedef struct _ISE_INFO
 {
     String uuid;
@@ -69,6 +82,9 @@ typedef Slot0<void>
 
 typedef Slot1<void, int>
         PanelAgentSlotInt;
+
+typedef Slot1<void, int &>
+        PanelAgentSlotInt2;
 
 typedef Slot1<void, const String &>
         PanelAgentSlotString;
@@ -118,6 +134,9 @@ typedef Slot2<void, int, const HelperInfo &>
 typedef Slot2<void, const String &, const AttributeList &>
         PanelAgentSlotAttributeString;
 
+typedef Slot3<void, const String &, const AttributeList &, int>
+        PanelAgentSlotAttributeStringInt;
+
 typedef Slot1<void, std::vector<String> &>
         PanelAgentSlotStringVector;
 
@@ -138,6 +157,9 @@ typedef Slot1<void, struct rectinfo &>
 
 typedef Slot2<void, const String &, bool>
         PanelAgentSlotStringBool;
+
+typedef Slot6<bool, String, String &, String &, int &, int &, String &>
+        PanelAgentSlotBoolString4int2;
 
 typedef struct DefaultIse
 {
@@ -162,7 +184,7 @@ typedef struct DefaultIse
  * two signals are used to provide a thread lock to PanelAgent, so that PanelAgent
  * can run correctly within a multi-threading Panel program.
  */
-class PanelAgent
+class EAPI PanelAgent
 {
     class PanelAgentImpl;
     PanelAgentImpl *m_impl;
@@ -278,13 +300,6 @@ public:
     TOOLBAR_MODE_T get_current_toolbar_mode (void) const;
 
     /**
-     * @brief Get current ISE icon.
-     *
-     * @return the current ISE icon.
-     */
-    String get_current_factory_icon (void) const;
-
-    /**
      * @brief Get current helper ISE uuid.
      *
      * @return the current helper ISE uuid.
@@ -306,25 +321,11 @@ public:
     String get_current_ise_name (void) const;
 
     /**
-     * @brief Set current ISE style.
-     *
-     * @param style The current ISE style.
-     */
-    void set_current_ise_style (uint32 &style);
-
-    /**
      * @brief Set current ISE name.
      *
      * @param name The current ISE name.
      */
     void set_current_ise_name (String &name);
-
-    /**
-     * @brief Set current ISE icon.
-     *
-     * @param icon The current ISE icon filepath.
-     */
-    void set_current_factory_icon (String &icon);
 
     /**
      * @brief Set current ISE type.
@@ -334,25 +335,17 @@ public:
     void set_current_toolbar_mode (TOOLBAR_MODE_T mode);
 
     /**
+     * @brief Set current helper ISE option.
+     *
+     * @param mode The current helper ISE option.
+     */
+    void set_current_helper_option (uint32 option);
+    /**
      * @brief Get current ISE size and position.
      *
      * @param rect It contains ISE size and position.
      */
     void get_current_ise_geometry (rectinfo &rect);
-
-    /**
-     * @brief Update ISE name to IM Control.
-     *
-     * @param name The ISE name.
-     */
-    void update_ise_name (String &name);
-
-    /**
-     * @brief Update ISE style to IM Control.
-     *
-     * @param style The ISE style.
-     */
-    void update_ise_style (uint32 &style);
 
     /**
      * @brief Send candidate panel event to IM Control.
@@ -369,13 +362,6 @@ public:
      * @param nValue The input panel event value.
      */
     void update_input_panel_event (uint32 nType, uint32 nValue);
-
-    /**
-     * @brief Update ISE control panel status to IM Control.
-     *
-     * @param showed The control panel status.
-     */
-    void update_isf_control_status (const bool showed);
 
     /**
      * @brief Notice helper ISE to focus out.
@@ -396,7 +382,7 @@ public:
      *
      * @param uuid The helper ISE uuid.
      */
-    void show_helper (const String &uuid);
+    bool show_helper (const String &uuid);
 
     /**
      * @brief Notice helper ISE to hide window.
@@ -426,13 +412,6 @@ public:
      * @return true if this operation is successful, otherwise return false.
      */
     bool reset_keyboard_ise (void) const;
-
-    /**
-     * @brief Set whether ISE is changed.
-     *
-     * @param changing The indicator for ISE changing.
-     */
-    void set_ise_changing (bool changing);
 
 public:
     /**
@@ -476,6 +455,24 @@ public:
     bool candidate_more_window_hide     (void);
 
     /**
+     * @brief Notice Helper ISE that show candidate.
+     * @return true if the command was sent correctly.
+     */
+    bool helper_candidate_show     (void);
+
+    /**
+     * @brief Notice Helper ISE that hide candidate.
+     * @return true if the command was sent correctly.
+     */
+    bool helper_candidate_hide     (void);
+
+    /**
+     * @brief Update helper lookup table.
+     * @return true if the command was sent correctly.
+     */
+    bool update_helper_lookup_table     (const LookupTable &table);
+
+    /**
      * @brief Let the focused IMEngineInstance object
      *        select a aux in current aux string.
      *
@@ -515,6 +512,15 @@ public:
      * @return true if the command was sent correctly.
      */
     bool update_lookup_table_page_size  (uint32         size);
+
+    /**
+     * @brief Let the focused IMEngineInstance object
+     *        update candidate items layout.
+     *
+     * @param row_items The items of each row.
+     * @return true if the command was sent correctly.
+     */
+    bool update_candidate_item_layout   (const std::vector<uint32> &row_items);
 
     /**
      * @brief Let the focused IMEngineInstance object
@@ -632,11 +638,14 @@ public:
     int get_server_id                   (void);
 
     /**
-     * @brief Set the common ISE uuid.
+     * @brief Send candidate longpress event to ISE.
+     *
+     * @param type The candidate object type.
+     * @param index The candidate object index.
      *
      * @return none.
      */
-    void set_common_ise_uuid            (String &uuid);
+    void send_longpress_event           (int type, int index);
 
     /**
      * @brief Request to update ISE list.
@@ -711,6 +720,13 @@ public:
     Connection signal_connect_start_default_ise          (PanelAgentSlotVoid                *slot);
 
     /**
+     * @brief Signal: stop default ise.
+     *
+     * slot prototype: void stop_default_ise (void);
+     */
+    Connection signal_connect_stop_default_ise           (PanelAgentSlotVoid                *slot);
+
+    /**
      * @brief Signal: Get the list of keyboard ise name.
      *
      * slot prototype: bool get_keyboard_ise_list (std::vector<String> &);
@@ -755,9 +771,9 @@ public:
     /**
      * @brief Signal: Set keyboard ise.
      *
-     * slot prototype: void set_keyboard_ise (int type, const String &ise);
+     * slot prototype: void set_keyboard_ise (const String &uuid);
      */
-    Connection signal_connect_set_keyboard_ise           (PanelAgentSlotIntString           *slot);
+    Connection signal_connect_set_keyboard_ise           (PanelAgentSlotString              *slot);
 
     /**
      * @brief Signal: Get keyboard ise.
@@ -845,11 +861,11 @@ public:
     /**
      * @brief Signal: Update preedit string.
      *
-     * slot prototype: void update_preedit_string (const String &str, const AttributeList &attrs);
+     * slot prototype: void update_preedit_string (const String &str, const AttributeList &attrs, int caret);
      * - str   -- The UTF-8 encoded string to be displayed in preedit area.
      * - attrs -- The attributes of the string.
      */
-    Connection signal_connect_update_preedit_string      (PanelAgentSlotAttributeString     *slot);
+    Connection signal_connect_update_preedit_string      (PanelAgentSlotAttributeStringInt  *slot);
 
     /**
      * @brief Signal: Update preedit caret.
@@ -952,14 +968,6 @@ public:
     Connection signal_connect_set_active_ise_by_uuid     (PanelAgentSlotStringBool          *slot);
 
     /**
-     * @brief Signal: Start an ise with the speficied name
-     *
-     * slot prototype: void set_active_ise_by_name (const String& name);
-     * - name -- the name of the ise object
-     */
-    Connection signal_connect_set_active_ise_by_name     (PanelAgentSlotString              *slot);
-
-    /**
      * @brief Signal: Focus in panel.
      *
      * slot prototype: void focus_in (void);
@@ -988,11 +996,25 @@ public:
     Connection signal_connect_contract_candidate         (PanelAgentSlotVoid                *slot);
 
     /**
+     * @brief Signal: Select candidate string index.
+     *
+     * slot prototype: void select_candidate (int index);
+     */
+    Connection signal_connect_select_candidate           (PanelAgentSlotInt                 *slot);
+
+    /**
      * @brief Signal: Get the list of ise name.
      *
      * slot prototype: bool get_ise_list (std::vector<String> &);
      */
     Connection signal_connect_get_ise_list               (PanelAgentSlotBoolStringVector    *slot);
+
+    /**
+     * @brief Signal: Get the ISE information according to UUID.
+     *
+     * slot prototype: bool get_ise_information (String, String &, String &, int &, int &);
+     */
+    Connection signal_connect_get_ise_information        (PanelAgentSlotBoolString4int2     *slot);
 
     /**
      * @brief Signal: Get the list of selected language name.
@@ -1015,25 +1037,11 @@ public:
     Connection signal_connect_get_ise_language           (PanelAgentSlotStrStringVector     *slot);
 
     /**
-     * @brief Signal: Set the isf language.
-     *
-     * slot prototype: void get_ise_language (char *, std::vector<String> &);
-     */
-    Connection signal_connect_set_isf_language           (PanelAgentSlotString              *slot);
-
-    /**
      * @brief Signal: Get the ise information by uuid.
      *
      * slot prototype: bool get_ise_info_by_uuid (const String &, ISE_INFO &);
      */
     Connection signal_connect_get_ise_info_by_uuid       (PanelAgentSlotStringISEINFO       *slot);
-
-    /**
-     * @brief Signal: Get the ise information by name.
-     *
-     * slot prototype: bool get_ise_info_by_name (const String &, ISE_INFO &);
-     */
-    Connection signal_connect_get_ise_info_by_name       (PanelAgentSlotStringISEINFO       *slot);
 
     /**
      * @brief Signal: send key event in panel.
@@ -1107,6 +1115,56 @@ public:
      * slot prototype: void update_input_context (int type, int value);
      */
     Connection signal_connect_update_input_context       (PanelAgentSlotIntInt              *slot);
+
+    /**
+     * @brief Signal: Show ISE.
+     *
+     * slot prototype: void show_ise (void);
+     */
+    Connection signal_connect_show_ise                   (PanelAgentSlotVoid                *slot);
+
+    /**
+     * @brief Signal: Hide ISE.
+     *
+     * slot prototype: void hide_ise (void);
+     */
+    Connection signal_connect_hide_ise                   (PanelAgentSlotVoid                *slot);
+
+    /**
+     * @brief Signal: Notifies the client finished handling WILL_SHOW event
+     *
+     * slot prototype: void will_show_ack (void);
+     */
+    Connection signal_connect_will_show_ack              (PanelAgentSlotVoid                *slot);
+
+    /**
+     * @brief Signal: Notifies the client finished handling WILL_HIDE event
+     *
+     * slot prototype: void will_hide_ack (void);
+     */
+    Connection signal_connect_will_hide_ack              (PanelAgentSlotVoid                *slot);
+
+    /**
+     * @brief Signal: Set hardware mode
+     *
+     * slot prototype: void set_keyboard_mode (void);
+     */
+    Connection signal_connect_set_keyboard_mode (PanelAgentSlotInt                *slot);
+
+    /**
+     * @brief Signal: Notifies the client finished handling WILL_HIDE event for candidate
+     *
+     * slot prototype: void candidate_will_hide_ack (void);
+     */
+    Connection signal_connect_candidate_will_hide_ack    (PanelAgentSlotVoid                *slot);
+
+    /**
+     * @brief Signal: Get ISE state.
+     *
+     * slot prototype: void get_ise_state (int &state);
+     */
+    Connection signal_connect_get_ise_state              (PanelAgentSlotInt2                *slot);
+
 };
 
 /**  @} */

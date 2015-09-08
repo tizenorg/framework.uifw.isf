@@ -2,7 +2,7 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2000 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  * Contact: Haifeng Deng <haifeng.deng@samsung.com>, Hengliang Luo <hl.luo@samsung.com>
  *
@@ -38,12 +38,22 @@
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <dlog.h>
 #include "scim_private.h"
 #include "scim.h"
 #include "isf_query_utility.h"
 
 
 using namespace scim;
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Declaration of macro.
+/////////////////////////////////////////////////////////////////////////////
+#ifdef LOG_TAG
+# undef LOG_TAG
+#endif
+#define LOG_TAG                                         "ISF_QUERY"
 
 
 /**
@@ -53,8 +63,11 @@ using namespace scim;
  *
  * @return normalized language name.
  */
-String isf_get_normalized_language (String src_str)
+EAPI String isf_get_normalized_language (String src_str)
 {
+    if (src_str.length () == 0)
+        return String ("en");
+
     std::vector<String> str_list, dst_list;
     scim_split_string_list (str_list, src_str);
 
@@ -66,7 +79,7 @@ String isf_get_normalized_language (String src_str)
     return dst_str;
 }
 
-void isf_get_ise_info_from_string (const char *str, ISEINFO &info)
+EAPI void isf_get_ise_info_from_string (const char *str, ISEINFO &info)
 {
     if (str == NULL || strlen (str) == 0)
         return;
@@ -101,7 +114,7 @@ void isf_get_ise_info_from_string (const char *str, ISEINFO &info)
     free (buf);
 }
 
-String isf_combine_ise_info_string (String name, String uuid, String module, String language,
+EAPI String isf_combine_ise_info_string (String name, String uuid, String module, String language,
                                     String icon, String mode, String option, String locales)
 {
         String line = name + String (":") + uuid + String (":") + module + String (":") + language + String (":") +
@@ -109,7 +122,7 @@ String isf_combine_ise_info_string (String name, String uuid, String module, Str
         return line;
 }
 
-bool isf_read_ise_info_list (const char *filename, std::vector<ISEINFO> &info_list)
+EAPI bool isf_read_ise_info_list (const char *filename, std::vector<ISEINFO> &info_list)
 {
     info_list.clear ();
     FILE *engine_list_file = fopen (filename, "r");
@@ -130,14 +143,19 @@ bool isf_read_ise_info_list (const char *filename, std::vector<ISEINFO> &info_li
     return true;
 }
 
-bool isf_write_ise_info_list (const char *filename, std::vector<ISEINFO> &info_list)
+EAPI bool isf_write_ise_info_list (const char *filename, std::vector<ISEINFO> &info_list)
 {
+    LOGD ("Enter");
     if (info_list.size () <= 0)
         return false;
 
-    FILE *engine_list_file = fopen (filename, "w+");
+    /* In order to avoid file writing failed, firstly save ISE information to temporary file */
+    bool   bSuccess = true;
+    String strTempFile = String (filename) + String (".tmp");
+
+    FILE *engine_list_file = fopen (strTempFile.c_str (), "w+");
     if (engine_list_file == NULL) {
-        std::cerr << "failed to open " << filename << "\n";
+        LOGW ("Failed to open %s!!!\n", strTempFile.c_str ());
         return false;
     }
 
@@ -151,13 +169,27 @@ bool isf_write_ise_info_list (const char *filename, std::vector<ISEINFO> &info_l
         String line = isf_combine_ise_info_string (iter->name, iter->uuid, iter->module, iter->language,
                                                    iter->icon, String (mode), String (option), iter->locales);
         if (fputs (line.c_str (), engine_list_file) < 0) {
-            std::cerr << "write to ise cache file failed:" << line << "\n";
+            bSuccess = false;
+            LOGW ("Failed to write (%s)!!!\n", line.c_str ());
             break;
         }
     }
 
-    fclose (engine_list_file);
-    return true;
+    int ret = fclose (engine_list_file);
+    if (ret != 0) {
+        bSuccess = false;
+        LOGW ("Failed to fclose %s!!!\n", strTempFile.c_str ());
+    }
+
+    if (bSuccess) {
+        if (rename (strTempFile.c_str (), filename) != 0) {
+            bSuccess = false;
+            LOGW ("Failed to rename %s!!!\n", filename);
+        }
+    }
+
+    LOGD ("Exit");
+    return bSuccess;
 }
 
 static void add_keyboard_info_to_list (std::vector<ISEINFO> &info_list, const char *module_name, const ConfigPointer &config)
@@ -185,7 +217,7 @@ static void add_keyboard_info_to_list (std::vector<ISEINFO> &info_list, const ch
                 info.language = isf_get_normalized_language (factory->get_language ());
                 info.icon = factory->get_icon_file ();
                 info.mode = TOOLBAR_KEYBOARD_MODE;
-                info.option = 0;
+                info.option = factory->get_option ();
                 info.locales = factory->get_locales ();
 
                 info_list.push_back (info);
@@ -242,7 +274,26 @@ static void remove_ise_info_from_list (std::vector<ISEINFO> &info_list, const ch
     }
 }
 
-bool isf_add_keyboard_info_to_file (const char *filename, const char *module_name, const ConfigPointer &config)
+static void remove_ise_info_from_list_by_uuid (std::vector<ISEINFO> &info_list, const char *uuid)
+{
+    if (uuid == NULL)
+        return;
+
+    std::vector<ISEINFO>::iterator iter;
+    while (info_list.size () > 0) {
+        for (iter = info_list.begin (); iter != info_list.end (); iter++) {
+            if (iter->uuid == uuid)
+                break;
+        }
+
+        if (iter !=  info_list.end ())
+            info_list.erase (iter);
+        else
+            break;
+    }
+}
+
+EAPI bool isf_add_keyboard_info_to_file (const char *filename, const char *module_name, const ConfigPointer &config)
 {
     std::vector<ISEINFO> info_list;
     std::vector<ISEINFO>::iterator iter;
@@ -256,7 +307,7 @@ bool isf_add_keyboard_info_to_file (const char *filename, const char *module_nam
     return isf_write_ise_info_list (filename, info_list);
 }
 
-bool isf_add_helper_info_to_file (const char *filename, const char *module_name)
+EAPI bool isf_add_helper_info_to_file (const char *filename, const char *module_name)
 {
     std::vector<ISEINFO> info_list;
     std::vector<ISEINFO>::iterator iter;
@@ -270,18 +321,35 @@ bool isf_add_helper_info_to_file (const char *filename, const char *module_name)
     return isf_write_ise_info_list (filename, info_list);
 }
 
-void isf_remove_ise_info_from_file (const char *filename, const char *module_name)
+EAPI bool isf_remove_ise_info_from_file (const char *filename, const char *module_name)
 {
     std::vector<ISEINFO> info_list;
     std::vector<ISEINFO>::iterator iter;
-    isf_read_ise_info_list (filename, info_list);
 
-    remove_ise_info_from_list (info_list, module_name);
+    if (isf_read_ise_info_list (filename, info_list)) {
 
-    isf_write_ise_info_list (filename, info_list);
+        remove_ise_info_from_list (info_list, module_name);
+
+        return isf_write_ise_info_list (filename, info_list);
+    }
+    return false;
 }
 
-void isf_update_ise_info_to_file (const char *filename, const ConfigPointer &config)
+EAPI bool isf_remove_ise_info_from_file_by_uuid (const char *filename, const char *uuid)
+{
+    std::vector<ISEINFO> info_list;
+    std::vector<ISEINFO>::iterator iter;
+
+    if (isf_read_ise_info_list (filename, info_list)) {
+
+        remove_ise_info_from_list_by_uuid (info_list, uuid);
+
+        return isf_write_ise_info_list (filename, info_list);
+    }
+    return false;
+}
+
+EAPI void isf_update_ise_info_to_file (const char *filename, const ConfigPointer &config)
 {
     if (filename == NULL)
         return;

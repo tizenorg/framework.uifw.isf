@@ -240,10 +240,10 @@ IMEngineHotkeyMatcher::save_hotkeys (const ConfigPointer &config) const
 
     if (uuids.size ()) {
         for (std::vector <String>::iterator uit = uuids.begin (); uit != uuids.end (); ++uit)
-            config->write (String (SCIM_CONFIG_HOTKEYS_IMENGINE "/") + *uit, "");
+            config->write (String (SCIM_CONFIG_HOTKEYS_IMENGINE "/") + *uit, String (""));
     }
 
-    config->write (String (SCIM_CONFIG_HOTKEYS_IMENGINE_LIST), "");
+    config->write (String (SCIM_CONFIG_HOTKEYS_IMENGINE_LIST), String (""));
     uuids.clear ();
     /* Clear helper hotkeys  in config file */
     scim_split_string_list (uuids, config->read (String (SCIM_CONFIG_HOTKEYS_HELPER_LIST), String ("")));
@@ -253,10 +253,10 @@ IMEngineHotkeyMatcher::save_hotkeys (const ConfigPointer &config) const
 
     if (uuids.size ()) {
         for (std::vector <String>::iterator uit = uuids.begin (); uit != uuids.end (); ++uit)
-            config->write (String (SCIM_CONFIG_HOTKEYS_HELPER "/") + *uit, "");
+            config->write (String (SCIM_CONFIG_HOTKEYS_HELPER "/") + *uit, String (""));
     }
 
-    config->write (String (SCIM_CONFIG_HOTKEYS_HELPER_LIST), "");
+    config->write (String (SCIM_CONFIG_HOTKEYS_HELPER_LIST), String (""));
     uuids.clear ();
 
     /* Save to config */

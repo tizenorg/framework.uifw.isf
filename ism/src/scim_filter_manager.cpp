@@ -78,6 +78,7 @@ __initialize_modules (const ConfigPointer &config)
             }
         }
     }
+    delete[] __filter_modules;
 }
 
 class FilterManager::FilterManagerImpl

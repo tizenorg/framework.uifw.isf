@@ -32,21 +32,21 @@
 /**
  * @brief Translate a X11 KeyEvent to a scim KeyEvent according to the given Display
  */
-scim::KeyEvent scim_x11_keyevent_x11_to_scim (Display *display, const XKeyEvent &xkey);
+EAPI scim::KeyEvent scim_x11_keyevent_x11_to_scim (Display *display, const XKeyEvent &xkey);
 
 /**
  * @brief Translate a scim KeyEvent to a X11 KeyEvent according to the given Display
  */
-XKeyEvent scim_x11_keyevent_scim_to_x11 (Display *display, const scim::KeyEvent &scimkey);
+EAPI XKeyEvent scim_x11_keyevent_scim_to_x11 (Display *display, const scim::KeyEvent &scimkey);
 
 /**
  * @brief Translate X11 key state to scim key mask.
  */
-scim::uint16 scim_x11_keymask_x11_to_scim (Display *display, unsigned int xkeystate);
+EAPI scim::uint16 scim_x11_keymask_x11_to_scim (Display *display, unsigned int xkeystate);
 
 /**
  * @brief Translate scim key mask to X11 key state.
  */
-unsigned int scim_x11_keymask_scim_to_x11 (Display *display, scim::uint16 scimkeymask);
+EAPI unsigned int scim_x11_keymask_scim_to_x11 (Display *display, scim::uint16 scimkeymask);
 
 #endif

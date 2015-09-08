@@ -1,8 +1,8 @@
 /******************************************************************
- 
+
          Copyright 1994, 1995 by Sun Microsystems, Inc.
          Copyright 1993, 1994 by Hewlett-Packard Company
- 
+
 Permission to use, copy, modify, distribute, and sell this software
 and its documentation for any purpose is hereby granted without fee,
 provided that the above copyright notice appear in all copies and
@@ -13,7 +13,7 @@ distribution of the software without specific, written prior permission.
 Sun Microsystems, Inc. and Hewlett-Packard make no representations about
 the suitability of this software for any purpose.  It is provided "as is"
 without express or implied warranty.
- 
+
 SUN MICROSYSTEMS INC. AND HEWLETT-PACKARD COMPANY DISCLAIMS ALL
 WARRANTIES WITH REGARD TO THIS SOFTWARE, INCLUDING ALL IMPLIED
 WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL
@@ -22,11 +22,11 @@ SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER
 RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF
 CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR
 IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
- 
+
   Author: Hidetoshi Tajima(tajima@Eng.Sun.COM) Sun Microsystems, Inc.
 
     This version tidied and debugged by Steve Underwood May 1999
- 
+
 ******************************************************************/
 
 #include <X11/Xlib.h>
@@ -70,8 +70,14 @@ int _Xi18nGeometryCallback (XIMS ims, IMProtocol *call_data)
                        0,
                        reply,
                        total_size);
-    FrameMgrFree (fm);
-    XFree (reply);
+    if (fm)
+    {
+        FrameMgrFree (fm);
+    }
+    if (reply)
+    {
+        XFree (reply);
+    }
 
     /* XIM_GEOMETRY is an asyncronous protocol,
        so return immediately. */
@@ -112,8 +118,14 @@ int _Xi18nPreeditStartCallback (XIMS ims, IMProtocol *call_data)
                        0,
                        reply,
                        total_size);
-    FrameMgrFree (fm);
-    XFree (reply);
+    if (fm)
+    {
+        FrameMgrFree (fm);
+    }
+    if (reply)
+    {
+        XFree (reply);
+    }
 
     return True;
 }
@@ -176,15 +188,21 @@ int _Xi18nPreeditDrawCallback (XIMS ims, IMProtocol *call_data)
     for (i = 0;  i < feedback_count;  i++)
         FrameMgrPutToken (fm, draw->text->feedback[i]);
     /*endfor*/
-    
+
     _Xi18nSendMessage (ims,
                        connect_id,
                        XIM_PREEDIT_DRAW,
                        0,
                        reply,
                        total_size);
-    FrameMgrFree (fm);
-    XFree (reply);
+    if (fm)
+    {
+        FrameMgrFree (fm);
+    }
+    if (reply)
+    {
+        XFree (reply);
+    }
 
     /* XIM_PREEDIT_DRAW is an asyncronous protocol, so return immediately. */
     return True;
@@ -230,8 +248,14 @@ int _Xi18nPreeditCaretCallback (XIMS ims, IMProtocol *call_data)
                        0,
                        reply,
                        total_size);
-    FrameMgrFree (fm);
-    XFree (reply);
+    if (fm)
+    {
+        FrameMgrFree (fm);
+    }
+    if (reply)
+    {
+        XFree (reply);
+    }
 
     return True;
 }
@@ -271,8 +295,14 @@ int _Xi18nPreeditDoneCallback (XIMS ims, IMProtocol *call_data)
                        0,
                        reply,
                        total_size);
-    FrameMgrFree (fm);
-    XFree (reply);
+    if (fm)
+    {
+        FrameMgrFree (fm);
+    }
+    if (reply)
+    {
+        XFree (reply);
+    }
 
     /* XIM_PREEDIT_DONE is an asyncronous protocol, so return immediately. */
     return True;
@@ -312,8 +342,14 @@ int _Xi18nStatusStartCallback (XIMS ims, IMProtocol *call_data)
                        0,
                        reply,
                        total_size);
-    FrameMgrFree (fm);
-    XFree (reply);
+    if (fm)
+    {
+        FrameMgrFree (fm);
+    }
+    if (reply)
+    {
+        XFree (reply);
+    }
 
     /* XIM_STATUS_START is an asyncronous protocol, so return immediately. */
     return True;
@@ -348,7 +384,7 @@ int _Xi18nStatusDrawCallback (XIMS ims, IMProtocol *call_data)
         else if (draw->data.text->feedback[0] == 0)
             status = 0x00000002;
         /*endif*/
-        
+
         /* set length of status string */
         FrameMgrSetSize(fm, draw->data.text->length);
         /* set iteration count for list of feedback */
@@ -408,8 +444,14 @@ int _Xi18nStatusDrawCallback (XIMS ims, IMProtocol *call_data)
                        0,
                        reply,
                        total_size);
-    FrameMgrFree (fm);
-    XFree (reply);
+    if (fm)
+    {
+        FrameMgrFree (fm);
+    }
+    if (reply)
+    {
+        XFree (reply);
+    }
 
     /* XIM_STATUS_DRAW is an asyncronous protocol, so return immediately. */
     return True;
@@ -450,8 +492,14 @@ int _Xi18nStatusDoneCallback (XIMS ims, IMProtocol *call_data)
                        0,
                        reply,
                        total_size);
-    FrameMgrFree (fm);
-    XFree (reply);
+    if (fm)
+    {
+        FrameMgrFree (fm);
+    }
+    if (reply)
+    {
+        XFree (reply);
+    }
 
     /* XIM_STATUS_DONE is an asyncronous protocol, so return immediately. */
     return True;
@@ -496,8 +544,14 @@ int _Xi18nStringConversionCallback (XIMS ims, IMProtocol *call_data)
                        0,
                        reply,
                        total_size);
-    FrameMgrFree (fm);
-    XFree (reply);
+    if (fm)
+    {
+        FrameMgrFree (fm);
+    }
+    if (reply)
+    {
+        XFree (reply);
+    }
 
     /* XIM_STR_CONVERSION is a syncronous protocol,
        so should wait here for XIM_STR_CONVERSION_REPLY. */

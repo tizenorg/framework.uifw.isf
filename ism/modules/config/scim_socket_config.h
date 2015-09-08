@@ -33,7 +33,7 @@
 
 namespace scim {
 
-class SocketConfig : public ConfigBase
+class EAPI SocketConfig : public ConfigBase
 {
     String               m_socket_address;
     int                  m_socket_timeout;

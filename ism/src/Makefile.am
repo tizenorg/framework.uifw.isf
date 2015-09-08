@@ -33,7 +33,8 @@ INCLUDES		= -I$(top_builddir) \
 			  -DSCIM_SYSCONFDIR=\"@SCIM_SYSCONFDIR@\" \
 			  -DSCIM_LIBEXECDIR=\"@SCIM_LIBEXECDIR@\" \
 			  -DSCIM_ICONDIR=\"@SCIM_ICONDIR@\" \
-			  -DSCIM_MODULE_PATH=\"@SCIM_MODULE_PATH@\"
+			  -DSCIM_MODULE_PATH=\"@SCIM_MODULE_PATH@\" \
+			  @ISF_BUILDING_DLL@
 
 
 noinst_HEADERS		= ltdl.h \
@@ -86,9 +87,11 @@ libsciminclude_HEADERS 	= scim.h \
 			  scim_transaction.h \
 			  scim_types.h \
 			  scim_utility.h \
+			  scim_setup_module_efl.h \
 			  isf_control.h \
 			  isf_imcontrol_client.h \
-			  ise_context.h
+			  ise_context.h \
+			  scim_visibility.h
 
 noinst_LTLIBRARIES	= libltdlc.la
 
@@ -101,13 +104,15 @@ endif
 
 lib_LTLIBRARIES 	= libscim@SCIM_EPOCH@.la
 
-libscim@SCIM_EPOCH@_la_SOURCES = scim_backend.cpp \
-		      	  scim_chartraits.cpp \
+libscim@SCIM_EPOCH@_la_SOURCES = \
+			  scim_debug.cpp \
+			  scim_module.cpp \
+			  scim_backend.cpp \
+			  scim_chartraits.cpp \
 			  scim_compose_key.cpp \
 			  scim_config_base.cpp \
 			  scim_config_module.cpp \
 			  scim_connection.cpp \
-			  scim_debug.cpp \
 			  scim_event.cpp \
 			  scim_filter.cpp \
 			  scim_filter_module.cpp \
@@ -123,7 +128,6 @@ libscim@SCIM_EPOCH@_la_SOURCES = scim_backend.cpp \
 			  scim_imengine.cpp \
 			  scim_imengine_module.cpp \
 			  scim_lookup_table.cpp \
-			  scim_module.cpp \
 			  scim_object.cpp \
 			  scim_panel_agent.cpp \
 			  scim_panel_client.cpp \
@@ -133,19 +137,24 @@ libscim@SCIM_EPOCH@_la_SOURCES = scim_backend.cpp \
 			  scim_socket.cpp \
 			  scim_transaction.cpp \
 			  scim_utility.cpp \
+			  scim_setup_module_efl.cpp \
 			  isf_control.cpp \
 			  isf_imcontrol_client.cpp \
 			  isf_query_utility.cpp
 
-libscim@SCIM_EPOCH@_la_CXXFLAGS = @GTK2_CFLAGS@
+libscim@SCIM_EPOCH@_la_CXXFLAGS = @EFL_CFLAGS@ @DLOG_CFLAGS@ @SECURITY_SERVER_CFLAGS@ @VCONF_CFLAGS@
 
 libscim@SCIM_EPOCH@_la_LDFLAGS  = -version-info $(SCIM_CURRENT):$(SCIM_REVISION):$(SCIM_AGE) \
 			  -export-dynamic \
 			  -rpath $(libdir) \
 			  $(LD_VERSION_SCRIPT_OPTION) \
+			  @DLOG_LIBS@ \
 			  @LIBTOOL_EXPORT_OPTIONS@ \
 			  @LIBICONV@ \
 			  @LTLIBINTL@ \
+			  @SECURITY_SERVER_LIBS@ \
+			  @EFL_LIBS@ \
+			  @VCONF_LIBS@ \
 			  -lstdc++
 
 libscim@SCIM_EPOCH@_la_LIBADD	= libltdlc.la
@@ -154,35 +163,34 @@ libscim@SCIM_EPOCH@_la_LIBADD	= libltdlc.la
 bin_PROGRAMS		= scim isf-log isf-query-engines
 
 scim_SOURCES	 	= scim.cpp
+scim_CXXFLAGS		= @EFL_CFLAGS@ @PRIVILEGE_CONTROL_CFLAGS@ @VCONF_CFLAGS@ -fPIE
 scim_LDADD		= libscim@SCIM_EPOCH@.la
-scim_LDFLAGS		= @LTLIBINTL@
+scim_LDFLAGS		= @LTLIBINTL@ @EFL_LIBS@ @PRIVILEGE_CONTROL_LIBS@ @VCONF_LIBS@ -pie
 
 isf_log_SOURCES	 	= isf_log.cpp
 isf_log_LDADD		= libscim@SCIM_EPOCH@.la
 if SCIM_BUILD_GTK_UTILS
-isf_log_CXXFLAGS	= @GTK2_CFLAGS@
-isf_log_LDFLAGS		= @LTLIBINTL@ -rpath $(libdir) -lgtk-x11-2.0 -lgdk-x11-2.0 -lglib-2.0 -lgobject-2.0
+isf_log_CXXFLAGS	= @GTK2_CFLAGS@ -fPIE
+isf_log_LDFLAGS		= @LTLIBINTL@ -rpath $(libdir) -L@GTK_LIBDIR@ -lgtk-x11-2.0 -lgdk-x11-2.0 -lglib-2.0 -lgobject-2.0 -pie
 else
-isf_log_LDFLAGS		= @LTLIBINTL@ -rpath $(libdir) -lglib-2.0 -lgobject-2.0
+isf_log_CXXFLAGS	= -fPIE
+isf_log_LDFLAGS		= @LTLIBINTL@ -rpath $(libdir) -lglib-2.0 -lgobject-2.0 -pie
 endif
 
 isf_query_engines_SOURCES  = isf_query_engines.cpp
-isf_query_engines_CXXFLAGS = @VCONF_CFLAGS@ @PRIVILEGE_CONTROL_CFLAGS@
+isf_query_engines_CXXFLAGS = @VCONF_CFLAGS@ @PRIVILEGE_CONTROL_CFLAGS@ -fPIE
 isf_query_engines_LDADD    = libscim@SCIM_EPOCH@.la
-isf_query_engines_LDFLAGS  = @LTLIBINTL@ @VCONF_LIBS@ @PRIVILEGE_CONTROL_LIBS@
+isf_query_engines_LDFLAGS  = @LTLIBINTL@ @VCONF_LIBS@ @PRIVILEGE_CONTROL_LIBS@ -pie
 
 libexecdir		= $(libdir)/scim@SCIM_EPOCH@
 libexec_PROGRAMS        = scim-launcher scim-helper-launcher
 
 scim_launcher_SOURCES 	= scim_launcher.cpp
 scim_launcher_LDADD	= libscim@SCIM_EPOCH@.la
-scim_launcher_CXXFLAGS  = @PRIVILEGE_CONTROL_CFLAGS@
-scim_launcher_LDFLAGS	= @LTLIBINTL@ @PRIVILEGE_CONTROL_LIBS@
+scim_launcher_CXXFLAGS  = @PRIVILEGE_CONTROL_CFLAGS@ @VCONF_CFLAGS@ -fPIE
+scim_launcher_LDFLAGS	= @LTLIBINTL@ @PRIVILEGE_CONTROL_LIBS@ @VCONF_LIBS@ -pie
 
-scim_helper_launcher_SOURCES 	= scim_helper_launcher.cpp
-scim_helper_launcher_CXXFLAGS	= @PRIVILEGE_CONTROL_CFLAGS@
+scim_helper_launcher_SOURCES 	= scim_helper_launcher.cpp ise_preexec.cpp
+scim_helper_launcher_CXXFLAGS	= @PRIVILEGE_CONTROL_CFLAGS@ @EFL_CFLAGS@ @PKGMGR_INFO_CFLAGS@ @DLOG_CFLAGS@ -fPIE
 scim_helper_launcher_LDADD	= libscim@SCIM_EPOCH@.la
-scim_helper_launcher_LDFLAGS	= @LTLIBINTL@ @PRIVILEGE_CONTROL_LIBS@
-
-
-
+scim_helper_launcher_LDFLAGS	= @LTLIBINTL@ @PRIVILEGE_CONTROL_LIBS@ @EFL_LIBS@ @PKGMGR_INFO_LIBS@ @DLOG_LIBS@ -pie

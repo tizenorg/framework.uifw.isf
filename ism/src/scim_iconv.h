@@ -44,7 +44,7 @@ namespace scim {
 /**
  * @brief A class to convert strings between UCS-4 and local encodings.
  */
-class IConvert
+class EAPI IConvert
 {
     class IConvertImpl;
 
@@ -67,7 +67,7 @@ public:
     /**
      * @brief Assign operator
      */
-    const IConvert & operator = (const IConvert & iconvert);
+    IConvert & operator = (const IConvert & iconvert);
 
     /**
      * @brief Set the working local encoding.

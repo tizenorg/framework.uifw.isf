@@ -2,7 +2,7 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2000 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  * Contact: Haifeng Deng <haifeng.deng@samsung.com>, Hengliang Luo <hl.luo@samsung.com>
  *
@@ -32,9 +32,17 @@
 #include <string.h>
 #include "scim.h"
 #include "scim_stl_map.h"
+#include "isf_panel_efl.h"
 #include "isf_panel_utility.h"
 #include "isf_query_utility.h"
+#include <sys/stat.h>
+#include <unistd.h>
+#include <dlog.h>
+#include <errno.h>
 
+/////////////////////////////////////////////////////////////////////////////
+// Declaration of macro.
+/////////////////////////////////////////////////////////////////////////////
 
 /////////////////////////////////////////////////////////////////////////////
 // Declaration of global variables.
@@ -48,13 +56,10 @@ std::vector<String>          _icons;
 std::vector<uint32>          _options;
 std::vector<TOOLBAR_MODE_T>  _modes;
 
-std::vector<String>          _load_ise_list;
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Declaration of internal variables.
 /////////////////////////////////////////////////////////////////////////////
-static std::vector<String>   _current_modules_list;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -80,12 +85,13 @@ void isf_get_all_languages (std::vector<String> &all_langs)
 }
 
 /**
- * @brief Get all ISE names for the specific languages.
+ * @brief Get all ISEs for the specific languages.
  *
  * @param lang_list The specific languages list.
- * @param ise_names The list to store ISE names .
+ * @param uuid_list The list to store ISEs' UUID.
+ * @param name_list The list to store ISEs' name.
  */
-void isf_get_all_ise_names_in_languages (std::vector<String> lang_list, std::vector<String> &ise_names)
+void isf_get_all_ises_in_languages (std::vector<String> lang_list, std::vector<String> &uuid_list, std::vector<String> &name_list)
 {
     String lang_name;
 
@@ -93,12 +99,11 @@ void isf_get_all_ise_names_in_languages (std::vector<String> lang_list, std::vec
         lang_name = scim_get_language_name_english (it->first);
         if (std::find (lang_list.begin (), lang_list.end (), lang_name) != lang_list.end ()) {
             for (size_t i = 0; i < it->second.size (); i++) {
-                if (_current_modules_list.size () > 0 &&
-                        std::find (_current_modules_list.begin (), _current_modules_list.end (), _module_names[it->second[i]]) == _current_modules_list.end ())
-                    continue;
-                // Avoid to add the same ise
-                if (std::find (ise_names.begin (), ise_names.end (), _names[it->second[i]]) == ise_names.end ())
-                    ise_names.push_back (_names[it->second[i]]);
+                // Avoid to add the same ISE
+                if (std::find (uuid_list.begin (), uuid_list.end (), _uuids[it->second[i]]) == uuid_list.end ()) {
+                    uuid_list.push_back (_uuids[it->second[i]]);
+                    name_list.push_back (_names[it->second[i]]);
+                }
             }
         }
     }
@@ -107,19 +112,21 @@ void isf_get_all_ise_names_in_languages (std::vector<String> lang_list, std::vec
 /**
  * @brief Get keyboard ISE
  *
+ * @param config The config pointer for loading keyboard ISE.
  * @param ise_uuid The keyboard ISE uuid.
  * @param ise_name The keyboard ISE name.
+ * @param ise_option The keyboard ISE option.
  */
-void isf_get_keyboard_ise (String &ise_uuid, String &ise_name, const ConfigPointer &config)
+void isf_get_keyboard_ise (const ConfigPointer &config, String &ise_uuid, String &ise_name, uint32 &ise_option)
 {
-    String language = String ("~other");
-    String uuid     = config->read (String (SCIM_CONFIG_DEFAULT_IMENGINE_FACTORY) + String ("/") + language, String ("d75857a5-4148-4745-89e2-1da7ddaf7999"));
+    String uuid = config->read (String (SCIM_CONFIG_DEFAULT_IMENGINE_FACTORY) + String ("/") + String ("~other"), String (""));
     if (ise_uuid.length () > 0)
         uuid = ise_uuid;
     for (unsigned int i = 0; i < _uuids.size (); i++) {
         if (uuid == _uuids[i]) {
-            ise_name = _names[i];
-            ise_uuid = uuid;
+            ise_uuid   = _uuids[i];
+            ise_name   = _names[i];
+            ise_option = _options[i];
             return;
         }
     }
@@ -128,12 +135,17 @@ void isf_get_keyboard_ise (String &ise_uuid, String &ise_name, const ConfigPoint
 }
 
 /**
- * @brief Get all keyboard ISE names for the specific languages.
+ * @brief Get all keyboard ISEs for the specific languages.
  *
  * @param lang_list The specific languages list.
- * @param keyboard_names The list to store keyboard ISE names.
+ * @param uuid_list The list to store keyboard ISEs' UUID.
+ * @param name_list The list to store keyboard ISEs' name.
+ * @param bCheckOption The flag to check whether support hardware keyboard.
  */
-void isf_get_keyboard_names_in_languages (std::vector<String> lang_list, std::vector<String> &keyboard_names)
+void isf_get_keyboard_ises_in_languages (const std::vector<String> &lang_list,
+                                         std::vector<String>       &uuid_list,
+                                         std::vector<String>       &name_list,
+                                         bool                       bCheckOption)
 {
     String lang_name;
 
@@ -144,50 +156,25 @@ void isf_get_keyboard_names_in_languages (std::vector<String> lang_list, std::ve
             for (size_t i = 0; i < it->second.size (); i++) {
                 if (_modes[it->second[i]] != TOOLBAR_KEYBOARD_MODE)
                     continue;
-                if (_current_modules_list.size () > 0 &&
-                        std::find (_current_modules_list.begin (), _current_modules_list.end (), _module_names[it->second[i]]) == _current_modules_list.end ())
+                if (bCheckOption && (_options[it->second[i]] & SCIM_IME_NOT_SUPPORT_HARDWARE_KEYBOARD))
                     continue;
-                if (std::find (keyboard_names.begin (), keyboard_names.end (), _names[it->second[i]]) == keyboard_names.end ())
-                    keyboard_names.push_back (_names[it->second[i]]);
+                if (std::find (uuid_list.begin (), uuid_list.end (), _uuids[it->second[i]]) == uuid_list.end ()) {
+                    uuid_list.push_back (_uuids[it->second[i]]);
+                    name_list.push_back (_names[it->second[i]]);
+                }
             }
         }
     }
 }
 
 /**
- * @brief Get all keyboard ISE uuids for the specific languages.
+ * @brief Get all helper ISEs for the specific languages.
  *
  * @param lang_list The specific languages list.
- * @param keyboard_uuids The list to store keyboard ISE uuids.
+ * @param uuid_list The list to store helper ISEs' UUID.
+ * @param name_list The list to store helper ISEs' name.
  */
-void isf_get_keyboard_uuids_in_languages (std::vector<String> lang_list, std::vector<String> &keyboard_uuids)
-{
-    String lang_name;
-
-    for (MapStringVectorSizeT::iterator it = _groups.begin (); it != _groups.end (); ++it) {
-        lang_name = scim_get_language_name_english (it->first);
-
-        if (std::find (lang_list.begin (), lang_list.end (), lang_name) != lang_list.end ()) {
-            for (size_t i = 0; i < it->second.size (); i++) {
-                if (_modes[it->second[i]] != TOOLBAR_KEYBOARD_MODE)
-                    continue;
-                if (_current_modules_list.size () > 0 &&
-                        std::find (_current_modules_list.begin (), _current_modules_list.end (), _module_names[it->second[i]]) == _current_modules_list.end ())
-                    continue;
-                if (std::find (keyboard_uuids.begin (), keyboard_uuids.end (), _uuids[it->second[i]]) == keyboard_uuids.end ())
-                    keyboard_uuids.push_back (_uuids[it->second[i]]);
-            }
-        }
-    }
-}
-
-/**
- * @brief Get enabled helper ISE names for the specific languages.
- *
- * @param lang_list The specific languages list.
- * @param helper_names The list to store helper ISE names.
- */
-void isf_get_helper_names_in_languages (std::vector<String> lang_list, std::vector<String> &helper_names)
+void isf_get_helper_ises_in_languages (const std::vector<String> &lang_list, std::vector<String> &uuid_list, std::vector<String> &name_list)
 {
     String lang_name;
 
@@ -198,12 +185,11 @@ void isf_get_helper_names_in_languages (std::vector<String> lang_list, std::vect
 
                 if (_modes[it->second[i]]!= TOOLBAR_HELPER_MODE)
                     continue;
-                if (_current_modules_list.size () > 0 &&
-                        std::find (_current_modules_list.begin (), _current_modules_list.end (), _module_names[it->second[i]]) == _current_modules_list.end ())
-                    continue;
                 // Avoid to add the same ISE
-                if (std::find (helper_names.begin (), helper_names.end (), _names[it->second[i]]) == helper_names.end ())
-                    helper_names.push_back (_names[it->second[i]]);
+                if (std::find (uuid_list.begin (), uuid_list.end (), _uuids[it->second[i]]) == uuid_list.end ()) {
+                    uuid_list.push_back (_uuids[it->second[i]]);
+                    name_list.push_back (_names[it->second[i]]);
+                }
             }
         }
     }
@@ -221,8 +207,6 @@ void isf_save_ise_information (void)
 
     std::vector<ISEINFO> info_list;
     for (size_t i = 0; i < _module_names.size (); ++i) {
-        if (_module_names[i] == ENGLISH_KEYBOARD_MODULE)
-            continue;
         ISEINFO info;
         info.name     = _names[i];
         info.uuid     = _uuids[i];
@@ -251,7 +235,6 @@ void isf_save_ise_information (void)
  * @param icons The ISE icon list.
  * @param modes The ISE type list.
  * @param options The ISE option list.
- * @param ise_list The already loaded ISE list.
  */
 void isf_get_factory_list (LOAD_ISE_TYPE  type,
                            const ConfigPointer &config,
@@ -261,8 +244,7 @@ void isf_get_factory_list (LOAD_ISE_TYPE  type,
                            std::vector<String> &langs,
                            std::vector<String> &icons,
                            std::vector<TOOLBAR_MODE_T> &modes,
-                           std::vector<uint32> &options,
-                           const std::vector<String> &ise_list)
+                           std::vector<uint32> &options)
 {
     uuids.clear ();
     names.clear ();
@@ -273,23 +255,10 @@ void isf_get_factory_list (LOAD_ISE_TYPE  type,
     options.clear ();
     _groups.clear ();
 
-    if (type != HELPER_ONLY) {
-        /* Add "English/Keyboard" factory first. */
-        IMEngineFactoryPointer factory = new ComposeKeyFactory ();
-        uuids.push_back (factory->get_uuid ());
-        names.push_back (utf8_wcstombs (factory->get_name ()));
-        module_names.push_back (ENGLISH_KEYBOARD_MODULE);
-        langs.push_back (isf_get_normalized_language (factory->get_language ()));
-        icons.push_back (factory->get_icon_file ());
-        modes.push_back (TOOLBAR_KEYBOARD_MODE);
-        options.push_back (0);
-        factory.reset ();
-    }
-
     String user_file_name = String (USER_ENGINE_FILE_NAME);
     FILE *engine_list_file = fopen (user_file_name.c_str (), "r");
     if (engine_list_file == NULL) {
-        std::cerr <<  user_file_name << " doesn't exist.\n";
+        std::cerr << __func__ << " Failed to open(" << user_file_name << ")\n";
         return;
     }
 
@@ -317,21 +286,10 @@ void isf_get_factory_list (LOAD_ISE_TYPE  type,
  * @param type The load ISE type.
  * @param config The config pointer for loading keyboard ISE.
  */
-void isf_load_ise_information (LOAD_ISE_TYPE  type, const ConfigPointer &config)
+void isf_load_ise_information (LOAD_ISE_TYPE type, const ConfigPointer &config)
 {
     /* Load ISE engine info */
-    isf_get_factory_list (type, config, _uuids, _names, _module_names, _langs, _icons, _modes, _options, _load_ise_list);
-
-    _current_modules_list.clear ();
-    scim_get_helper_module_list (_current_modules_list);
-    /* Check keyboard ISEs */
-    if (type != HELPER_ONLY) {
-        _current_modules_list.push_back (ENGLISH_KEYBOARD_MODULE);
-        std::vector<String> imengine_list;
-        scim_get_imengine_module_list (imengine_list);
-        for (size_t i = 0; i < imengine_list.size (); ++i)
-            _current_modules_list.push_back (imengine_list [i]);
-    }
+    isf_get_factory_list (type, config, _uuids, _names, _module_names, _langs, _icons, _modes, _options);
 
     /* Update _groups */
     std::vector<String> ise_langs;
@@ -364,7 +322,7 @@ static bool add_keyboard_ise_module (const String module_name, const ConfigPoint
     String filename = String (USER_ENGINE_FILE_NAME);
     FILE *engine_list_file = fopen (filename.c_str (), "a");
     if (engine_list_file == NULL) {
-        std::cerr << "failed to open " << filename << "\n";
+        LOGW ("Failed to open %s!!!\n", filename.c_str ());
         return false;
     }
 
@@ -392,15 +350,15 @@ static bool add_keyboard_ise_module (const String module_name, const ConfigPoint
                     _langs.push_back (language);
                     _icons.push_back (icon);
                     _modes.push_back (TOOLBAR_KEYBOARD_MODE);
-                    _options.push_back (0);
+                    _options.push_back (factory->get_option ());
 
                     snprintf (mode, sizeof (mode), "%d", (int)TOOLBAR_KEYBOARD_MODE);
-                    snprintf (option, sizeof (option), "%d", 0);
+                    snprintf (option, sizeof (option), "%d", factory->get_option ());
 
-                    String line = isf_combine_ise_info_string (name, uuid, module_name, language, 
+                    String line = isf_combine_ise_info_string (name, uuid, module_name, language,
                                                                icon, String (mode), String (option), factory->get_locales ());
                     if (fputs (line.c_str (), engine_list_file) < 0) {
-                        std::cerr << "write to ise cache file failed:" << line << "\n";
+                        LOGW ("Failed to write (%s)!!!\n", line.c_str ());
                         break;
                     }
                 }
@@ -408,9 +366,15 @@ static bool add_keyboard_ise_module (const String module_name, const ConfigPoint
             }
         }
         ime_module.unload ();
+    } else {
+        LOGW ("Failed to load (%s)!!!", module_name.c_str ());
+        fclose (engine_list_file);
+        return false;
     }
 
-    fclose (engine_list_file);
+    int ret = fclose (engine_list_file);
+    if (ret != 0)
+        LOGW ("Failed to fclose %s!!!\n", filename.c_str ());
 
     return true;
 }
@@ -433,7 +397,7 @@ static bool add_helper_ise_module (const String module_name)
     String filename = String (USER_ENGINE_FILE_NAME);
     FILE *engine_list_file = fopen (filename.c_str (), "a");
     if (engine_list_file == NULL) {
-        std::cerr << "failed to open " << filename << "\n";
+        LOGW ("Failed to open %s!!!\n", filename.c_str ());
         return false;
     }
 
@@ -457,14 +421,20 @@ static bool add_helper_ise_module (const String module_name)
             String line = isf_combine_ise_info_string (helper_info.name, helper_info.uuid, module_name, isf_get_normalized_language (helper_module.get_helper_lang (j)),
                                                        helper_info.icon, String (mode), String (option), String (""));
             if (fputs (line.c_str (), engine_list_file) < 0) {
-                 std::cerr << "write to ise cache file failed:" << line << "\n";
+                 LOGW ("Failed to write (%s)!!!\n", line.c_str ());
                  break;
             }
         }
         helper_module.unload ();
+    } else {
+        LOGW ("Failed to load (%s)!!!", module_name.c_str ());
+        fclose (engine_list_file);
+        return false;
     }
 
-    fclose (engine_list_file);
+    int ret = fclose (engine_list_file);
+    if (ret != 0)
+        LOGW ("Failed to fclose %s!!!\n", filename.c_str ());
 
     return true;
 }
@@ -484,15 +454,14 @@ bool isf_update_ise_list (LOAD_ISE_TYPE type, const ConfigPointer &config)
     std::vector<String> helper_list;
     scim_get_helper_module_list (helper_list);
 
-    _current_modules_list.clear ();
+    std::vector<String> install_modules, uninstall_modules;
 
     /* Check keyboard ISEs */
     if (type != HELPER_ONLY) {
-        _current_modules_list.push_back (ENGLISH_KEYBOARD_MODULE);
         std::vector<String> imengine_list;
         scim_get_imengine_module_list (imengine_list);
         for (size_t i = 0; i < imengine_list.size (); ++i) {
-            _current_modules_list.push_back (imengine_list [i]);
+            install_modules.push_back (imengine_list [i]);
             if (std::find (_module_names.begin (), _module_names.end (), imengine_list [i]) == _module_names.end ()) {
                 if (add_keyboard_ise_module (imengine_list [i], config))
                     ret = true;
@@ -502,10 +471,56 @@ bool isf_update_ise_list (LOAD_ISE_TYPE type, const ConfigPointer &config)
 
     /* Check helper ISEs */
     for (size_t i = 0; i < helper_list.size (); ++i) {
-        _current_modules_list.push_back (helper_list [i]);
+        install_modules.push_back (helper_list [i]);
         if (std::find (_module_names.begin (), _module_names.end (), helper_list [i]) == _module_names.end ()) {
             if (add_helper_ise_module (helper_list [i]))
                 ret = true;
+        }
+    }
+
+    /* Try to find uninstall ISEs */
+    bool bFindUninstall = false;
+    for (size_t i = 0; i < _module_names.size (); ++i) {
+        if (std::find (install_modules.begin (), install_modules.end (), _module_names [i]) == install_modules.end ()) {
+            ret = true;
+            bFindUninstall = true;
+            /* Avoid to add the same module */
+            if (std::find (uninstall_modules.begin (), uninstall_modules.end (), _module_names [i]) == uninstall_modules.end ()) {
+                uninstall_modules.push_back (_module_names [i]);
+                String filename = String (USER_ENGINE_FILE_NAME);
+                if (isf_remove_ise_info_from_file (filename.c_str (), _module_names [i].c_str ()) == false)
+                    LOGW ("Failed to remove %s from cache file : %s!!!", _module_names [i].c_str (), filename.c_str ());
+            }
+        }
+    }
+    if (bFindUninstall) {
+        std::vector<String>          tmp_uuids        = _uuids;
+        std::vector<String>          tmp_names        = _names;
+        std::vector<String>          tmp_module_names = _module_names;
+        std::vector<String>          tmp_langs        = _langs;
+        std::vector<String>          tmp_icons        = _icons;
+        std::vector<uint32>          tmp_options      = _options;
+        std::vector<TOOLBAR_MODE_T>  tmp_modes        = _modes;
+
+        _uuids.clear ();
+        _names.clear ();
+        _module_names.clear ();
+        _langs.clear ();
+        _icons.clear ();
+        _options.clear ();
+        _modes.clear ();
+        _groups.clear ();
+
+        for (size_t i = 0; i < tmp_module_names.size (); ++i) {
+            if (std::find (uninstall_modules.begin (), uninstall_modules.end (), tmp_module_names [i]) == uninstall_modules.end ()) {
+                _uuids.push_back (tmp_uuids [i]);
+                _names.push_back (tmp_names [i]);
+                _module_names.push_back (tmp_module_names [i]);
+                _langs.push_back (tmp_langs [i]);
+                _icons.push_back (tmp_icons [i]);
+                _options.push_back (tmp_options [i]);
+                _modes.push_back (tmp_modes [i]);
+            }
         }
     }
 
@@ -522,10 +537,169 @@ bool isf_update_ise_list (LOAD_ISE_TYPE type, const ConfigPointer &config)
         }
     }
 
-    /* When load ise list is empty, all ISEs can be loaded. */
-    _load_ise_list.clear ();
     return ret;
 }
+
+bool isf_remove_ise_module (const String module_name, const ConfigPointer &config)
+{
+    if (std::find (_module_names.begin (), _module_names.end (), module_name) == _module_names.end ()) {
+        LOGW ("Cannot to find %s!!!", module_name.c_str ());
+        return true;
+    }
+
+    String filename = String (USER_ENGINE_FILE_NAME);
+    if (isf_remove_ise_info_from_file (filename.c_str (), module_name.c_str ())) {
+        isf_get_factory_list (ALL_ISE, config, _uuids, _names, _module_names, _langs, _icons, _modes, _options);
+
+        /* Update _groups */
+        _groups.clear ();
+        std::vector<String> ise_langs;
+        for (size_t i = 0; i < _uuids.size (); ++i) {
+            scim_split_string_list (ise_langs, _langs[i]);
+            for (size_t j = 0; j < ise_langs.size (); j++) {
+                if (std::find (_groups[ise_langs[j]].begin (), _groups[ise_langs[j]].end (), i) == _groups[ise_langs[j]].end ())
+                    _groups[ise_langs[j]].push_back (i);
+            }
+            ise_langs.clear ();
+        }
+        return true;
+    } else {
+        LOGW ("Failed to remove %s from cache file : %s!!!", module_name.c_str (), filename.c_str ());
+        return false;
+    }
+}
+
+bool isf_update_ise_module (const String strModulePath, const ConfigPointer &config)
+{
+    bool ret = false;
+    struct stat filestat;
+    if (stat (strModulePath.c_str (), &filestat) == -1) {
+        char buf_err[256];
+        LOGW ("can't access : %s, reason : %s\n", strModulePath.c_str (), strerror_r (errno, buf_err, sizeof (buf_err)));
+        return false;
+    }
+
+    if (!S_ISDIR (filestat.st_mode)) {
+        int begin = strModulePath.find_last_of (SCIM_PATH_DELIM) + 1;
+        String mod_name = strModulePath.substr (begin, strModulePath.find_last_of ('.') - begin);
+        String path     = strModulePath.substr (0, strModulePath.find_last_of (SCIM_PATH_DELIM));
+        LOGD ("module_name = %s, path = %s", mod_name.c_str (), path.c_str ());
+
+        if (mod_name.length () > 0 && path.length () > 1) {
+            if (isf_remove_ise_module (mod_name, config)) {
+                String type = path.substr (path.find_last_of (SCIM_PATH_DELIM) + 1);
+                LOGD ("type = %s", type.c_str ());
+                if (type == String ("Helper")) {
+                    if (add_helper_ise_module (mod_name))
+                        ret = true;
+                } else if (type == String ("IMEngine")) {
+                    if (add_keyboard_ise_module (mod_name, config))
+                        ret = true;
+                }
+            }
+        } else {
+            LOGW ("%s is not valid so file!!!", strModulePath.c_str ());
+        }
+    }
+
+    /* Update _groups */
+    if (ret) {
+        _groups.clear ();
+        std::vector<String> ise_langs;
+        for (size_t i = 0; i < _uuids.size (); ++i) {
+            scim_split_string_list (ise_langs, _langs[i]);
+            for (size_t j = 0; j < ise_langs.size (); j++) {
+                if (std::find (_groups[ise_langs[j]].begin (), _groups[ise_langs[j]].end (), i) == _groups[ise_langs[j]].end ())
+                    _groups[ise_langs[j]].push_back (i);
+            }
+            ise_langs.clear ();
+        }
+    }
+
+    return ret;
+}
+
+/**
+ * @brief Get normalized language name.
+ *
+ * @param src_str The language name before normalized.
+ *
+ * @return normalized language name.
+ */
+String isf_get_normalized_language (String src_str)
+{
+    if (src_str.length () == 0)
+        return String ("en");
+
+    std::vector<String> str_list, dst_list;
+    scim_split_string_list (str_list, src_str);
+
+    for (size_t i = 0; i < str_list.size (); i++)
+        dst_list.push_back (scim_get_normalized_language (str_list[i]));
+
+    String dst_str =  scim_combine_string_list (dst_list);
+
+    return dst_str;
+}
+
+bool isf_add_helper_ise (HelperInfo helper_info, String module_name)
+{
+    String filename = String (USER_ENGINE_FILE_NAME);
+    FILE *engine_list_file = fopen (filename.c_str (), "a");
+    if (engine_list_file == NULL) {
+        LOGW ("Failed to open %s!!!\n", filename.c_str ());
+        return false;
+    }
+
+    _uuids.push_back (helper_info.uuid);
+    _names.push_back (helper_info.name);
+    _langs.push_back (isf_get_normalized_language ("en_US")); // FIXME
+    _module_names.push_back (module_name);
+    _icons.push_back (helper_info.icon);
+    _modes.push_back (TOOLBAR_HELPER_MODE);
+    _options.push_back (helper_info.option);
+
+    char mode[12];
+    char option[12];
+    snprintf (mode, sizeof (mode), "%d", (int)TOOLBAR_HELPER_MODE);
+    snprintf (option, sizeof (option), "%d", helper_info.option);
+
+    String line = isf_combine_ise_info_string (helper_info.name, helper_info.uuid, module_name, isf_get_normalized_language ("en_US"),
+                                               helper_info.icon, String (mode), String (option), String (""));
+    if (fputs (line.c_str (), engine_list_file) < 0) {
+         LOGW ("Failed to write (%s)!!!\n", line.c_str ());
+    }
+
+    if (fclose (engine_list_file) != 0)
+        LOGW ("Failed to fclose %s!!!\n", filename.c_str ());
+
+    return true;
+}
+
+bool isf_remove_helper_ise (const char *uuid, const ConfigPointer &config)
+{
+    String filename = String (USER_ENGINE_FILE_NAME);
+    if (isf_remove_ise_info_from_file_by_uuid (filename.c_str (), uuid)) {
+        isf_get_factory_list (ALL_ISE, config, _uuids, _names, _module_names, _langs, _icons, _modes, _options);
+
+        /* Update _groups */
+        _groups.clear ();
+        std::vector<String> ise_langs;
+        for (size_t i = 0; i < _uuids.size (); ++i) {
+            scim_split_string_list (ise_langs, _langs[i]);
+            for (size_t j = 0; j < ise_langs.size (); j++) {
+                if (std::find (_groups[ise_langs[j]].begin (), _groups[ise_langs[j]].end (), i) == _groups[ise_langs[j]].end ())
+                    _groups[ise_langs[j]].push_back (i);
+            }
+            ise_langs.clear ();
+        }
+        return true;
+    } else {
+        LOGW ("Failed to remove uuid : %s from cache file : %s!!!", uuid, filename.c_str ());
+        return false;
+    }
+}
+
 
 /*
 vi:ts=4:nowrap:ai:expandtab

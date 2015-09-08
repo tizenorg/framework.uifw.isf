@@ -43,8 +43,8 @@ ism/modules/frontend/scim_socket_frontend.cpp
 ism/modules/imengine/scim_socket_imengine.cpp
 ism/extras/gtk2_immodule/gtkimcontextscim.cpp
 ism/extras/gtk2_immodule/imscim.cpp
-ism/extras/gtk_panel/scim_panel_gtk.cpp
 ism/extras/efl_panel/isf_panel_efl.cpp
+ism/extras/efl_panel/iseselector.cpp
 ism/utils/scimstringview.c
 ism/utils/scimkeyselection.cpp
 ism/utils/scimtrayicon.c

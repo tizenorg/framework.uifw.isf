@@ -9,6 +9,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -25,6 +26,15 @@
  * License along with this program; if not, write to the
  * Free Software Foundation, Inc., 59 Temple Place, Suite 330,
  * Boston, MA  02111-1307  USA
+ *
+ * Modifications by Samsung Electronics Co., Ltd.
+ * 1. Dynamic load keyboard ISE
+ * 2. Add new interface APIs for keyboard ISE
+ *    a. expand_candidate (), contract_candidate () and set_candidate_style ()
+ *    b. select_aux (), set_prediction_allow () and set_layout ()
+ *    c. update_candidate_item_layout (), update_cursor_position () and update_displayed_candidate_number ()
+ *    d. candidate_more_window_show (), candidate_more_window_hide () and longpress_candidate ()
+ *    e. set_imdata () and reset_option ()
  *
  * $Id: scim_frontend.h,v 1.42 2005/10/06 18:02:06 liuspider Exp $
  */
@@ -47,7 +57,7 @@ namespace scim {
  * scim::FrontEndBase and its derived classes must throw
  * scim::FrontEndError object when error.
  */
-class FrontEndError: public Exception
+class EAPI FrontEndError: public Exception
 {
 public:
     FrontEndError (const String& what_arg)
@@ -70,7 +80,7 @@ typedef Pointer <FrontEndBase> FrontEndPointer;
  * and the user applications. It forward the user requests to
  * IMEngineFactory/IMEngineInstance objects, and handle the requests sent back.
  */
-class FrontEndBase : public ReferencedObject
+class EAPI FrontEndBase : public ReferencedObject
 {
     class FrontEndBaseImpl;
 
@@ -98,7 +108,7 @@ protected:
      */
 
     /**
-     * @brief Add one IMEngine module in BackEnd
+     * @brief Add one IMEngine module in BackEnd.
      *
      *
      * @return void.
@@ -106,7 +116,7 @@ protected:
     void add_module (const ConfigPointer &config, const String module, bool is_load_resource) const;
 
     /**
-     * @brief Add one IMEngine module info in BackEnd
+     * @brief Add one IMEngine module info in BackEnd.
      *
      *
      * @return void.
@@ -114,7 +124,7 @@ protected:
     void add_module_info (const ConfigPointer &config, const String module) const;
 
     /**
-     * @brief Get the IMEngine factories list for specific encoding
+     * @brief Get the IMEngine factories list for specific encoding.
      *
      * @param uuids    the vector to store the factories' uuids which
      *                 support the encoding.
@@ -126,10 +136,10 @@ protected:
     uint32 get_factory_list_for_encoding (std::vector<String> &uuids, const String &encoding) const;
 
     /**
-     * @brief Get the IMEngine factories list for specific language
+     * @brief Get the IMEngine factories list for specific language.
      *
      * @param uuids    the vector to store the factories' uuids which
-     *                 support the encoding.
+     *                 support the language.
      * @param language the language to be queried. If empty,
      *                 all IMEngine factories will be returned.
      *
@@ -137,6 +147,13 @@ protected:
      */
     uint32 get_factory_list_for_language (std::vector<String> &uuids, const String &language) const;
 
+    /**
+     * @brief Get the IMEngine factories list.
+     *
+     * @param uuids the vector to store the existing factories' uuids.
+     *
+     * @return the number of IMEngine factories found.
+     */
     uint32 get_factory_list (std::vector<String> &uuids) const;
 
     /**
@@ -336,8 +353,16 @@ protected:
      */
     String get_instance_icon_file (int id) const;
 
+    /**
+     * @brief get the name list of existing IMEngine instances.
+     * @param vec the vector to store the name of existing IMEngine instances,
+     *         aka. the name of its factory.
+     */
     void get_instance_list(std::vector<String> &vec) const;
 
+    /**
+     * @brief output uuid of existing IMEngine instances to scim debug.
+     */
     void dump_instances ();
 
     /**
@@ -449,6 +474,75 @@ protected:
     void update_client_capabilities (int id, unsigned int cap) const;
 
     /**
+     * @brief update candidate items layout.
+     * @param id the IMEngine instance id.
+     * @param row_items the items of each row.
+     */
+    void update_candidate_item_layout (int id, const std::vector<unsigned int> &row_items) const;
+
+    /**
+     * @brief update cursor position.
+     * @param id the IMEngine instance id.
+     * @param cursor_pos the new cursor position.
+     */
+    void update_cursor_position (int id, unsigned int cursor_pos) const;
+
+    /**
+     * @brief Update displayed candidate number
+     * @param id the IMEngine instance id.
+     * @param number - the number of displayed candidates.
+     */
+    void update_displayed_candidate_number (int id, unsigned int number) const;
+
+    /**
+     * @brief Candidate more window is shown
+     * @param id the IMEngine instance id.
+     */
+    void candidate_more_window_show (int id) const;
+
+    /**
+     * @brief Candidate more window is hidden
+     * @param id the IMEngine instance id.
+     */
+    void candidate_more_window_hide (int id) const;
+
+    /**
+     * @brief let a specific IMEngine instance longpress a candidate in its current lookup table.
+     * @param id the IMEngine instance id.
+     * @param index - the index in current page of the lookup table.
+     */
+    void longpress_candidate (int id, unsigned int index) const;
+
+    /**
+     * @brief Set IM data.
+     * @param id the IMEngine instance id.
+     * @param data - the buffer of data.
+     * @param len  - the length of data.
+     */
+    void set_imdata (int id, const char *data, unsigned int len) const;
+
+    /**
+     * @brief Set autocapital type
+     * @param id the IMEngine instance id.
+     * @param mode autocapital type
+     */
+    void set_autocapital_type (int id, int mode) const;
+
+    /**
+     * @brief Set input hint.
+     * @param id the IMEngine instance id.
+     * @param input_hint - the input hint.
+     */
+    void set_input_hint (int id, unsigned int input_hint) const;
+
+    /**
+     * @brief Update BiDi direction. (Neutral / LTR / RTL)
+     * @param id the IMEngine instance id.
+     * @param bidi_direction - the BiDi direction.
+     */
+    void update_bidi_direction (int id, unsigned int bidi_direction) const;
+
+    /**
      * @}
      */
 
@@ -511,7 +605,7 @@ protected:
      * @param str the new content of preedit string.
      * @param attrs the string attributes.
      */
-    virtual void update_preedit_string (int id, const WideString & str, const AttributeList & attrs);
+    virtual void update_preedit_string (int id, const WideString & str, const AttributeList & attrs, int caret);
 
     /**
      * @brief update the content of aux string for an IMEngine instance.
@@ -628,6 +722,62 @@ protected:
      * @return true if the signal was handled.
      */
     virtual bool delete_surrounding_text  (int id, int offset, int len);
+
+    /**
+     * @brief Retrieves selection text.
+     *
+     * @param id            the id of the IMEngine instance. It must have been focused in.
+     * @param text          location to store the context string selected.
+     *
+     * @return true if selection text was provided.
+     */
+
+    virtual bool get_selection  (int id, WideString &text);
+
+    /**
+     * @brief Ask the client to select around the cursor position.
+     *
+     * @param id     the id of the IMEngine instance. It must have been focused in.
+     * @param start  start position in chars;
+     * @param end    end position in chars.
+     *
+     * @return true if the signal was handled.
+     */
+    virtual bool set_selection  (int id, int start, int end);
+
+    /**
+     * @brief Request to expand candidate window.
+     *
+     * @param id the id of the IMEngine instance. It must have been focused in.
+     */
+    virtual void expand_candidate (int id);
+
+    /**
+     * @brief Request to contract candidate window.
+     *
+     * @param id the id of the IMEngine instance. It must have been focused in.
+     */
+    virtual void contract_candidate (int id);
+
+    /**
+     * @brief Request to set candidate style.
+     *
+     * @param id            the id of the IMEngine instance. It must have been focused in.
+     * @param portrait_line the displayed line number for portrait.
+     * @param mode          candidate window mode.
+     */
+    virtual void set_candidate_style (int                           id,
+                                      ISF_CANDIDATE_PORTRAIT_LINE_T portrait_line,
+                                      ISF_CANDIDATE_MODE_T          mode);
+
+    /**
+     * @brief Send a private command to an application.
+     *
+     * @param id     the id of the IMEngine instance. It must have been focused in.
+     * @param command The private command
+     */
+    virtual void send_private_command  (int id, const String &command);
+
     /**
      * @}
      */

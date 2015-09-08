@@ -1,13 +1,9 @@
-#sbs-git:framework/uifw/isf isf 2.3.5617 07f2b65224e6cef5cd6799065bb01fa656bc115e
-%define _usrdir	/usr
-%define _ugdir	%{_usrdir}/ug
-
 Name:       isf
 Summary:    Input Service Framework
-Version:    2.3.5617
+Version:    2.4.8317
 Release:    1
-Group:      TO_BE/FILLED_IN
-License:    LGPL
+Group:      System Environment/Libraries
+License:    LGPL-2.1+
 Source0:    %{name}-%{version}.tar.gz
 BuildRequires:  edje-bin
 BuildRequires:  embryo-bin
@@ -17,14 +13,27 @@ BuildRequires:  pkgconfig(libprivilege-control)
 BuildRequires:  pkgconfig(elementary)
 BuildRequires:  pkgconfig(utilX)
 BuildRequires:  pkgconfig(vconf)
+%if "%{?tizen_profile_name}" == "mobile"
 BuildRequires:  pkgconfig(ui-gadget-1)
-BuildRequires:  pkgconfig(heynoti)
+BuildRequires:  pkgconfig(minicontrol-provider)
+%endif
 BuildRequires:  pkgconfig(ecore)
 BuildRequires:  pkgconfig(edje)
 BuildRequires:  pkgconfig(x11)
+BuildRequires:  pkgconfig(notification)
+BuildRequires:  pkgconfig(dlog)
+BuildRequires:  pkgconfig(tts)
+BuildRequires:  pkgconfig(security-server)
+BuildRequires:  pkgconfig(edbus)
+BuildRequires:  pkgconfig(capi-network-bluetooth)
+BuildRequires:  pkgconfig(feedback)
+BuildRequires:  efl-assist-devel
+BuildRequires:  pkgconfig(pkgmgr-info)
+BuildRequires:  capi-appfw-package-manager-devel
 Requires(post): /sbin/ldconfig /usr/bin/vconftool
 Requires(postun): /sbin/ldconfig
 
+%define _optexecdir /opt/usr/devel/usr/bin/
 
 %description
 Input Service Framewok (ISF) is an input method (IM) platform, and it has been derived from SCIM.
@@ -38,46 +47,72 @@ Requires:   %{name} = %{version}-%{release}
 %description devel
 This package contains ISF header files for ISE development.
 
-
-
 %prep
 %setup -q
 
 %build
+export CFLAGS="$CFLAGS -DTIZEN_DEBUG_ENABLE"
+export CXXFLAGS="$CXXFLAGS -DTIZEN_DEBUG_ENABLE"
+export FFLAGS="$FFLAGS -DTIZEN_DEBUG_ENABLE"
 
-./bootstrap
+%if "%{?tizen_profile_name}" == "mobile"
+CFLAGS+=" -D_MOBILE";
+CXXFLAGS+=" -D_MOBILE";
+%else
+CFLAGS+=" -D_WEARABLE";
+CXXFLAGS+=" -D_WEARABLE";
+%endif
+
+export GC_SECTIONS_FLAGS="-fdata-sections -ffunction-sections -Wl,--gc-sections"
+CFLAGS+=" -fvisibility=hidden ${GC_SECTIONS_FLAGS} "; export CFLAGS
+CXXFLAGS+=" -fvisibility=hidden -fvisibility-inlines-hidden ${GC_SECTIONS_FLAGS} ";export CXXFLAGS
+
+%autogen
 %configure --disable-static \
-		--disable-tray-icon --disable-filter-sctc
-make %{?jobs:-j%jobs}
+		--disable-tray-icon --disable-filter-sctc \
+		--disable-frontend-x11
+make %{?_smp_mflags}
 
 %install
 rm -rf %{buildroot}
+
 %make_install
+mkdir -p %{buildroot}%{_datadir}/license
+mkdir -p %{buildroot}/opt/etc/dump.d/module.d
+install -m0644 %{_builddir}/%{buildsubdir}/COPYING %{buildroot}%{_datadir}/license/%{name}
+cp -af ism/dump/isf_log_dump.sh %{buildroot}/opt/etc/dump.d/module.d
 
-%post 
+%post
 /sbin/ldconfig
+mkdir -p /etc/scim/conf
+mkdir -p /opt/apps/scim/lib/scim-1.0/1.4.0/Helper
+mkdir -p /opt/apps/scim/lib/scim-1.0/1.4.0/SetupUI
+mkdir -p /opt/apps/scim/lib/scim-1.0/1.4.0/IMEngine
 
-/usr/bin/vconftool set -t string file/private/isf/autocapital_allow 0 -g 6514
-/usr/bin/vconftool set -t string file/private/isf/autoperiod_allow 0 -g 6514
 
-ln -sf /etc/init.d/isf-panel-efl /etc/rc.d/rc3.d/S42isf-panel-efl
-ln -sf /etc/init.d/isf-panel-efl /etc/rc.d/rc4.d/S81isf-panel-efl
-
+/usr/bin/vconftool set -t bool file/private/isf/autocapital_allow 1 -s system::vconf_inhouse -g 6514 || :
+/usr/bin/vconftool set -t bool file/private/isf/autoperiod_allow 0 -s system::vconf_inhouse -g 6514 || :
+/usr/bin/vconftool set -t string db/isf/input_language "en_US" -s system::vconf_misc -g 5000 || :
+/usr/bin/vconftool set -t string db/isf/csc_initial_uuid "" -s system::vconf_inhouse -g 6514 || :
+/usr/bin/vconftool set -t string db/isf/input_keyboard_uuid "12aa3425-f88d-45f4-a509-cee8dfe904e3" -s system::vconf_inhouse -g 6514 || :
+/usr/bin/vconftool set -t int memory/isf/input_panel_state 0 -s system::vconf_inhouse -i -g 5000 || :
 
 %postun -p /sbin/ldconfig
 
 
-
 %files
+%manifest %{name}.manifest
+/etc/smack/accesses.d/%{name}.rule
 %defattr(-,root,root,-)
-%attr(755,root,root) %{_sysconfdir}/init.d/isf-panel-efl
+%{_libdir}/systemd/user/core-efl.target.wants/scim.service
+%{_libdir}/systemd/user/scim.service
 %attr(755,root,root) %{_sysconfdir}/profile.d/isf.sh
 %{_sysconfdir}/scim/global
 %{_sysconfdir}/scim/config
-%{_datadir}/scim/*.edj
+%{_datadir}/scim/isf_candidate_theme1.edj
 %{_datadir}/scim/icons/*
 %{_datadir}/locale/*
-%{_bindir}/isf-demo-efl
+%{_optexecdir}/isf-demo-efl
 %{_bindir}/scim
 %{_bindir}/isf-log
 %{_bindir}/isf-panel-efl
@@ -90,9 +125,8 @@ ln -sf /etc/init.d/isf-panel-efl /etc/rc.d/rc4.d/S81isf-panel-efl
 %{_libdir}/scim-1.0/scim-launcher
 %{_libdir}/scim-1.0/scim-helper-launcher
 %{_libdir}/libscim-*.so*
-%{_ugdir}/res/locale/*
-%{_ugdir}/lib/libug-keyboard-setting-wizard-efl.so
-%{_ugdir}/lib/libug-isfsetting-efl.so
+%{_datadir}/license/%{name}
+/opt/etc/dump.d/module.d/*
 
 %files devel
 %defattr(-,root,root,-)

@@ -11,6 +11,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -28,6 +29,10 @@
  * Free Software Foundation, Inc., 59 Temple Place, Suite 330,
  * Boston, MA  02111-1307  USA
  *
+ * Modifications by Samsung Electronics Co., Ltd.
+ * 1. Create and use ISE cache file
+ * 2. Dynamic load keyboard ISE
+ *
  * $Id: scim_backend.h,v 1.26 2005/10/06 18:02:06 liuspider Exp $
  */
 
@@ -42,7 +47,7 @@ namespace scim {
  * scim::BackEndBase and its derived classes must throw
  * scim::BackEndError object when error.
  */
-class BackEndError: public Exception
+class EAPI BackEndError: public Exception
 {
 public:
     BackEndError (const String& what_arg)
@@ -60,7 +65,7 @@ public:
  * Most developer should just use the default implementation
  * scim::CommonBackEnd.
  */
-class BackEndBase : public ReferencedObject
+class EAPI BackEndBase : public ReferencedObject
 {
     class BackEndBaseImpl;
 
@@ -210,7 +215,7 @@ typedef Pointer <BackEndBase> BackEndPointer;
 /**
  * @brief The default implementation of scim::BackEndBase interface.
  */
-class CommonBackEnd : public BackEndBase
+class EAPI CommonBackEnd : public BackEndBase
 {
     class CommonBackEndImpl;
     CommonBackEndImpl *m_impl;

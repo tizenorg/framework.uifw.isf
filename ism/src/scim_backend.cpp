@@ -4,6 +4,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -21,6 +22,10 @@
  * Free Software Foundation, Inc., 59 Temple Place, Suite 330,
  * Boston, MA  02111-1307  USA
  *
+ * Modifications by Samsung Electronics Co., Ltd.
+ * 1. Create and use ISE cache file
+ * 2. Dynamic load keyboard ISE
+ *
  * $Id: scim_backend.cpp,v 1.38.2.1 2006/09/24 16:00:52 suzhe Exp $
  *
  */
@@ -36,10 +41,18 @@
 
 #include <malloc.h>
 #include <string.h>
+#include <unistd.h>
+#include <dlog.h>
 #include "scim_private.h"
 #include "scim.h"
 #include "scim_stl_map.h"
 #include "isf_query_utility.h"
+
+
+#ifdef LOG_TAG
+# undef LOG_TAG
+#endif
+#define LOG_TAG                                         "ISF_BACKEND"
 
 
 namespace scim {
@@ -261,6 +274,7 @@ public:
                 if ((*it)->get_uuid () == uuid) {
                     m_config->write (String (SCIM_CONFIG_DEFAULT_IMENGINE_FACTORY) + String ("/") + String ("~other"), uuid);
                     m_config->flush ();
+                    m_config->reload ();
                     return;
                 }
             }
@@ -276,12 +290,16 @@ public:
             IMEngineFactoryPointerVector::iterator it, itl;
 
             for (it = factories.begin (); it != factories.end (); ++it) {
-                if ((language.length () == 0 || (*it)->get_language () == language) && lang_first.null ())
+                uint32 option = (*it)->get_option ();
+                if ((language.length () == 0 || (*it)->get_language () == language) && lang_first.null () &&
+                    !(option & SCIM_IME_NOT_SUPPORT_HARDWARE_KEYBOARD))
                     lang_first = *it;
 
                 if ((*it)->get_uuid () == cur_uuid) {
                     for (itl = it + 1; itl != factories.end (); ++itl) {
-                        if (language.length () == 0 || (*itl)->get_language () == language)
+                        option = (*itl)->get_option ();
+                        if ((language.length () == 0 || (*itl)->get_language () == language) &&
+                            !(option & SCIM_IME_NOT_SUPPORT_HARDWARE_KEYBOARD))
                             return *itl;
                     }
                     if (!lang_first.null ()) return lang_first;
@@ -302,15 +320,20 @@ public:
             IMEngineFactoryPointer lang_last;
             IMEngineFactoryPointerVector::iterator it, itl;
 
+            uint32 option = 0;
             for (it = factories.begin (); it != factories.end (); ++it) {
-                if ((language.length () == 0 || (*it)->get_language () == language))
+                option = (*it)->get_option ();
+                if ((language.length () == 0 || (*it)->get_language () == language) &&
+                    !(option & SCIM_IME_NOT_SUPPORT_HARDWARE_KEYBOARD))
                     lang_last = *it;
             }
 
             for (it = factories.begin (); it != factories.end (); ++it) {
                 if ((*it)->get_uuid () == cur_uuid) {
                     for (itl = it; itl != factories.begin (); --itl) {
-                        if (language.length () == 0 || (*(itl-1))->get_language () == language)
+                        option = (*(itl-1))->get_option ();
+                        if ((language.length () == 0 || (*(itl-1))->get_language () == language) &&
+                            !(option & SCIM_IME_NOT_SUPPORT_HARDWARE_KEYBOARD))
                             return *(itl-1);
                     }
 
@@ -482,9 +505,8 @@ CommonBackEnd::initialize (const ConfigPointer       &config,
 {
     SCIM_DEBUG_BACKEND (1) << __FUNCTION__ << "...\n";
 
-    IMEngineFactoryPointer factory;
     std::vector<String>    new_modules = modules;
-
+    IMEngineFactoryPointer factory;
     int all_factories_count = 0;
     int module_factories_count = 0;
 
@@ -512,16 +534,6 @@ CommonBackEnd::initialize (const ConfigPointer       &config,
         return;
     }
 
-    factory = new ComposeKeyFactory ();
-
-    if (all_factories_count == 0 ||
-        std::find (m_impl->m_disabled_factories.begin (),
-                   m_impl->m_disabled_factories.end (),
-                   factory->get_uuid ()) == m_impl->m_disabled_factories.end ()) {
-        factory = m_impl->m_filter_manager->attach_filters_to_factory (factory);
-        add_factory (factory);
-    }
-
     if (is_load_info) {
         /*for (size_t i = 0; i < new_modules.size (); ++i)
             add_module_info (config, new_modules [i]);*/
@@ -533,6 +545,15 @@ CommonBackEnd::initialize (const ConfigPointer       &config,
     for (size_t i = 0; i < new_modules.size (); ++i) {
         module_factories_count = add_module (config, new_modules [i], is_load_resource);
         all_factories_count += module_factories_count;
+    }
+
+    factory = new ComposeKeyFactory ();
+    if (all_factories_count == 0 ||
+        std::find (m_impl->m_disabled_factories.begin (),
+                    m_impl->m_disabled_factories.end (),
+                    factory->get_uuid ()) == m_impl->m_disabled_factories.end ()) {
+        factory = m_impl->m_filter_manager->attach_filters_to_factory (factory);
+        add_factory (factory);
     }
 }
 
@@ -617,7 +638,6 @@ CommonBackEnd::add_module (const ConfigPointer &config,
             }
         } else {
             std::cerr << __func__ << ": Failed to load " << module << " IMEngine module!!!\n";
-            engine_module->unload ();
         }
     }
 
@@ -759,8 +779,9 @@ CommonBackEnd::add_module_info_from_cache_file (const ConfigPointer &config, std
      */
     if (isFirst) {
         user_engine_file = fopen (user_file_name.c_str (), "a");
-        if (user_engine_file == NULL)
-            std::cerr << "failed to open " << user_file_name << "\n";
+        if (user_engine_file == NULL) {
+            std::cerr << __func__ << " Failed to open(" << user_file_name << ")\n";
+        }
     }
 
     while (fgets (buf, MAXLINE, engine_list_file) != NULL) {
@@ -822,7 +843,7 @@ CommonBackEnd::add_imengine_module_info (const String module_name, const ConfigP
     String filename = String (USER_ENGINE_FILE_NAME);
     FILE *engine_list_file = fopen (filename.c_str (), "a");
     if (engine_list_file == NULL) {
-        std::cerr << "failed to open " << filename << "\n";
+        LOGW ("Failed to open %s!!!\n", filename.c_str ());
         return;
     }
 
@@ -845,12 +866,12 @@ CommonBackEnd::add_imengine_module_info (const String module_name, const ConfigP
                 char option[12];
 
                 snprintf (mode, sizeof (mode), "%d", (int)TOOLBAR_KEYBOARD_MODE);
-                snprintf (option, sizeof (option), "%d", 0);
+                snprintf (option, sizeof (option), "%d", factory->get_option ());
 
                 String line = isf_combine_ise_info_string (name, uuid, module_name, language,
                                                            icon, String (mode), String (option), factory->get_locales ());
                 if (fputs (line.c_str (), engine_list_file) < 0) {
-                    std::cerr << "write to ise cache file failed:" << line << "\n";
+                    LOGW ("Failed to write (%s)!!!\n", line.c_str ());
                     break;
                 }
 
@@ -865,7 +886,9 @@ CommonBackEnd::add_imengine_module_info (const String module_name, const ConfigP
     }
 
     ime_module.unload ();
-    fclose (engine_list_file);
+    int ret = fclose (engine_list_file);
+    if (ret != 0)
+        LOGW ("Failed to fclose %s!!!\n", filename.c_str ());
 }
 
 

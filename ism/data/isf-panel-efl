@@ -1,8 +1,0 @@
-#!/bin/sh
-
-while [ ! -f /tmp/.wm_ready ];
-do
-    sleep 0.1
-done
-
-/usr/bin/isf-panel-efl &

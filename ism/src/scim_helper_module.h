@@ -12,6 +12,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2004-2005 James Su <suzhe@tsinghua.org.cn>
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -28,6 +29,11 @@
  * License along with this program; if not, write to the
  * Free Software Foundation, Inc., 59 Temple Place, Suite 330,
  * Boston, MA  02111-1307  USA
+ *
+ * Modifications by Samsung Electronics Co., Ltd.
+ * 1. Add new interface APIs
+ *    a. get_helper_lang () and set_path_info ()
+ *    b. set_arg_info ()
  *
  * $Id: scim_helper_module.h,v 1.6 2005/01/10 08:30:54 suzhe Exp $
  */
@@ -99,13 +105,39 @@ typedef String (*HelperModuleGetHelperLangFunc)   (unsigned int idx);
  */
 typedef void (*HelperModuleRunHelperFunc)       (const String &uuid, const ConfigPointer &config, const String &display);
 
+/**
+ * @brief Deliver argc, argv arguments of scim-helper-launcher executable.
+ *
+ * In Tizen platform, there are cases that helper module requires pointer to
+ * argc, argv parameter variables of scim-helper-launcher executable, for manipulating them
+ * as if they are launched directly from command line without any help of scim-helper-launcher.
+ * This function delivers the necessary argc, argv variables to helper module,
+ * and should be removed when there is no need for these variables since this is only tizen-specific.
+ *
+ * @param argc The argc parameter passed to main() function of scim-helper-launcher
+ * @param argv The argv parameter passed to main() function of scim-helper-launcher
+ */
+typedef void (*HelperModuleSetArgInfoFunc)       (int argc, char *argv []);
+
+/**
+ * @brief Deliver the .so filepath to ISE currently being loaded.
+ *
+ * In Tizen platform, there are cases that helper module requires the filepath of .so file
+ * currently being loaded, since the binary does not contain any information such as ModuleName or UUID.
+ * This function delivers the filepath information to those applications,
+ * so that it can acquire the necessary information using the filepath information.
+ * This also should be removed when there is no need for the filepath since this is only tizen-specific.
+ *
+ * @param path The filepath of the .so file currently being loaded
+ */
+typedef void (*HelperModuleSetPathInfoFunc)       (const char *path);
 
 /**
  * @brief The class used to load a Helper module and run its Helpers.
  *
  * This class should not be used directly. HelperManager should be used instead.
  */
-class HelperModule
+class EAPI HelperModule
 {
     Module                          m_module;
 
@@ -113,6 +145,8 @@ class HelperModule
     HelperModuleGetHelperInfoFunc   m_get_helper_info;
     HelperModuleGetHelperLangFunc   m_get_helper_lang;
     HelperModuleRunHelperFunc       m_run_helper;
+    HelperModuleSetArgInfoFunc      m_set_arg_info;
+    HelperModuleSetPathInfoFunc     m_set_path_info;
 
     HelperModule (const HelperModule &);
     HelperModule & operator= (const HelperModule &);
@@ -184,6 +218,14 @@ public:
      * @param display The display in which this helper should run.
      */
     void run_helper (const String &uuid, const ConfigPointer &config, const String &display) const;
+
+    /**
+     * @brief Sets the argument information of scim-helper-launcher.
+     *
+     * @param argc The argc parameter passed to main() function of scim-helper-launcher
+     * @param argv The argv parameter passed to main() function of scim-helper-launcher
+     */
+    void set_arg_info (int argc, char *argv []) const;
 };
 
 /**
@@ -191,7 +233,7 @@ public:
  * @param mod_list - the result list will be stored here.
  * @return the number of the modules, equal to mod_list.size ().
  */
-int scim_get_helper_module_list (std::vector <String> &mod_list);
+EAPI int scim_get_helper_module_list (std::vector <String> &mod_list);
 /**  @} */
 
 } // namespace scim

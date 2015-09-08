@@ -58,7 +58,7 @@ namespace scim {
  * on the heap, you free the memory and destroy the object by
  * calling unref(), not delete.
  */
-class ReferencedObject
+class EAPI ReferencedObject
 {
     template<typename T> friend class Pointer;
 

@@ -32,7 +32,8 @@ INCLUDES             = -I$(top_builddir) \
                        -DSCIM_SYSCONFDIR=\"@SCIM_SYSCONFDIR@\" \
                        -DSCIM_LIBEXECDIR=\"@SCIM_LIBEXECDIR@\" \
                        -DSCIM_ICONDIR=\"@SCIM_ICONDIR@\" \
-                       -DSCIM_MODULE_PATH=\"@SCIM_MODULE_PATH@\"
+                       -DSCIM_MODULE_PATH=\"@SCIM_MODULE_PATH@\" \
+                       @ISF_BUILDING_DLL@
 
 if SCIM_BUILD_FRONTEND_X11
 CONFIG_FRONTEND_X11_MODULE    = x11.la
@@ -71,11 +72,14 @@ x11_la_LIBADD      = imdkit/libXimd.la \
 
 socket_la_SOURCES  = scim_socket_frontend.cpp
 
-socket_la_CXXFLAGS = @GTK2_CFLAGS@
+socket_la_CXXFLAGS = @DLOG_CFLAGS@ @ECORE_CFLAGS@ @PKGMGR_INFO_CFLAGS@
 
 socket_la_LDFLAGS  = -avoid-version \
                      -rpath $(moduledir) \
                      -module \
+                     @DLOG_LIBS@ \
+                     @ECORE_LIBS@ \
+                     @PKGMGR_INFO_LIBS@ \
                      @LIBTOOL_EXPORT_OPTIONS@
 
 socket_la_LIBADD   = $(top_builddir)/ism/src/libscim@SCIM_EPOCH@.la

@@ -22,6 +22,3 @@ SUBDIRS			= icons pixmaps
 
 isfshelldir    = /etc/profile.d/
 isfshell_DATA  = isf.sh
-
-bootscriptdir    = /etc/init.d/
-bootscript_DATA  = isf-panel-efl

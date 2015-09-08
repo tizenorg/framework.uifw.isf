@@ -9,6 +9,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -26,6 +27,18 @@
  * Free Software Foundation, Inc., 59 Temple Place, Suite 330,
  * Boston, MA  02111-1307  USA
  *
+ * Modifications by Samsung Electronics Co., Ltd.
+ * 1. Add helper ISE management
+ *    a. Load helper ISE module
+ *    b. Launch helper ISE
+ * 2. Dynamic load keyboard ISE
+ * 3. Add new interface APIs for keyboard ISE
+ *    a. expand_candidate (), contract_candidate () and set_candidate_style ()
+ *    b. socket_select_aux (), socket_set_prediction_allow () and socket_set_layout ()
+ *    c. socket_update_candidate_item_layout (), socket_update_cursor_position () and socket_update_displayed_candidate_number ()
+ *    d. socket_candidate_more_window_show (), socket_candidate_more_window_hide () and socket_longpress_candidate ()
+ *    e. socket_set_imdata () and socket_reset_option ()
+ *
  * $Id: scim_socket_frontend.h,v 1.26 2005/04/14 17:01:56 suzhe Exp $
  */
 
@@ -33,13 +46,15 @@
 #define __SCIM_SOCKET_FRONTEND_H
 
 #include "scim_stl_map.h"
+#include <Ecore.h>
 
 using namespace scim;
 
-class SocketFrontEnd : public FrontEndBase
+class EAPI SocketFrontEnd : public FrontEndBase
 {
     enum ClientType {
-        UNKNOWN_CLIENT,
+        NONE_CLIENT             = -1, //Client does not find in SocketClientRepository
+        UNKNOWN_CLIENT          =  0, //Connecting client, never receive any data
         IMENGINE_CLIENT,
         CONFIG_CLIENT,
         HELPER_MANAGER_CLIENT
@@ -48,6 +63,7 @@ class SocketFrontEnd : public FrontEndBase
     struct ClientInfo {
         uint32     key;
         ClientType type;
+        Ecore_Fd_Handler *handler;
     };
 
     /**
@@ -86,6 +102,8 @@ class SocketFrontEnd : public FrontEndBase
 
     int    m_current_socket_client;
 
+    int    m_preload_keyboard_ise_id;
+
     uint32 m_current_socket_client_key;
 
 public:
@@ -104,7 +122,7 @@ protected:
     virtual void hide_lookup_table       (int id);
 
     virtual void update_preedit_caret    (int id, int caret);
-    virtual void update_preedit_string   (int id, const WideString & str, const AttributeList & attrs);
+    virtual void update_preedit_string   (int id, const WideString & str, const AttributeList & attrs, int caret);
     virtual void update_aux_string       (int id, const WideString & str, const AttributeList & attrs);
     virtual void commit_string           (int id, const WideString & str);
     virtual void forward_key_event       (int id, const KeyEvent & key);
@@ -122,6 +140,17 @@ protected:
     virtual bool get_surrounding_text    (int id, WideString &text, int &cursor, int maxlen_before, int maxlen_after);
     virtual bool delete_surrounding_text (int id, int offset, int len);
 
+    virtual bool get_selection           (int id, WideString &text);
+    virtual bool set_selection           (int id, int start, int end);
+
+    virtual void expand_candidate        (int id);
+    virtual void contract_candidate      (int id);
+    virtual void set_candidate_style     (int                           id,
+                                          ISF_CANDIDATE_PORTRAIT_LINE_T portrait_line,
+                                          ISF_CANDIDATE_MODE_T          mode);
+
+    virtual void send_private_command    (int id, const String &command);
+
 public:
     virtual void init (int argc, char **argv);
     virtual void run ();
@@ -132,6 +161,7 @@ private:
     void run_helper (const Socket &client);
 
     void get_active_ise_list (int client_id);
+    void preload_keyboard_ise (const String &uuid);
     void unregister_helper ();
 
     uint32 generate_key () const;
@@ -199,6 +229,17 @@ private:
     void socket_turn_on_log                 (int client_id);
 
     void reload_config_callback (const ConfigPointer &config);
+
+    void socket_update_candidate_item_layout (int client_id);
+    void socket_update_cursor_position      (int client_id);
+    void socket_update_displayed_candidate_number (int client_id);
+    void socket_candidate_more_window_show  (int client_id);
+    void socket_candidate_more_window_hide  (int client_id);
+    void socket_longpress_candidate         (int client_id);
+    void socket_set_imdata                  (int client_id);
+    void socket_set_autocapital_type        (int client_id);
+    void socket_set_input_hint              (int client_id);
+    void socket_update_bidi_direction       (int client_id);
 };
 
 #endif

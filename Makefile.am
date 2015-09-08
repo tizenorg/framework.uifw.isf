@@ -33,7 +33,7 @@ EXTRA_DIST		= config.rpath \
 			  intltool-update.in
 
 AUTOMAKE_OPTIONS 	= gnu
-SUBDIRS 		= ism/m4 ism/src ism/utils ism/modules ism/configs po/scim po/isfsetting_efl po/kbwizard_efl  ism/extras ism/data ism/demos
+SUBDIRS 		= ism/src ism/utils ism/modules ism/configs po/scim ism/extras ism/data ism/demos
 
 MAINTAINERCLEANFILES 	= Makefile.in \
 			  aclocal.m4 \
@@ -56,6 +56,13 @@ endif
 pkgconfig_DATA          = isf.pc scim.pc \
 			  $(GTK_UTILS_PKGCONFIG)
 
+smackdir = /etc/smack/accesses.d/
+smack_DATA = isf.rule
+
+# $(libdir) will be /usr/lib64 on x86_64 arch, so hard-coded.
+systemduserunitdir = /usr/lib/systemd/user
+systemduserunit_DATA = scim.service
+
 ACLOCAL_AMFLAGS = -I ism/m4
 
 .PHONY: update-ChangeLog
@@ -65,3 +72,7 @@ update-ChangeLog:
 
 uninstall-local:
 	rm -rf @SCIM_MODULE_PATH@
+
+install-data-hook:
+	$(mkinstalldirs) $(DESTDIR)$(systemduserunitdir)/core-efl.target.wants
+	ln -sf ../scim.service $(DESTDIR)$(systemduserunitdir)/core-efl.target.wants/scim.service

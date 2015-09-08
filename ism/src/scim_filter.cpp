@@ -182,6 +182,15 @@ public:
 
             m_orig->signal_connect_delete_surrounding_text (
                 slot (this, &FilterInstanceBase::FilterInstanceBaseImpl::slot_delete_surrounding_text));
+
+            m_orig->signal_connect_get_selection (
+                slot (this, &FilterInstanceBase::FilterInstanceBaseImpl::slot_get_selection));
+
+            m_orig->signal_connect_set_selection (
+                slot (this, &FilterInstanceBase::FilterInstanceBaseImpl::slot_set_selection));
+
+            m_orig->signal_connect_send_private_command (
+                slot (this, &FilterInstanceBase::FilterInstanceBaseImpl::slot_send_private_command));
         }
     }
 
@@ -266,8 +275,8 @@ private:
         m_parent->filter_update_preedit_caret (caret);
     }
 
-    void slot_update_preedit_string (IMEngineInstanceBase * si, const WideString & str, const AttributeList & attrs) {
-        m_parent->filter_update_preedit_string (str, attrs);
+    void slot_update_preedit_string (IMEngineInstanceBase * si, const WideString & str, const AttributeList & attrs, int caret) {
+        m_parent->filter_update_preedit_string (str, attrs, caret);
     }
 
     void slot_update_aux_string     (IMEngineInstanceBase * si, const WideString & str, const AttributeList & attrs) {
@@ -316,6 +325,18 @@ private:
 
     bool slot_delete_surrounding_text(IMEngineInstanceBase * si, int offset, int len) {
         return m_parent->filter_delete_surrounding_text (offset, len);
+    }
+
+    bool slot_get_selection          (IMEngineInstanceBase * si, WideString &text) {
+        return m_parent->filter_get_selection (text);
+    }
+
+    bool slot_set_selection          (IMEngineInstanceBase * si, int start, int end) {
+        return m_parent->filter_set_selection (start, end);
+    }
+
+    void slot_send_private_command   (IMEngineInstanceBase * si, const String & command) {
+        m_parent->filter_send_private_command (command);
     }
 };
 
@@ -453,9 +474,10 @@ FilterInstanceBase::filter_update_preedit_caret (int caret)
 
 void
 FilterInstanceBase::filter_update_preedit_string (const WideString    &str,
-                                                          const AttributeList &attrs)
+                                                          const AttributeList &attrs,
+                                                          int caret)
 {
-    update_preedit_string (str, attrs);
+    update_preedit_string (str, attrs, caret);
 }
 
 void
@@ -529,6 +551,24 @@ bool
 FilterInstanceBase::filter_delete_surrounding_text (int offset, int len)
 {
     return delete_surrounding_text (offset, len);
+}
+
+bool
+FilterInstanceBase::filter_get_selection (WideString &text)
+{
+    return get_selection (text);
+}
+
+bool
+FilterInstanceBase::filter_set_selection (int start, int end)
+{
+    return set_selection (start, end);
+}
+
+void
+FilterInstanceBase::filter_send_private_command (const String &command)
+{
+    send_private_command (command);
 }
 
 } // namespace scim

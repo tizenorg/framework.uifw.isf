@@ -3,10 +3,11 @@
  * @brief definition of X11FrontEnd related classes.
  */
 
-/* 
+/*
  * Smart Common Input Method
- * 
+ *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -24,6 +25,11 @@
  * Free Software Foundation, Inc., 59 Temple Place, Suite 330,
  * Boston, MA  02111-1307  USA
  *
+ * Modifications by Samsung Electronics Co., Ltd.
+ * 1. Implement aux and preedit show/hide/update for helper ISE
+ *    a. panel_slot_select_aux ()
+ *    b. panel_slot_show_preedit_string (), panel_slot_hide_preedit_string () and panel_slot_update_preedit_string ()
+ *
  * $Id: scim_x11_frontend.h,v 1.56 2005/06/26 16:35:12 suzhe Exp $
  */
 
@@ -34,7 +40,7 @@
 
 using namespace scim;
 
-class X11FrontEnd : public FrontEndBase
+class EAPI X11FrontEnd : public FrontEndBase
 {
 // first = UUID.
 // second= siid.
@@ -54,6 +60,7 @@ class X11FrontEnd : public FrontEndBase
     String                  m_display_name;
 
     PanelClient             m_panel_client;
+    int                     m_panel_client_id;
 
     X11IC                  *m_focus_ic;
 
@@ -98,7 +105,7 @@ protected:
     virtual void hide_lookup_table       (int siid);
 
     virtual void update_preedit_caret    (int siid, int caret);
-    virtual void update_preedit_string   (int siid, const WideString & str, const AttributeList & attrs = AttributeList ());
+    virtual void update_preedit_string   (int siid, const WideString & str, const AttributeList & attrs = AttributeList (), int caret = -1);
     virtual void update_aux_string       (int siid, const WideString & str, const AttributeList & attrs = AttributeList ());
     virtual void commit_string           (int siid, const WideString & str);
     virtual void forward_key_event       (int siid, const KeyEvent & key);
@@ -113,6 +120,11 @@ protected:
 
     virtual bool get_surrounding_text    (int siid, WideString &text, int &cursor, int maxlen_before, int maxlen_after);
     virtual bool delete_surrounding_text (int siid, int offset, int len);
+
+    virtual bool get_selection           (int siid, WideString &text);
+    virtual bool set_selection           (int siid, int start, int end);
+
+    virtual void send_private_command    (int siid, const String & command);
 
 public:
     virtual void init (int argc, char **argv);
@@ -153,11 +165,11 @@ private:
     bool ims_is_preedit_callback_mode (const X11IC *ic);
     void ims_preedit_callback_start (X11IC *ic);
     void ims_preedit_callback_done (X11IC *ic);
-    void ims_preedit_callback_draw (X11IC *ic, const WideString& str, const AttributeList & attrs = AttributeList ());
+    void ims_preedit_callback_draw (X11IC *ic, const WideString& str, const AttributeList & attrs = AttributeList (), int caret = -1);
     void ims_preedit_callback_caret (X11IC *ic, int caret);
 
-    bool ims_string_conversion_callback_retrieval (X11IC *ic, WideString &text, int &cursor, int maxlen_before, int maxlen_after); 
-    bool ims_string_conversion_callback_substitution (X11IC *ic, int offset, int len); 
+    bool ims_string_conversion_callback_retrieval (X11IC *ic, WideString &text, int &cursor, int maxlen_before, int maxlen_after);
+    bool ims_string_conversion_callback_substitution (X11IC *ic, int offset, int len);
 
     void ims_turn_on_ic (X11IC *ic);
     void ims_turn_off_ic (X11IC *ic);
@@ -204,7 +216,7 @@ private:
     void panel_slot_select_aux (int context,int aux_index);
     void panel_slot_show_preedit_string (int context);
     void panel_slot_hide_preedit_string (int context);
-    void panel_slot_update_preedit_string (int context,const WideString &str,const AttributeList &attrs);
+    void panel_slot_update_preedit_string (int context, const WideString &str, const AttributeList &attrs, int caret);
 
     void panel_req_update_screen (const X11IC *ic);
     void panel_req_show_help (const X11IC *ic);

@@ -8,6 +8,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2004-2005 James Su <suzhe@tsinghua.org.cn>
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -24,6 +25,11 @@
  * License along with this program; if not, write to the
  * Free Software Foundation, Inc., 59 Temple Place, Suite 330,
  * Boston, MA  02111-1307  USA
+ *
+ * Modifications by Samsung Electronics Co., Ltd.
+ * 1. Launch scim-launcher process when connection is failed
+ * 2. Replace helper manager server with socket frontend
+ * 3. Add some new interface APIs in HelperManager class
  *
  * $Id: scim_helper_manager.cpp,v 1.2 2005/01/05 13:41:10 suzhe Exp $
  *
@@ -68,7 +74,8 @@ public:
         : m_socket_key (0),
           m_socket_timeout (scim_get_default_socket_timeout ())
     {
-        open_connection ();
+        if (!open_connection ())
+            std::cerr << __func__ << " open_connection () is failed!!!\n";
     }
 
     ~HelperManagerImpl ()
@@ -258,6 +265,35 @@ public:
         return -1;
     }
 
+    void preload_keyboard_ise (const String &uuid)
+    {
+        SCIM_DEBUG_MAIN(1) << __FUNCTION__ << "...\n";
+        if (!uuid.length ())
+            return;
+        if (!m_socket_client.is_connected () && !open_connection ())
+            return;
+
+        Transaction trans;
+        for (int i = 0; i < 3; ++i) {
+            trans.clear ();
+            trans.put_command (SCIM_TRANS_CMD_REQUEST);
+            trans.put_data (m_socket_key);
+            trans.put_command (ISM_TRANS_CMD_PRELOAD_KEYBOARD_ISE);
+            trans.put_data (uuid);
+
+            int cmd;
+            if (trans.write_to_socket (m_socket_client) &&
+                trans.read_from_socket (m_socket_client) &&
+                trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_REPLY &&
+                trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_OK)
+                return;
+
+            m_socket_client.close ();
+            if (!open_connection ())
+                break;
+        }
+    }
+
     bool open_connection (void)
     {
         SCIM_DEBUG_MAIN(1) << __FUNCTION__ << "...\n";
@@ -272,7 +308,9 @@ public:
                 bool bConnected = false;
 
                 std::cerr << " Connecting to ISF(scim) server.";
-                for (i = 0; i < 50; ++i) {
+
+                /* Make sure we are not waiting for more than 10 second */
+                for (i = 0; i < 100; ++i) {
                     if (m_socket_client.connect (address)) {
                         bConnected = true;
                         break;
@@ -282,7 +320,8 @@ public:
                 }
                 std::cerr << " Connected :" << i << "\n";
 
-                if (!bConnected) {
+                /* Do not launch SocketFrontEnd process here, let the immodule to create SocketFrontEnd process */
+                if (false && !bConnected) {
                     /* Get modules list */
                     std::vector<String> engine_list;
                     std::vector<String> helper_list;
@@ -304,10 +343,10 @@ public:
                                  "simple",
                                  (load_engine_list.size () ? scim_combine_string_list (load_engine_list, ',') : "none"),
                                  "socket",
-                                 (char **)new_argv);
+                                 const_cast<char**>(new_argv));
 
                     std::cerr << " Reconnecting to ISF(scim) server.";
-                    for (i = 0; i < 50; ++i) {
+                    for (i = 0; i < 100; ++i) {
                         if (m_socket_client.connect (address))
                             break;
                         scim_usleep (100000);
@@ -353,7 +392,7 @@ public:
             if (trans.write_to_socket (m_socket_client) &&
                 trans.read_from_socket (m_socket_client, m_socket_timeout) &&
                 trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_REPLY &&
-                trans.get_data (num) && num > 0) {
+                trans.get_data (num)) {
                 for (uint32 j = 0; j < num; j++) {
                     HelperInfo info;
                     if (trans.get_data (info.uuid) &&
@@ -366,10 +405,6 @@ public:
                 }
                 return;
             }
-
-            m_socket_client.close ();
-            if (!open_connection ())
-                break;
         }
     }
 };
@@ -463,6 +498,12 @@ int
 HelperManager::turn_on_log (uint32 isOn) const
 {
     return m_impl->turn_on_log (isOn);
+}
+
+void
+HelperManager::preload_keyboard_ise (const String &uuid) const
+{
+    m_impl->preload_keyboard_ise (uuid);
 }
 
 } // namespace scim

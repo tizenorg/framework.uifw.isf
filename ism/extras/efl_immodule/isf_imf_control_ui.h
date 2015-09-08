@@ -2,7 +2,7 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2000 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  * Contact: Jihoon Kim <jihoon48.kim@samsung.com>, Haifeng Deng <haifeng.deng@samsung.com>
  *
@@ -25,16 +25,28 @@
 #ifndef __ISF_IMF_CONTROL_UI_H
 #define __ISF_IMF_CONTROL_UI_H
 
+#define Uses_SCIM_PANEL_CLIENT
+
 #include <Ecore_IMF.h>
+#include <Ecore_X.h>
+#include "scim.h"
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif /* __cplusplus */
+    Eina_Bool check_focus_out_by_popup_win (Ecore_IMF_Context *ctx);
+    void input_panel_event_callback_call (Ecore_IMF_Input_Panel_Event type, int value);
+    scim::TOOLBAR_MODE_T get_keyboard_mode ();
+    bool process_update_input_context (int type, int value);
+    Ecore_IMF_Context *get_using_ic (Ecore_IMF_Input_Panel_Event type, int value);
+    void save_current_xid (Ecore_IMF_Context *ctx);
+    void clear_hide_request ();
+    Ecore_X_Window client_window_id_get (Ecore_IMF_Context *ctx);
 
-    /* non UI related works */
     void isf_imf_input_panel_init ();
     void isf_imf_input_panel_shutdown ();
+    void isf_imf_context_input_panel_input_mode_set (Ecore_IMF_Context *ctx, Ecore_IMF_Input_Mode input_mode);
     void isf_imf_context_input_panel_show (Ecore_IMF_Context *ctx);
     void isf_imf_context_input_panel_hide (Ecore_IMF_Context *ctx);
     void isf_imf_context_input_panel_instant_hide (Ecore_IMF_Context *ctx);
@@ -50,15 +62,20 @@ extern "C"
     Ecore_IMF_Input_Panel_Layout isf_imf_context_input_panel_layout_get (Ecore_IMF_Context *ctx);
     Ecore_IMF_Input_Panel_State isf_imf_context_input_panel_state_get (Ecore_IMF_Context *ctx);
     void isf_imf_context_input_panel_caps_mode_set (Ecore_IMF_Context *ctx, unsigned int mode);
-    void isf_imf_context_input_panel_event_callback_add (Ecore_IMF_Context *ctx, Ecore_IMF_Input_Panel_Event type, void (*func) (void *data, Ecore_IMF_Context *ctx, int value), void *data);
-    void isf_imf_context_input_panel_event_callback_del (Ecore_IMF_Context *ctx, Ecore_IMF_Input_Panel_Event type, void (*func) (void *data, Ecore_IMF_Context *ctx, int value));
     void isf_imf_context_input_panel_event_callback_clear (Ecore_IMF_Context *ctx);
+
     void isf_imf_context_input_panel_return_key_type_set (Ecore_IMF_Context *ctx, Ecore_IMF_Input_Panel_Return_Key_Type type);
     Ecore_IMF_Input_Panel_Return_Key_Type isf_imf_context_input_panel_return_key_type_get (Ecore_IMF_Context *ctx);
     void isf_imf_context_input_panel_return_key_disabled_set (Ecore_IMF_Context *ctx, Eina_Bool disabled);
     Eina_Bool isf_imf_context_input_panel_return_key_disabled_get (Ecore_IMF_Context *ctx);
     void isf_imf_context_input_panel_caps_lock_mode_set (Ecore_IMF_Context *ctx, Eina_Bool mode);
     void isf_imf_context_candidate_window_geometry_get (Ecore_IMF_Context *ctx, int *x, int *y, int *w, int *h);
+
+    void isf_imf_context_input_panel_send_will_show_ack (Ecore_IMF_Context *ctx);
+    void isf_imf_context_input_panel_send_will_hide_ack (Ecore_IMF_Context *ctx);
+    void isf_imf_context_set_keyboard_mode (Ecore_IMF_Context *ctx, scim::TOOLBAR_MODE_T mode);
+
+    void isf_imf_context_input_panel_send_candidate_will_hide_ack (Ecore_IMF_Context *ctx);
 
 #ifdef __cplusplus
 }

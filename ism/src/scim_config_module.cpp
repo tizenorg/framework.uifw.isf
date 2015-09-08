@@ -86,7 +86,7 @@ ConfigModule::create_config () const
     return ConfigPointer ();
 }
 
-int scim_get_config_module_list (std::vector <String>& mod_list)
+EAPI int scim_get_config_module_list (std::vector <String>& mod_list)
 {
     return scim_get_module_list (mod_list, "Config");
 }

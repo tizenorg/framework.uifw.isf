@@ -9,6 +9,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -25,6 +26,10 @@
  * License along with this program; if not, write to the
  * Free Software Foundation, Inc., 59 Temple Place, Suite 330,
  * Boston, MA  02111-1307  USA
+ *
+ * Modifications by Samsung Electronics Co., Ltd.
+ * 1. Add filter_event () and filter_exception_event () in SocketServer class
+ * 2. Add set_nonblock_mode () in Socket class
  *
  * $Id: scim_socket.h,v 1.25 2005/01/25 15:13:15 suzhe Exp $
  */
@@ -57,7 +62,7 @@ typedef Signal2<void, SocketServer *, const Socket &>
  * scim::Socket and its derived classes must throw
  * scim::SocketError object when error.
  */
-class SocketError: public Exception
+class EAPI SocketError: public Exception
 {
 public:
     SocketError (const String& what_arg)
@@ -94,7 +99,7 @@ enum SocketFamily
  *    A unix or local socket address. It's a full path of a socket file.
  *    For example: local:/tmp/scim-socket-frontend
  */
-class SocketAddress
+class EAPI SocketAddress
 {
     class SocketAddressImpl;
     SocketAddressImpl *m_impl;
@@ -120,7 +125,7 @@ public:
     /**
      * @brief Copy operator.
      */
-    const SocketAddress& operator = (const SocketAddress &addr);
+    SocketAddress& operator = (const SocketAddress &addr);
 
     /**
      * @brief Check if this address is valid.
@@ -178,7 +183,7 @@ public:
  * Only the object of its derived classes SocketServer and SocketClient
  * can be created directly.
  */
-class Socket
+class EAPI Socket
 {
     class SocketImpl;
 
@@ -334,7 +339,7 @@ protected:
  * Class SocketServer provides basic operations to create a Socket Server,
  * such as create, run etc.
  */
-class SocketServer : public Socket
+class EAPI SocketServer : public Socket
 {
     class SocketServerImpl;
 
@@ -499,7 +504,7 @@ public:
  * Class SocketClient provides basic operations to create a Socket Client,
  * such as connect, read, write, etc.
  */
-class SocketClient : public Socket
+class EAPI SocketClient : public Socket
 {
     bool m_connected;
 
@@ -548,21 +553,21 @@ public:
  *
  * SocketFrontEnd should listen on this address by default.
  */
-String scim_get_default_socket_frontend_address ();
+EAPI String scim_get_default_socket_frontend_address ();
 
 /**
  * @brief Get the default socket address of SocketIMEngine
  *
  * SocketIMEngine should connect to this address by default.
  */
-String scim_get_default_socket_imengine_address ();
+EAPI String scim_get_default_socket_imengine_address ();
 
 /**
  * @brief Get the default socket address of SocketConfig
  *
  * SocketConfig should connect to this address by default.
  */
-String scim_get_default_socket_config_address ();
+EAPI String scim_get_default_socket_config_address ();
 
 /**
  * @brief Get the default socket address of the Panel running on localhost.
@@ -570,19 +575,19 @@ String scim_get_default_socket_config_address ();
  * The panel running on local host should listen on this address by default.
  * All FrontEnds which need panel should connect to this address by default.
  */
-String scim_get_default_panel_socket_address (const String &display);
+EAPI String scim_get_default_panel_socket_address (const String &display);
 
 /**
  * @brief Get the default socket address of Helper Manager Server running on localhost.
  */
-String scim_get_default_helper_manager_socket_address ();
+EAPI String scim_get_default_helper_manager_socket_address ();
 
 /**
  * @brief Get the default socket timeout value.
  *
  * All socket connection should use this timeout value.
  */
-int    scim_get_default_socket_timeout ();
+EAPI int    scim_get_default_socket_timeout ();
 
 /**
  * @brief Helper function to open a connection to a socket server
@@ -610,7 +615,7 @@ int    scim_get_default_socket_timeout ();
  * @return true if the connection was established successfully, otherwise
  *         return false, and the client should close the socket.
  */
-bool   scim_socket_open_connection   (uint32       &key,
+EAPI bool   scim_socket_open_connection   (uint32       &key,
                                       const String &client_type,
                                       const String &server_type,
                                       const Socket &socket,
@@ -640,7 +645,7 @@ bool   scim_socket_open_connection   (uint32       &key,
  * @return The type of the accepted socket client, or an empty string if the
  *         connection could not be established.
  */
-String scim_socket_accept_connection (uint32       &key,
+EAPI String scim_socket_accept_connection (uint32       &key,
                                       const String &server_types,
                                       const String &client_types,
                                       const Socket &socket,

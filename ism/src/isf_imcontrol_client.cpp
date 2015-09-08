@@ -2,7 +2,7 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2000 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  * Contact: Haifeng Deng <haifeng.deng@samsung.com>, Hengliang Luo <hl.luo@samsung.com>
  *
@@ -27,10 +27,9 @@
 
 
 #include <string.h>
+#include <vconf.h>
 #include "scim.h"
 
-#define IMCONTROLDBG(str...)
-#define IMCONTROLERR(str...) printf(str)
 
 namespace scim
 {
@@ -58,7 +57,9 @@ public:
 
     int open_connection (void) {
         String config = "";
-        String display = String(getenv ("DISPLAY"));
+        const char *p = getenv ("DISPLAY");
+        String display;
+        if (p) display = String (p);
 
         SocketAddress addr (scim_get_default_panel_socket_address (display));
 
@@ -73,7 +74,10 @@ public:
             ret2 = m_socket_panel2imclient.connect (addr);
             if (!ret) {
                 scim_usleep (100000);
+                /* Do not launch panel process here, let the SocketFrontend to create panel process */
+                /*
                 scim_launch_panel (true, config, display, NULL);
+                */
                 for (int i = 0; i < 200; ++i) {
                     if (m_socket_imclient2panel.connect (addr)) {
                         ret = true;
@@ -130,221 +134,53 @@ public:
         return false;
     }
 
-
-    void show_ise (void *data, int length) {
-        m_trans.put_command (ISM_TRANS_CMD_SHOW_ISE_PANEL);
-        m_trans.put_data ((const char *)data, (size_t)length);
-    }
-
-    void hide_ise (void) {
-        m_trans.put_command (ISM_TRANS_CMD_HIDE_ISE_PANEL);
-    }
-
-    void show_control_panel (void) {
-        m_trans.put_command (ISM_TRANS_CMD_SHOW_ISF_CONTROL);
-    }
-
-    void hide_control_panel (void) {
-        m_trans.put_command (ISM_TRANS_CMD_HIDE_ISF_CONTROL);
-    }
-
-    void set_mode (int mode) {
-        m_trans.put_command (ISM_TRANS_CMD_SET_ISE_MODE);
-        m_trans.put_data (mode);
-    }
-
-    void set_imdata (const char* data, int len) {
-        m_trans.put_command (ISM_TRANS_CMD_SET_ISE_IMDATA);
-        m_trans.put_data (data, len);
-    }
-
-    void get_imdata (char* data, int* len) {
-        int cmd;
-        size_t datalen = 0;
-        char* data_temp = NULL;
-
-        m_trans.put_command (ISM_TRANS_CMD_GET_ISE_IMDATA);
-        m_trans.write_to_socket (m_socket_imclient2panel);
-        if (!m_trans.read_from_socket (m_socket_imclient2panel, m_socket_timeout))
-            IMCONTROLERR ("%s:: read_from_socket() may be timeout \n", __FUNCTION__);
-
-        if (m_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_REPLY &&
-                m_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_OK &&
-                m_trans.get_data (&data_temp, datalen)) {
-            memcpy (data, data_temp, datalen);
-            *len = datalen;
-        } else {
-            IMCONTROLERR ("%s:: get_command() or get_data() may fail!!!\n", __FUNCTION__);
-        }
-        delete [] data_temp;
-    }
-
-    void get_ise_window_geometry (int* x, int* y, int* width, int* height) {
-        int cmd;
-        uint32 x_temp = 0;
-        uint32 y_temp = 0;
-        uint32 w_temp = 0;
-        uint32 h_temp = 0;
-
-        m_trans.put_command (ISM_TRANS_CMD_GET_ACTIVE_ISE_GEOMETRY);
-        m_trans.write_to_socket (m_socket_imclient2panel);
-
-        if (!m_trans.read_from_socket (m_socket_imclient2panel, m_socket_timeout))
-            IMCONTROLERR ("%s:: read_from_socket() may be timeout \n", __FUNCTION__);
-
-        if (m_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_REPLY &&
-            m_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_OK &&
-            m_trans.get_data (x_temp) &&
-            m_trans.get_data (y_temp) &&
-            m_trans.get_data (w_temp) &&
-            m_trans.get_data (h_temp)) {
-            *x = x_temp;
-            *y = y_temp;
-            *width = w_temp;
-            *height = h_temp;
-        } else {
-            IMCONTROLERR ("%s:: get_command() or get_data() may fail!!!\n", __FUNCTION__);
-        }
-    }
-
-    void get_candidate_window_geometry (int* x, int* y, int* width, int* height) {
-        int cmd;
-        uint32 x_temp = 0;
-        uint32 y_temp = 0;
-        uint32 w_temp = 0;
-        uint32 h_temp = 0;
-
-        m_trans.put_command (ISM_TRANS_CMD_GET_CANDIDATE_GEOMETRY);
-        m_trans.write_to_socket (m_socket_imclient2panel);
-
-        if (!m_trans.read_from_socket (m_socket_imclient2panel, m_socket_timeout))
-            IMCONTROLERR ("%s::read_from_socket () may be timeout \n", __FUNCTION__);
-
-        if (m_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_REPLY &&
-            m_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_OK &&
-            m_trans.get_data (x_temp) &&
-            m_trans.get_data (y_temp) &&
-            m_trans.get_data (w_temp) &&
-            m_trans.get_data (h_temp)) {
-            *x = x_temp;
-            *y = y_temp;
-            *width = w_temp;
-            *height = h_temp;
-        } else {
-            IMCONTROLERR ("%s::get_command () or get_data () is failed!!!\n", __FUNCTION__);
-        }
-    }
-
-    void get_ise_language_locale (char **locale) {
-        int cmd;
-        size_t datalen = 0;
-        char  *data = NULL;
-
-        m_trans.put_command (ISM_TRANS_CMD_GET_ISE_LANGUAGE_LOCALE);
-        m_trans.write_to_socket (m_socket_imclient2panel);
-        if (!m_trans.read_from_socket (m_socket_imclient2panel, m_socket_timeout))
-            IMCONTROLERR ("%s::read_from_socket () may be timeout \n", __FUNCTION__);
-
-        if (m_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_REPLY &&
-            m_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_OK &&
-            m_trans.get_data (&data, datalen)) {
-            if (locale)
-                *locale = strndup (data, datalen);
-        } else {
-            IMCONTROLERR ("%s::get_command () or get_data () is failed!!!\n", __FUNCTION__);
-            if (locale)
-                *locale = strdup ("");
-        }
-        if (data)
-            delete [] data;
-    }
-
-    void set_return_key_type (int type) {
-        m_trans.put_command (ISM_TRANS_CMD_SET_RETURN_KEY_TYPE);
-        m_trans.put_data (type);
-    }
-
-    void get_return_key_type (int &type) {
-        int cmd;
-        uint32 temp;
-
-        m_trans.put_command (ISM_TRANS_CMD_GET_RETURN_KEY_TYPE);
-        m_trans.write_to_socket (m_socket_imclient2panel);
-        if (!m_trans.read_from_socket (m_socket_imclient2panel, m_socket_timeout))
-            IMCONTROLERR ("%s:: read_from_socket() may be timeout \n", __FUNCTION__);
-
-        if (m_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_REPLY &&
-                m_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_OK &&
-                m_trans.get_data (temp)) {
-            type = temp;
-        } else {
-            IMCONTROLERR ("%s:: get_command() or get_data() may fail!!!\n", __FUNCTION__);
-        }
-    }
-
-    void set_return_key_disable (int disabled) {
-        m_trans.put_command (ISM_TRANS_CMD_SET_RETURN_KEY_DISABLE);
-        m_trans.put_data (disabled);
-    }
-
-    void get_return_key_disable (int &disabled) {
-        int cmd;
-        uint32 temp;
-
-        m_trans.put_command (ISM_TRANS_CMD_GET_RETURN_KEY_DISABLE);
-        m_trans.write_to_socket (m_socket_imclient2panel);
-        if (!m_trans.read_from_socket (m_socket_imclient2panel, m_socket_timeout))
-            IMCONTROLERR ("%s:: read_from_socket() may be timeout \n", __FUNCTION__);
-
-        if (m_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_REPLY &&
-                m_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_OK &&
-                m_trans.get_data (temp)) {
-            disabled = temp;
-        } else {
-            IMCONTROLERR ("%s:: get_command() or get_data() may fail!!!\n", __FUNCTION__);
-        }
-    }
-
-    void set_layout (int layout) {
-        m_trans.put_command (ISM_TRANS_CMD_SET_LAYOUT);
-        m_trans.put_data (layout);
-    }
-
-    void get_layout (int* layout) {
-        int cmd;
-        uint32 layout_temp;
-
-        m_trans.put_command (ISM_TRANS_CMD_GET_LAYOUT);
-        m_trans.write_to_socket (m_socket_imclient2panel);
-        if (!m_trans.read_from_socket (m_socket_imclient2panel, m_socket_timeout))
-            IMCONTROLERR ("%s:: read_from_socket() may be timeout \n", __FUNCTION__);
-
-        if (m_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_REPLY &&
-                m_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_OK &&
-                m_trans.get_data (layout_temp)) {
-            *layout = layout_temp;
-        } else {
-            IMCONTROLERR ("%s:: get_command() or get_data() may fail!!!\n", __FUNCTION__);
-        }
-    }
-
-    void set_ise_language (int language) {
-        m_trans.put_command (ISM_TRANS_CMD_SET_ISE_LANGUAGE);
-        m_trans.put_data (language);
-    }
-
     void set_active_ise_by_uuid (const char* uuid) {
         int cmd;
         m_trans.put_command (ISM_TRANS_CMD_SET_ACTIVE_ISE_BY_UUID);
-        m_trans.put_data (uuid, strlen(uuid)+1);
+        m_trans.put_data (uuid, strlen (uuid)+1);
         m_trans.write_to_socket (m_socket_imclient2panel);
         if (!m_trans.read_from_socket (m_socket_imclient2panel, m_socket_timeout))
-            IMCONTROLERR ("%s:: read_from_socket() may be timeout \n", __FUNCTION__);
+            std::cerr << __func__ << " read_from_socket() may be timeout \n";
 
         if (m_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_REPLY &&
                 m_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_OK) {
         } else {
-            IMCONTROLERR ("%s:: get_command() or get_data() may fail!!!\n", __FUNCTION__);
+            std::cerr << __func__ << " get_command() or get_data() may fail!!!\n";
+        }
+    }
+
+    void set_initial_ise_by_uuid (const char* uuid) {
+        int cmd;
+        m_trans.put_command (ISM_TRANS_CMD_SET_INITIAL_ISE_BY_UUID);
+        m_trans.put_data (uuid, strlen (uuid)+1);
+        m_trans.write_to_socket (m_socket_imclient2panel);
+        if (!m_trans.read_from_socket (m_socket_imclient2panel, m_socket_timeout))
+            std::cerr << __func__ << " read_from_socket() may be timeout \n";
+
+        if (m_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_REPLY &&
+                m_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_OK) {
+        } else {
+            std::cerr << __func__ << " get_command() or get_data() may fail!!!\n";
+        }
+
+        vconf_set_str ("db/isf/csc_initial_uuid", uuid);
+    }
+
+    void get_active_ise (String &uuid) {
+        int    cmd;
+        String strTemp;
+
+        m_trans.put_command (ISM_TRANS_CMD_GET_ACTIVE_ISE);
+        m_trans.write_to_socket (m_socket_imclient2panel);
+        if (!m_trans.read_from_socket (m_socket_imclient2panel, m_socket_timeout))
+            std::cerr << __func__ << " read_from_socket() may be timeout \n";
+
+        if (m_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_REPLY &&
+                m_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_OK &&
+                m_trans.get_data (strTemp)) {
+            uuid = strTemp;
+        } else {
+            std::cerr << __func__ << " get_command() or get_data() may fail!!!\n";
         }
     }
 
@@ -353,33 +189,67 @@ public:
         uint32 count_temp = 0;
         char **buf = NULL;
         size_t len;
-        char * buf_temp = NULL;
+        char *buf_temp = NULL;
 
         m_trans.put_command (ISM_TRANS_CMD_GET_ISE_LIST);
         m_trans.write_to_socket (m_socket_imclient2panel);
         if (!m_trans.read_from_socket (m_socket_imclient2panel, m_socket_timeout))
-            IMCONTROLERR ("%s:: read_from_socket() may be timeout \n", __FUNCTION__);
+            std::cerr << __func__ << " read_from_socket() may be timeout \n";
 
         if (m_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_REPLY &&
                 m_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_OK &&
                 m_trans.get_data (count_temp) ) {
-            *count = count_temp;
+            if (count)
+                *count = count_temp;
         } else {
-            *count = 0;
-            IMCONTROLERR ("%s:: get_command() or get_data() may fail!!!\n", __FUNCTION__);
+            if (count)
+                *count = 0;
+            std::cerr << __func__ << " get_command() or get_data() may fail!!!\n";
         }
 
-        if (count_temp > 0) {
-            buf = (char**)malloc (count_temp * sizeof (char*));
-            if (buf) {
-                memset (buf, 0, count_temp * sizeof (char*));
-                for (uint32 i = 0; i < count_temp; i++) {
-                    if (m_trans.get_data (&buf_temp, len))
-                        buf[i] = buf_temp;
+        if (iselist) {
+            if (count_temp > 0) {
+                buf = (char**)calloc (1, count_temp * sizeof (char*));
+                if (buf) {
+                    for (uint32 i = 0; i < count_temp; i++) {
+                        if (m_trans.get_data (&buf_temp, len)) {
+                            if (buf_temp) {
+                                buf[i] = strdup (buf_temp);
+                                delete [] buf_temp;
+                            }
+                        }
+                    }
                 }
             }
+
+            *iselist = buf;
         }
-        *iselist = buf;
+    }
+
+    void get_ise_info (const char* uuid, String &name, String &language, int &type, int &option, String &module_name)
+    {
+        int    cmd;
+        uint32 tmp_type, tmp_option;
+        String tmp_name, tmp_language, tmp_module_name;
+
+        m_trans.put_command (ISM_TRANS_CMD_GET_ISE_INFORMATION);
+        m_trans.put_data (String (uuid));
+        m_trans.write_to_socket (m_socket_imclient2panel);
+        if (!m_trans.read_from_socket (m_socket_imclient2panel, m_socket_timeout))
+            std::cerr << __func__ << " read_from_socket() may be timeout \n";
+
+        if (m_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_REPLY &&
+                m_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_OK &&
+                m_trans.get_data (tmp_name) && m_trans.get_data (tmp_language) &&
+                m_trans.get_data (tmp_type) && m_trans.get_data (tmp_option) && m_trans.get_data (tmp_module_name)) {
+            name     = tmp_name;
+            language = tmp_language;
+            type     = tmp_type;
+            option   = tmp_option;
+            module_name = tmp_module_name;
+        } else {
+            std::cerr << __func__ << " get_command() or get_data() may fail!!!\n";
+        }
     }
 
     void reset_ise_option (void) {
@@ -388,19 +258,22 @@ public:
         m_trans.put_command (ISM_TRANS_CMD_RESET_ISE_OPTION);
         m_trans.write_to_socket (m_socket_imclient2panel);
         if (!m_trans.read_from_socket (m_socket_imclient2panel, m_socket_timeout))
-            IMCONTROLERR ("%s:: read_from_socket() may be timeout \n", __FUNCTION__);
+            std::cerr << __func__ << " read_from_socket() may be timeout \n";
 
         if (m_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_REPLY &&
                 m_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_OK) {
             ;
         } else {
-            IMCONTROLERR ("%s:: get_command() is failed!!!\n", __FUNCTION__);
+            std::cerr << __func__ << " get_command() is failed!!!\n";
         }
     }
 
-    void set_caps_mode (int mode) {
-        m_trans.put_command (ISM_TRANS_CMD_SET_CAPS_MODE);
-        m_trans.put_data (mode);
+    void set_active_ise_to_default (void) {
+        m_trans.put_command (ISM_TRANS_CMD_RESET_DEFAULT_ISE);
+    }
+
+    void show_ise_selector (void) {
+        m_trans.put_command (ISM_TRANS_CMD_SHOW_ISF_CONTROL);
     }
 };
 
@@ -448,94 +321,19 @@ IMControlClient::send (void)
     return m_impl->send ();
 }
 
-void IMControlClient::show_ise (void *data, int length)
-{
-    m_impl->show_ise (data,length);
-}
-
-void IMControlClient::hide_ise (void)
-{
-    m_impl->hide_ise ();
-}
-
-void IMControlClient::show_control_panel (void)
-{
-    m_impl->show_control_panel ();
-}
-
-void IMControlClient::hide_control_panel (void)
-{
-    m_impl->hide_control_panel ();
-}
-
-void IMControlClient::set_mode (int mode)
-{
-    m_impl->set_mode (mode);
-}
-
-void IMControlClient::set_imdata (const char* data, int len)
-{
-    m_impl->set_imdata (data, len);
-}
-
-void IMControlClient::get_imdata (char* data, int* len)
-{
-    m_impl->get_imdata (data, len);
-}
-
-void IMControlClient::get_ise_window_geometry (int* x, int* y, int* width, int* height)
-{
-    m_impl->get_ise_window_geometry (x, y, width, height);
-}
-
-void IMControlClient::get_candidate_window_geometry (int* x, int* y, int* width, int* height)
-{
-    m_impl->get_candidate_window_geometry (x, y, width, height);
-}
-
-void IMControlClient::get_ise_language_locale (char **locale)
-{
-    m_impl->get_ise_language_locale (locale);
-}
-
-void IMControlClient::set_return_key_type (int type)
-{
-    m_impl->set_return_key_type (type);
-}
-
-void IMControlClient::get_return_key_type (int &type)
-{
-    m_impl->get_return_key_type (type);
-}
-
-void IMControlClient::set_return_key_disable (int disabled)
-{
-    m_impl->set_return_key_disable (disabled);
-}
-
-void IMControlClient::get_return_key_disable (int &disabled)
-{
-    m_impl->get_return_key_disable (disabled);
-}
-
-void IMControlClient::set_layout (int layout)
-{
-    m_impl->set_layout (layout);
-}
-
-void IMControlClient::get_layout (int* layout)
-{
-    m_impl->get_layout (layout);
-}
-
-void IMControlClient::set_ise_language (int language)
-{
-    m_impl->set_ise_language (language);
-}
-
 void IMControlClient::set_active_ise_by_uuid (const char* uuid)
 {
     m_impl->set_active_ise_by_uuid (uuid);
+}
+
+void IMControlClient::set_initial_ise_by_uuid (const char* uuid)
+{
+    m_impl->set_initial_ise_by_uuid (uuid);
+}
+
+void IMControlClient::get_active_ise (String &uuid)
+{
+    m_impl->get_active_ise (uuid);
 }
 
 void IMControlClient::get_ise_list (int* count, char*** iselist)
@@ -543,16 +341,25 @@ void IMControlClient::get_ise_list (int* count, char*** iselist)
     m_impl->get_ise_list (count, iselist);
 }
 
+void IMControlClient::get_ise_info (const char* uuid, String &name, String &language, int &type, int &option, String &module_name)
+{
+    m_impl->get_ise_info (uuid, name, language, type, option, module_name);
+}
+
 void IMControlClient::reset_ise_option (void)
 {
     m_impl->reset_ise_option ();
 }
 
-void IMControlClient::set_caps_mode (int mode)
+void IMControlClient::set_active_ise_to_default (void)
 {
-    m_impl->set_caps_mode (mode);
+    m_impl->set_active_ise_to_default ();
 }
 
+void IMControlClient::show_ise_selector (void)
+{
+    m_impl->show_ise_selector ();
+}
 };
 
 /*

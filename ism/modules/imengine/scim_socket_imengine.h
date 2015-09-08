@@ -8,6 +8,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -25,6 +26,15 @@
  * Free Software Foundation, Inc., 59 Temple Place, Suite 330,
  * Boston, MA  02111-1307  USA
  *
+ * Modifications by Samsung Electronics Co., Ltd.
+ * 1. Use ISE cache file
+ * 2. Add new interface APIs for keyboard ISE
+ *    a. select_aux (), set_prediction_allow () and set_layout ()
+ *    b. update_candidate_item_layout (), update_cursor_position () and update_displayed_candidate_number ()
+ *    c. candidate_more_window_show (), candidate_more_window_hide () and longpress_candidate ()
+ *    d. set_imdata () and reset_option ()
+ * 3. Add get_option () in SocketFactory
+ *
  * $Id: scim_socket_imengine.h,v 1.13 2005/07/06 03:57:05 suzhe Exp $
  */
 
@@ -35,7 +45,7 @@ namespace scim {
 
 class SocketFactory;
 
-class SocketFactory : public IMEngineFactoryBase
+class EAPI SocketFactory : public IMEngineFactoryBase
 {
     WideString m_name;
 
@@ -46,6 +56,8 @@ class SocketFactory : public IMEngineFactoryBase
     String     m_icon_file;
 
     bool       m_ok;
+
+    unsigned int m_option;
 
     friend class SocketInstance;
 
@@ -63,6 +75,7 @@ public:
     virtual String      get_uuid () const;
     virtual String      get_icon_file () const;
     virtual String      get_language () const;
+    virtual unsigned int get_option () const;
 
     virtual IMEngineInstancePointer create_instance (const String& encoding, int id = -1);
 
@@ -70,7 +83,7 @@ private:
     int  create_peer_instance (const String &encoding);
 };
 
-class SocketInstance : public IMEngineInstanceBase
+class EAPI SocketInstance : public IMEngineInstanceBase
 {
     SocketFactory *m_factory;
     int            m_peer_id;
@@ -96,6 +109,16 @@ public:
     virtual void trigger_property (const String &property);
     virtual void process_helper_event (const String &helper_uuid, const Transaction &trans);
     virtual void update_client_capabilities (unsigned int cap);
+    virtual void update_candidate_item_layout (const std::vector<unsigned int> &row_items);
+    virtual void update_cursor_position (unsigned int cursor_pos);
+    virtual void update_displayed_candidate_number (unsigned int number);
+    virtual void candidate_more_window_show (void);
+    virtual void candidate_more_window_hide (void);
+    virtual void longpress_candidate (unsigned int index);
+    virtual void set_imdata (const char *data, unsigned int len);
+    virtual void set_autocapital_type (int mode);
+    virtual void set_input_hint (unsigned int input_hint);
+    virtual void update_bidi_direction (unsigned int bidi_direction);
 
 private:
     bool commit_transaction (Transaction &trans);

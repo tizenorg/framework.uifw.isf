@@ -14,6 +14,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -30,6 +31,14 @@
  * License along with this program; if not, write to the
  * Free Software Foundation, Inc., 59 Temple Place, Suite 330,
  * Boston, MA  02111-1307  USA
+ *
+ * Modifications by Samsung Electronics Co., Ltd.
+ * 1. Add new interface APIs for keyboard ISE
+ *    a. select_aux (), set_prediction_allow () and set_layout ()
+ *    b. update_candidate_item_layout (), update_cursor_position () and update_displayed_candidate_number ()
+ *    c. candidate_more_window_show (), candidate_more_window_hide () and longpress_candidate ()
+ *    d. set_imdata () and reset_option ()
+ * 2. Add get_option () in IMEngineFactoryBase class
  *
  * $Id: scim_imengine.h,v 1.19 2005/08/15 12:45:46 suzhe Exp $
  */
@@ -58,10 +67,20 @@ enum ClientCapability
     SCIM_CLIENT_CAP_ONTHESPOT_PREEDIT     = (1 << 0),   /**< The client support OnTheSpot preedit (embed preedit string into client window) */
     SCIM_CLIENT_CAP_SINGLE_LEVEL_PROPERTY = (1 << 1),   /**< The client support displaying single level property, property tree may not be supported*/
     SCIM_CLIENT_CAP_MULTI_LEVEL_PROPERTY  = (1 << 2),   /**< The client support displaying multiple level property, aka. property tree */
-    SCIM_CLIENT_CAP_TRIGGER_PROPERTY      = (1 << 3),   /**< The client is capabile to trigger the IMEngine property. */
+    SCIM_CLIENT_CAP_TRIGGER_PROPERTY      = (1 << 3),   /**< The client is capable to trigger the IMEngine property. */
     SCIM_CLIENT_CAP_HELPER_MODULE         = (1 << 4),   /**< The client support helper module */
     SCIM_CLIENT_CAP_SURROUNDING_TEXT      = (1 << 5),   /**< The client support get/delete surrounding text operations */
     SCIM_CLIENT_CAP_ALL_CAPABILITIES      = 0x3F
+};
+
+/**
+ * @brief Enum values of all IMEngine options bitmask.
+ *
+ */
+enum IMEngineOption
+{
+    SCIM_IME_NOT_SUPPORT_HARDWARE_KEYBOARD = (1 << 0),   /**< This option indicates IME could not support hardware keyboard */
+    SCIM_IME_SUPPORT_LANGUAGE_TOGGLE_KEY   = (1 << 1),   /**< This option indicates IME could support language toggle key */
 };
 
 /**
@@ -70,7 +89,7 @@ enum ClientCapability
  * scim::IMEngineBase and its derived classes must throw
  * scim::IMEngineError object when error.
  */
-class IMEngineError: public Exception
+class EAPI IMEngineError: public Exception
 {
 public:
     IMEngineError (const String& what_arg)
@@ -124,6 +143,9 @@ typedef Slot2<void, IMEngineInstanceBase*,const PropertyList&>
 typedef Slot3<void, IMEngineInstanceBase*,const String&,const Transaction&>
         IMEngineSlotStringTransaction;
 
+typedef Slot4<void, IMEngineInstanceBase*,const WideString&,const AttributeList&,int>
+        IMEngineSlotWideStringAttributeListInt;
+
 typedef Slot3<void, IMEngineInstanceBase*,const WideString&,const AttributeList&>
         IMEngineSlotWideStringAttributeList;
 
@@ -133,13 +155,22 @@ typedef Slot5<bool, IMEngineInstanceBase*,WideString&,int&,int,int>
 typedef Slot3<bool, IMEngineInstanceBase*,int,int>
         IMEngineSlotDeleteSurroundingText;
 
+typedef Slot2<bool, IMEngineInstanceBase*,WideString&>
+        IMEngineSlotGetSelection;
+
+typedef Slot3<bool, IMEngineInstanceBase*,int,int>
+        IMEngineSlotSetSelection;
+
+typedef Slot3<void, IMEngineInstanceBase*,ISF_CANDIDATE_PORTRAIT_LINE_T,ISF_CANDIDATE_MODE_T>
+        IMEngineSlotCandidateStyle;
+
 /**
  * @brief The base class of the real input methods' IMEngineFactory classes.
  *
  * Each input method should implement a class derived from scim::IMEngineFactoryBase,
  * which takes charge of holding shared data, creating IMEngineInstances etc.
  */
-class IMEngineFactoryBase : public ReferencedObject
+class EAPI IMEngineFactoryBase : public ReferencedObject
 {
     class IMEngineFactoryBaseImpl;
 
@@ -332,6 +363,13 @@ public:
      */
     String get_encodings () const;
 
+    /**
+     * @brief Get imengine option.
+     *
+     * @return The imengine option.
+     */
+    virtual unsigned int get_option () const;
+
 protected:
     /**
      * @brief Set the locales supported by this input method engine.
@@ -368,7 +406,7 @@ protected:
  * Each input method should implement a class derived from scim::IMEngineInstanceBase,
  * which takes charge of recording Input Context status and processing user input events.
  */
-class IMEngineInstanceBase : public ReferencedObject
+class EAPI IMEngineInstanceBase : public ReferencedObject
 {
     class IMEngineInstanceBaseImpl;
 
@@ -461,7 +499,7 @@ public:
     Connection signal_connect_hide_aux_string         (IMEngineSlotVoid *slot);
     Connection signal_connect_hide_lookup_table       (IMEngineSlotVoid *slot);
     Connection signal_connect_update_preedit_caret    (IMEngineSlotInt *slot);
-    Connection signal_connect_update_preedit_string   (IMEngineSlotWideStringAttributeList *slot);
+    Connection signal_connect_update_preedit_string   (IMEngineSlotWideStringAttributeListInt *slot);
     Connection signal_connect_update_aux_string       (IMEngineSlotWideStringAttributeList *slot);
     Connection signal_connect_update_lookup_table     (IMEngineSlotLookupTable *slot);
     Connection signal_connect_commit_string           (IMEngineSlotWideString *slot);
@@ -475,6 +513,16 @@ public:
 
     Connection signal_connect_get_surrounding_text    (IMEngineSlotGetSurroundingText *slot);
     Connection signal_connect_delete_surrounding_text (IMEngineSlotDeleteSurroundingText *slot);
+
+    Connection signal_connect_get_selection           (IMEngineSlotGetSelection *slot);
+    Connection signal_connect_set_selection           (IMEngineSlotSetSelection *slot);
+
+    Connection signal_connect_expand_candidate        (IMEngineSlotVoid *slot);
+    Connection signal_connect_contract_candidate      (IMEngineSlotVoid *slot);
+
+    Connection signal_connect_set_candidate_style     (IMEngineSlotCandidateStyle *slot);
+
+    Connection signal_connect_send_private_command    (IMEngineSlotString *slot);
     /** @} */
 
 public:
@@ -638,6 +686,73 @@ public:
      */
     virtual void set_layout (unsigned int layout);
 
+    /**
+     * @brief Update candidate items layout.
+     *
+     * @param row_items - The items of each row.
+     */
+    virtual void update_candidate_item_layout (const std::vector<unsigned int> &row_items);
+
+    /**
+     * @brief When cursor position is changed, this method will be invoked by FrontEnd.
+     *
+     * @param cursor_pos - the new cursor position.
+     */
+    virtual void update_cursor_position (unsigned int cursor_pos);
+
+    /**
+     * @brief After lookup table is updated, this method will be invoked by FrontEnd.
+     *
+     * @param number - the number of displayed candidates.
+     */
+    virtual void update_displayed_candidate_number (unsigned int number);
+
+    /**
+     * @brief When candidate more window is shown, this method will be invoked by FrontEnd.
+     */
+    virtual void candidate_more_window_show (void);
+
+    /**
+     * @brief When candidate more window is hidden, this method will be invoked by FrontEnd.
+     */
+    virtual void candidate_more_window_hide (void);
+
+    /**
+     * @brief When user longpress a candidate, this method will be invoked by FrontEnd.
+     *
+     * @param index - the index in current page of the lookup table.
+     */
+    virtual void longpress_candidate (unsigned int index);
+
+    /**
+     * @brief Set IM data.
+     *
+     * @param data - the buffer of data.
+     * @param len  - the length of data.
+     */
+    virtual void set_imdata (const char *data, unsigned int len);
+
+    /**
+     * @brief Set autocapital type.
+     *
+     * @param mode autocapital type.
+     */
+    virtual void set_autocapital_type (int mode);
+
+    /**
+     * @brief Set input hint
+     *
+     * @param input_hint - the input hint.
+     */
+    virtual void set_input_hint (unsigned int input_hint);
+
+    /**
+     * @brief When bidi direction is changed, this method will be invoked by FrontEnd.
+     *
+     * @param bidi_direction - the bidi direction.
+     */
+    virtual void update_bidi_direction (unsigned int bidi_direction);
+
 protected:
     /**
      * @name Signal activation functions
@@ -708,6 +823,17 @@ protected:
                                 const AttributeList &attrs = AttributeList ());
 
     /**
+     * @brief Update the content of the preedit string,
+     *
+     * @param str - the string content
+     * @param attrs - the string attributes
+     * @param caret - the caret position
+     */
+    void update_preedit_string (const WideString    &str,
+                                const AttributeList &attrs,
+                                int                  caret);
+
+    /**
      * @brief Update the content of the aux string,
      *
      * @param str - the string content
@@ -731,7 +857,7 @@ protected:
     /**
      * @brief Commit a string to the client application.
      *
-     * The preedit string should be hid before calling
+     * The preedit string should be hidden before calling
      * this method. Otherwise the clients which use
      * OnTheSpot input mode will flicker annoyingly.
      *
@@ -806,9 +932,9 @@ protected:
      *
      * @param text          location to store the context string around the insertion point.
      * @param cursor        location to store index of the insertion cursor within @text.
-     * @param maxlen_before the maxmium length of context string to be retrieved
+     * @param maxlen_before the maximum length of context string to be retrieved
      *                      before the cursor; -1 means unlimited.
-     * @param maxlen_after  the maxmium length of context string to be retrieved
+     * @param maxlen_after  the maximum length of context string to be retrieved
      *                      after the cursor; -1 means unlimited.
      *
      * @return true if surrounding text was provided.
@@ -832,13 +958,54 @@ protected:
      * @return true if the signal was handled.
      */
     bool delete_surrounding_text (int offset, int len);
+
+    /**
+     * @brief Retrieves selection.
+     *
+     * @param text          location to store the string selected.
+     *
+     * @return true if selection was provided.
+     */
+    bool get_selection (WideString &text);
+
+    /**
+     * @brief Ask the client to select characters from the start to the end position.
+     *
+     * @param start start position in chars;
+     * @param end end position in chars.
+     *
+     * @return true if the signal was handled.
+     */
+    bool set_selection (int start, int end);
+
+    /**
+     * @brief Request to expand candidate window.
+     */
+    void expand_candidate (void);
+
+    /**
+     * @brief Request to contract candidate window.
+     */
+    void contract_candidate (void);
+
+    /**
+     * @brief Request to set candidate style.
+     *
+     * @param portrait_line the displayed line number for portrait.
+     * @param mode          candidate window mode.
+     */
+    void set_candidate_style (ISF_CANDIDATE_PORTRAIT_LINE_T portrait_line = ONE_LINE_CANDIDATE,
+                              ISF_CANDIDATE_MODE_T          mode = FIXED_CANDIDATE_WINDOW);
+
+   void send_private_command (const String &command);
+
     /** @} */
 };
 
 /**
  * @brief A trivial IMEngine that do nothing.
  */
-class DummyIMEngineFactory : public IMEngineFactoryBase
+class EAPI DummyIMEngineFactory : public IMEngineFactoryBase
 {
 public:
     DummyIMEngineFactory ();
@@ -857,7 +1024,7 @@ public:
     virtual IMEngineInstancePointer create_instance (const String& encoding, int id = -1);
 };
 
-class DummyIMEngineInstance : public IMEngineInstanceBase
+class EAPI DummyIMEngineInstance : public IMEngineInstanceBase
 {
 public:
     DummyIMEngineInstance (DummyIMEngineFactory *factory,

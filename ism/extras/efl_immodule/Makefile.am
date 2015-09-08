@@ -15,7 +15,8 @@ INCLUDES       = -I$(top_builddir) \
                  -DSCIM_ICONDIR=\"@SCIM_ICONDIR@\" \
                  -DSCIM_MODULE_PATH=\"@SCIM_MODULE_PATH@\" \
                  -DSCIM_TEMPDIR=\"@SCIM_TEMPDIR@\" \
-                 -DSCIM_KEYBOARD_ICON_FILE=\"@SCIM_ICONDIR@/keyboard.png\"
+                 -DSCIM_KEYBOARD_ICON_FILE=\"@SCIM_ICONDIR@/keyboard.png\" \
+                 @ISF_BUILDING_DLL@
 
 if ISF_BUILD_EFL_IMMODULE
 CONFIG_EFL_IMMODULE = libisf-imf-module.la

@@ -39,14 +39,14 @@ namespace scim {
  * @{
  */
 
-class ModuleError: public Exception
+class EAPI ModuleError: public Exception
 {
 public:
     ModuleError (const String& what_arg)
         : Exception (String("scim::Module: ") + what_arg) { }
 };
 
-class Module
+class EAPI Module
 {
     class ModuleImpl;
     ModuleImpl *m_impl;
@@ -72,7 +72,7 @@ public:
     void * symbol (const String & sym) const;
 };
 
-int scim_get_module_list (std::vector <String>& mod_list, const String& type = "");
+EAPI int scim_get_module_list (std::vector <String>& mod_list, const String& type = "");
 
 /** @} */
 

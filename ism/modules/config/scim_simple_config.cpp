@@ -4,7 +4,7 @@
 
 /*
  * Smart Common Input Method
- * 
+ *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
  *
  *
@@ -52,22 +52,22 @@
 using namespace scim;
 
 extern "C" {
-    void scim_module_init (void)
+    EAPI void scim_module_init (void)
     {
         SCIM_DEBUG_CONFIG(1) << "Initializing Simple Config module...\n";
     }
-    
-    void scim_module_exit (void)
+
+    EAPI void scim_module_exit (void)
     {
         SCIM_DEBUG_CONFIG(1) << "Exiting Simple Config module...\n";
     }
 
-    void scim_config_module_init ()
+    EAPI void scim_config_module_init ()
     {
         SCIM_DEBUG_CONFIG(1) << "Initializing Simple Config module (more)...\n";
     }
 
-    ConfigPointer scim_config_module_create_config ()
+    EAPI ConfigPointer scim_config_module_create_config ()
     {
         SCIM_DEBUG_CONFIG(1) << "Creating a Simple Config instance...\n";
         return new SimpleConfig ();
@@ -176,7 +176,7 @@ bool
 SimpleConfig::read (const String& key, bool* val) const
 {
     if (!valid () || !val || key.empty()) return false;
-    
+
     KeyValueRepository::const_iterator i = m_new_config.find (key);
     KeyValueRepository::const_iterator end = m_new_config.end ();
 
@@ -206,7 +206,7 @@ bool
 SimpleConfig::read (const String& key, std::vector <String>* val) const
 {
     if (!valid () || !val || key.empty()) return false;
-    
+
     KeyValueRepository::const_iterator i = m_new_config.find (key);
     KeyValueRepository::const_iterator end = m_new_config.end ();
 
@@ -292,7 +292,7 @@ bool
 SimpleConfig::write (const String& key, double value)
 {
     if (!valid () || key.empty()) return false;
-    
+
     char buf [256];
 
     snprintf (buf, 255, "%lf", value);
@@ -373,7 +373,9 @@ SimpleConfig::flush()
     String userconf_dir = get_userconf_dir ();
 
     if (access (userconf_dir.c_str (), R_OK | W_OK) != 0) {
-        mkdir (userconf_dir.c_str (), S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
+        if (mkdir (userconf_dir.c_str (), S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) != 0)
+            return false;
+
         if (access (userconf_dir.c_str (), R_OK | W_OK) != 0)
             return false;
     }
@@ -554,7 +556,7 @@ SimpleConfig::parse_config (std::istream &is, KeyValueRepository &config)
                 if (i != config.end()) {
                     SCIM_DEBUG_CONFIG(2) << " Config entry " << normalized_line << " has been read.\n";
                 } else {
-                    String value = get_value_portion (normalized_line); 
+                    String value = get_value_portion (normalized_line);
                     config [param] = value;
                     SCIM_DEBUG_CONFIG(2) << " Config entry " << param << "=" << value << " is successfully read.\n";
                 }
@@ -598,6 +600,8 @@ SimpleConfig::load_all_config ()
                                  << sysconf << "\n";
             parse_config (is, config);
         }
+    } else {
+        std::cerr << __func__ << " Cannot open(" << sysconf << ")\n";
     }
 
     if (!m_config.size () || (m_update_timestamp.tv_sec == 0 && m_update_timestamp.tv_usec == 0)) {

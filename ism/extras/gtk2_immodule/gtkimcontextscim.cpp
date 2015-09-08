@@ -7,6 +7,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -23,6 +24,12 @@
  * License along with this program; if not, write to the
  * Free Software Foundation, Inc., 59 Temple Place, Suite 330,
  * Boston, MA  02111-1307  USA
+ *
+ * Modifications by Samsung Electronics Co., Ltd.
+ * 1. Implement GTK context auto-restore when PanelAgent is crashed
+ * 2. Add new interface APIs for helper ISE
+ *    a. panel_slot_reset_keyboard_ise ()
+ *    b. panel_slot_show_preedit_string (), panel_slot_hide_preedit_string () and panel_slot_update_preedit_string ()
  *
  * $Id: gtkimcontextscim.cpp,v 1.170.2.13 2007/06/16 06:23:38 suzhe Exp $
  */
@@ -205,7 +212,8 @@ static void     panel_slot_show_preedit_string          (int                    
 static void     panel_slot_hide_preedit_string          (int                     context);
 static void     panel_slot_update_preedit_string        (int                     context,
                                                          const WideString       &str,
-                                                         const AttributeList    &attrs);
+                                                         const AttributeList    &attrs,
+                                                         int                     caret);
 
 static void     panel_req_focus_in                      (GtkIMContextSCIM       *ic);
 static void     panel_req_update_screen                 (GtkIMContextSCIM       *ic);
@@ -245,6 +253,8 @@ static void     open_specific_factory                   (GtkIMContextSCIM       
                                                          const String           &uuid);
 
 static void     attach_instance                         (const IMEngineInstancePointer &si);
+static void     _hide_preedit_string                    (int                     context,
+                                                         bool                    update_preedit);
 
 /* slot functions */
 static void     slot_show_preedit_string                (IMEngineInstanceBase   *si);
@@ -259,7 +269,8 @@ static void     slot_update_preedit_caret               (IMEngineInstanceBase   
                                                          int                     caret);
 static void     slot_update_preedit_string              (IMEngineInstanceBase   *si,
                                                          const WideString       &str,
-                                                         const AttributeList    &attrs);
+                                                         const AttributeList    &attrs
+                                                         int                     caret);
 static void     slot_update_aux_string                  (IMEngineInstanceBase   *si,
                                                          const WideString       &str,
                                                          const AttributeList    &attrs);
@@ -340,6 +351,7 @@ static IMEngineFactoryPointer                           _fallback_factory;
 static IMEngineInstancePointer                          _fallback_instance;
 
 static PanelClient                                      _panel_client;
+static int                                              _panel_client_id            = 0;
 
 static GIOChannel                                      *_panel_iochannel            = 0;
 static guint                                            _panel_iochannel_read_source= 0;
@@ -510,6 +522,7 @@ gtk_im_context_scim_register_type (GTypeModule *type_module)
                                          "GtkIMContextSCIM",
                                          &im_context_scim_info,
                                          (GTypeFlags) 0);
+        g_type_module_use (type_module);
     }
     print_time ("exit gtk_im_context_scim_register_type");
 }
@@ -641,7 +654,6 @@ gtk_im_context_scim_init (GtkIMContextSCIM      *context_scim,
 
     _panel_client.prepare (context_scim->id);
     _panel_client.register_input_context (context_scim->id, si->get_factory_uuid ());
-    _panel_client.start_default_ise (context_scim->id);
     set_ic_capabilities (context_scim);
     _panel_client.send ();
 
@@ -833,7 +845,7 @@ gtk_im_context_scim_reset (GtkIMContext *context)
 
         if (context_scim->impl->need_commit_preedit)
         {
-            panel_slot_hide_preedit_string (context_scim->id);
+            _hide_preedit_string (context_scim->id, false);
 
             if (wstr.length ())
                 g_signal_emit_by_name (context_scim, "commit", utf8_wcstombs (wstr).c_str ());
@@ -1008,7 +1020,7 @@ gtk_im_context_scim_focus_out (GtkIMContext *context)
         //sehwan added
         if (context_scim->impl->need_commit_preedit)
         {
-            panel_slot_hide_preedit_string (context_scim->id);
+            _hide_preedit_string (context_scim->id, false);
 
             if (wstr.length ())
                 g_signal_emit_by_name (context_scim, "commit", utf8_wcstombs (wstr).c_str ());
@@ -1355,7 +1367,6 @@ static void
 panel_slot_reload_config (int context)
 {
     SCIM_DEBUG_FRONTEND(1) << "panel_slot_reload_config...\n";
-    _config->reload ();
 }
 
 static void
@@ -1459,9 +1470,6 @@ panel_slot_process_key_event (int context, const KeyEvent &key)
     GtkIMContextSCIM *ic = find_ic (context);
     SCIM_DEBUG_FRONTEND(1) << "panel_slot_process_key_event context=" << context << " key=" << key.get_key_string () << " ic=" << ic << "\n";
 
-    if (_focused_ic != ic)
-        return;
-
     if (ic && ic->impl) {
         // Just send it to key_snooper and bypass to client directly (because send_event is set to TRUE).
         GdkEventKey gdkevent = keyevent_scim_to_gdk (ic, key, FALSE);
@@ -1487,9 +1495,6 @@ panel_slot_forward_key_event (int context, const KeyEvent &key)
 {
     GtkIMContextSCIM *ic = find_ic (context);
     SCIM_DEBUG_FRONTEND(1) << "panel_slot_forward_key_event context=" << context << " key=" << key.get_key_string () << " ic=" << ic << "\n";
-
-    if (_focused_ic != ic)
-        return;
 
     if (ic && ic->impl) {
         // Just send it to key_snooper and bypass to client directly (because send_event is set to TRUE).
@@ -1545,7 +1550,7 @@ panel_slot_reset_keyboard_ise (int context)
         WideString wstr = ic->impl->preedit_string;
         if (ic->impl->need_commit_preedit)
         {
-            panel_slot_hide_preedit_string (ic->id);
+            _hide_preedit_string (ic->id, false);
 
             if (wstr.length ())
                 g_signal_emit_by_name (ic, "commit", utf8_wcstombs (wstr).c_str ());
@@ -1582,7 +1587,7 @@ panel_slot_show_preedit_string (int context)
 }
 
 static void
-panel_slot_hide_preedit_string (int context)
+_hide_preedit_string (int context, bool update_preedit)
 {
     GtkIMContextSCIM *ic = find_ic (context);
     SCIM_DEBUG_FRONTEND(1) << "panel_slot_hide_preedit_string context=" << context << "\n";
@@ -1600,7 +1605,7 @@ panel_slot_hide_preedit_string (int context)
             emit = true;
         }
         if (ic->impl->use_preedit) {
-            if (emit) g_signal_emit_by_name (ic, "preedit-changed");
+            if (update_preedit && emit) g_signal_emit_by_name (ic, "preedit-changed");
             if (ic->impl->preedit_started) {
                 g_signal_emit_by_name (ic, "preedit-end");
                 ic->impl->preedit_started     = false;
@@ -1611,9 +1616,16 @@ panel_slot_hide_preedit_string (int context)
 }
 
 static void
+panel_slot_hide_preedit_string (int context)
+{
+    _hide_preedit_string (context, true);
+}
+
+static void
 panel_slot_update_preedit_string (int context,
                                   const WideString    &str,
-                                  const AttributeList &attrs)
+                                  const AttributeList &attrs,
+                                  int caret)
 {
     GtkIMContextSCIM *ic = find_ic (context);
     SCIM_DEBUG_FRONTEND(1) << "panel_slot_update_preedit_string context=" << context << "\n";
@@ -1633,7 +1645,10 @@ panel_slot_update_preedit_string (int context,
                     ic->impl->preedit_started = true;
                     ic->impl->need_commit_preedit = true;
                 }
-                ic->impl->preedit_caret    = str.length ();
+                if (caret >= 0 && caret <= str.length ())
+                    ic->impl->preedit_caret = caret;
+                else
+                    ic->impl->preedit_caret = str.length ();
                 ic->impl->preedit_updating = true;
                 g_signal_emit_by_name(ic, "preedit-changed");
                 ic->impl->preedit_updating = false;
@@ -1712,7 +1727,7 @@ panel_req_update_factory_info (GtkIMContextSCIM *ic)
             if (sf)
                 info = PanelFactoryInfo (sf->get_uuid (), utf8_wcstombs (sf->get_name ()), sf->get_language (), sf->get_icon_file ());
         } else {
-            info = PanelFactoryInfo (String (""), String (_("English/Keyboard")), String ("C"), String (SCIM_KEYBOARD_ICON_FILE));
+            info = PanelFactoryInfo (String (""), String (_("English Keyboard")), String ("C"), String (SCIM_KEYBOARD_ICON_FILE));
         }
         _panel_client.update_factory_info (ic->id, info);
     }
@@ -1793,6 +1808,12 @@ panel_initialize ()
     SCIM_DEBUG_FRONTEND(1) << "panel_initialize..\n";
 
     if (_panel_client.open_connection (_config->get_name (), display_name) >= 0) {
+        if (_panel_client.get_client_id (_panel_client_id)) {
+            _panel_client.prepare (0);
+            _panel_client.register_client (_panel_client_id);
+            _panel_client.send ();
+        }
+
         int fd = _panel_client.get_connection_number ();
         _panel_iochannel = g_io_channel_unix_new (fd);
 
@@ -1811,15 +1832,14 @@ panel_initialize ()
         while (context_scim != NULL) {
             _panel_client.prepare (context_scim->id);
             _panel_client.register_input_context (context_scim->id, context_scim->impl->si->get_factory_uuid ());
-            _panel_client.start_default_ise (context_scim->id);
             _panel_client.send ();
             context_scim = context_scim->next;
         }
 
         if (_focused_ic) {
-            _panel_client.prepare (_focused_ic->id);
-            panel_req_focus_in (_focused_ic);
-            _panel_client.send ();
+            context_scim = _focused_ic;
+            _focused_ic = 0;
+            gtk_im_context_scim_focus_in (GTK_IM_CONTEXT (context_scim));
         }
 
         return true;
@@ -2141,7 +2161,7 @@ initialize (void)
             }
             for (it = helper_list.begin (); it != helper_list.end (); it++)
                 load_engine_list.push_back (*it);
-            const char *new_argv [] = { "--no-stay", 0 };
+            const char *new_argv [] = { static_cast<char*> "--no-stay", 0 };
             scim_launch (true,
                          config_module_name,
                          (load_engine_list.size () ? scim_combine_string_list (load_engine_list, ',') : "none"),
@@ -2622,7 +2642,8 @@ slot_update_preedit_caret (IMEngineInstanceBase *si, int caret)
 static void
 slot_update_preedit_string (IMEngineInstanceBase *si,
                             const WideString & str,
-                            const AttributeList & attrs)
+                            const AttributeList & attrs,
+                            int caret)
 {
     SCIM_DEBUG_FRONTEND(1) << "slot_update_preedit_string...\n";
 
@@ -2636,12 +2657,15 @@ slot_update_preedit_string (IMEngineInstanceBase *si,
                 g_signal_emit_by_name(_focused_ic, "preedit-start");
                 ic->impl->preedit_started = true;
             }
-            ic->impl->preedit_caret    = str.length ();
+            if (caret >= 0 && caret <= str.length ())
+                ic->impl->preedit_caret = caret;
+            else
+                ic->impl->preedit_caret = str.length ();
             ic->impl->preedit_updating = true;
             g_signal_emit_by_name(ic, "preedit-changed");
             ic->impl->preedit_updating = false;
         } else {
-            _panel_client.update_preedit_string (ic->id, str, attrs);
+            _panel_client.update_preedit_string (ic->id, str, attrs, caret);
         }
     }
 }

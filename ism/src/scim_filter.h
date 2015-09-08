@@ -50,7 +50,7 @@ namespace scim {
  * scim::FilterFactoryBase, scim::FilterInstanceBase
  * and their derived classes must throw scim::FilterError object when error.
  */
-class FilterError: public Exception
+class EAPI FilterError: public Exception
 {
 public:
     FilterError (const String& what_arg)
@@ -84,7 +84,7 @@ struct FilterInfo
  * Because multiple objects of one FilterFactory class maybe used at the same time
  * to filter several real IMEngineFactory objects.
  */
-class FilterFactoryBase : public IMEngineFactoryBase
+class EAPI FilterFactoryBase : public IMEngineFactoryBase
 {
     IMEngineFactoryPointer m_orig;
 
@@ -272,7 +272,7 @@ typedef Pointer <FilterFactoryBase> FilterFactoryPointer;
  * All FilterInstance classes should derive from this base class,
  * and some base methods should be override in the derived classes.
  */
-class FilterInstanceBase : public IMEngineInstanceBase
+class EAPI FilterInstanceBase : public IMEngineInstanceBase
 {
     class FilterInstanceBaseImpl;
 
@@ -371,7 +371,8 @@ protected:
     virtual void filter_hide_lookup_table ();
     virtual void filter_update_preedit_caret (int caret);
     virtual void filter_update_preedit_string (const WideString    &str,
-                                               const AttributeList &attrs = AttributeList ());
+                                               const AttributeList &attrs = AttributeList (),
+                                               int            caret = -1);
     virtual void filter_update_aux_string (const WideString    &str,
                                            const AttributeList &attrs = AttributeList ());
     virtual void filter_update_lookup_table (const LookupTable &table);
@@ -385,6 +386,9 @@ protected:
     virtual void filter_send_helper_event (const String &helper_uuid, const Transaction &trans);
     virtual bool filter_get_surrounding_text (WideString &text, int &cursor, int maxlen_before = -1, int maxlen_after = -1);
     virtual bool filter_delete_surrounding_text (int offset, int len);
+    virtual bool filter_get_selection (WideString &text);
+    virtual bool filter_set_selection (int start, int end);
+    virtual void filter_send_private_command (const String &command);
     /** @} */
 };
 

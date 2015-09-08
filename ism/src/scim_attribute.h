@@ -61,6 +61,10 @@ const unsigned int SCIM_ATTR_DECORATE_NONE       = 0;    ///< No decorate
 const unsigned int SCIM_ATTR_DECORATE_UNDERLINE  = 1;    ///< Draw a line under the text
 const unsigned int SCIM_ATTR_DECORATE_HIGHLIGHT  = 2;    ///< Draw the text in highlighted color
 const unsigned int SCIM_ATTR_DECORATE_REVERSE    = 4;    ///< Draw the text in reverse color mode
+const unsigned int SCIM_ATTR_DECORATE_BGCOLOR1   = 5;    ///< Draw the text in underline background 1 mode
+const unsigned int SCIM_ATTR_DECORATE_BGCOLOR2   = 6;    ///< Draw the text in underline background 2 mode
+const unsigned int SCIM_ATTR_DECORATE_BGCOLOR3   = 7;    ///< Draw the text in underline background 3 mode
+const unsigned int SCIM_ATTR_DECORATE_BGCOLOR4   = 8;    ///< Draw the text in underline background 4 mode
 
 #define SCIM_RGB_COLOR(RED,GREEN,BLUE)  ((unsigned int)(((RED)<<16) + ((GREEN)<<8) + (BLUE)))
 #define SCIM_RGB_COLOR_RED(COLOR)       ((unsigned int)((COLOR>>16) & 0x00ff))
@@ -90,7 +94,7 @@ const unsigned int SCIM_ATTR_DECORATE_REVERSE    = 4;    ///< Draw the text in r
  * You may use SCIM_RGB_COLOR_RED, SCIM_RGB_COLOR_GREEN and SCIM_RGB_COLOR_BLUE to extract
  * the RGB color later.
  */
-class Attribute
+class EAPI Attribute
 {
     unsigned int  m_start;
     unsigned int  m_length;

@@ -8,6 +8,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -24,6 +25,15 @@
  * License along with this program; if not, write to the
  * Free Software Foundation, Inc., 59 Temple Place, Suite 330,
  * Boston, MA  02111-1307  USA
+ *
+ * Modifications by Samsung Electronics Co., Ltd.
+ * 1. Use ISE cache file
+ * 2. Add new interface APIs for keyboard ISE
+ *    a. select_aux (), set_prediction_allow () and set_layout ()
+ *    b. update_candidate_item_layout (), update_cursor_position () and update_displayed_candidate_number ()
+ *    c. candidate_more_window_show (), candidate_more_window_hide () and longpress_candidate ()
+ *    d. set_imdata () and reset_option ()
+ * 3. Add get_option () in SocketFactory
  *
  * $Id: scim_socket_imengine.cpp,v 1.21 2005/07/06 03:57:04 suzhe Exp $
  *
@@ -113,13 +123,13 @@ static SocketIMEngineGlobal *global = 0;
 static std::map<String, ISEINFO> ise_info_repository;
 
 extern "C" {
-    void scim_module_init (void)
+    EAPI void scim_module_init (void)
     {
         if (!global)
             global = new SocketIMEngineGlobal;
     }
 
-    void scim_module_exit (void)
+    EAPI void scim_module_exit (void)
     {
         if (global) {
             delete global;
@@ -127,14 +137,14 @@ extern "C" {
         }
     }
 
-    unsigned int scim_imengine_module_init (const ConfigPointer &config)
+    EAPI unsigned int scim_imengine_module_init (const ConfigPointer &config)
     {
         if (global)
             return global->number_of_factories ();
         return 0;
     }
 
-    IMEngineFactoryPointer scim_imengine_module_create_factory (unsigned int index)
+    EAPI IMEngineFactoryPointer scim_imengine_module_create_factory (unsigned int index)
     {
         if (!global)
             return 0;
@@ -267,7 +277,7 @@ SocketIMEngineGlobal::get_ise_info_map (const char *filename)
 {
     FILE *engine_list_file = fopen (filename, "r");
     if (engine_list_file == NULL) {
-        std::cerr << "failed to open " << filename << "\n";
+        std::cerr << __func__ << " Failed to open(" << filename << ")\n";
         return;
     }
 
@@ -284,7 +294,6 @@ SocketIMEngineGlobal::get_ise_info_map (const char *filename)
     }
 
     fclose (engine_list_file);
-    return;
 }
 
 String
@@ -410,7 +419,8 @@ SocketFactory::SocketFactory (const String &peer_uuid)
       m_language (String ("")),
       m_peer_uuid (peer_uuid),
       m_icon_file (String ("")),
-      m_ok (false)
+      m_ok (false),
+      m_option (0)
 {
     String locales;
     String iconfile;
@@ -427,6 +437,7 @@ SocketFactory::SocketFactory (const String &peer_uuid)
         m_language = iter->second.language;
         //m_icon_file = global->load_icon (iter->second.icon);
         m_ok = true;
+        m_option = iter->second.option;
     } else {
         m_language.clear ();
     }
@@ -551,6 +562,12 @@ SocketFactory::get_language () const
         return m_language;
     else
         return IMEngineFactoryBase::get_language ();
+}
+
+unsigned int
+SocketFactory::get_option () const
+{
+    return m_option;
 }
 
 IMEngineInstancePointer
@@ -735,6 +752,148 @@ SocketInstance::set_layout (unsigned int layout)
 }
 
 void
+SocketInstance::set_input_hint (unsigned int input_hint)
+{
+    Transaction trans;
+
+    global->init_transaction (trans);
+
+    SCIM_DEBUG_IMENGINE(1) << __func__<< " (" << m_peer_id << ")\n";
+
+    trans.put_command (ISM_TRANS_CMD_SET_INPUT_HINT);
+    trans.put_data (m_peer_id);
+    trans.put_data (input_hint);
+
+    commit_transaction (trans);
+}
+
+void
+SocketInstance::update_bidi_direction (unsigned int bidi_direction)
+{
+    Transaction trans;
+
+    global->init_transaction (trans);
+
+    SCIM_DEBUG_IMENGINE(1) << __func__<< " (" << m_peer_id << ")\n";
+
+    trans.put_command (ISM_TRANS_CMD_UPDATE_BIDI_DIRECTION);
+    trans.put_data (m_peer_id);
+    trans.put_data (bidi_direction);
+
+    commit_transaction (trans);
+}
+
+void
+SocketInstance::update_candidate_item_layout (const std::vector<unsigned int> &row_items)
+{
+    Transaction trans;
+
+    global->init_transaction (trans);
+
+    SCIM_DEBUG_IMENGINE(1) << __func__ << " (" << m_peer_id << ")\n";
+
+    trans.put_command (ISM_TRANS_CMD_UPDATE_CANDIDATE_ITEM_LAYOUT);
+    trans.put_data (m_peer_id);
+    trans.put_data (row_items);
+
+    commit_transaction (trans);
+}
+
+void
+SocketInstance::update_cursor_position (unsigned int cursor_pos)
+{
+    Transaction trans;
+
+    global->init_transaction (trans);
+
+    SCIM_DEBUG_IMENGINE(1) << __func__ << " (" << m_peer_id << ")\n";
+
+    trans.put_command (ISM_TRANS_CMD_UPDATE_CURSOR_POSITION);
+    trans.put_data (m_peer_id);
+    trans.put_data (cursor_pos);
+
+    commit_transaction (trans);
+}
+
+void
+SocketInstance::update_displayed_candidate_number (unsigned int number)
+{
+    Transaction trans;
+
+    global->init_transaction (trans);
+
+    SCIM_DEBUG_IMENGINE(1) << __func__ << " (" << m_peer_id << ")\n";
+
+    trans.put_command (ISM_TRANS_CMD_UPDATE_DISPLAYED_CANDIDATE);
+    trans.put_data (m_peer_id);
+    trans.put_data (number);
+
+    commit_transaction (trans);
+}
+
+void
+SocketInstance::candidate_more_window_show (void)
+{
+    Transaction trans;
+
+    global->init_transaction (trans);
+
+    SCIM_DEBUG_IMENGINE(1) << __func__ << " (" << m_peer_id << ")\n";
+
+    trans.put_command (ISM_TRANS_CMD_CANDIDATE_MORE_WINDOW_SHOW);
+    trans.put_data (m_peer_id);
+
+    commit_transaction (trans);
+}
+
+void
+SocketInstance::candidate_more_window_hide (void)
+{
+    Transaction trans;
+
+    global->init_transaction (trans);
+
+    SCIM_DEBUG_IMENGINE(1) << __func__ << " (" << m_peer_id << ")\n";
+
+    trans.put_command (ISM_TRANS_CMD_CANDIDATE_MORE_WINDOW_HIDE);
+    trans.put_data (m_peer_id);
+
+    commit_transaction (trans);
+}
+
+void
+SocketInstance::longpress_candidate (unsigned int index)
+{
+    Transaction trans;
+
+    global->init_transaction (trans);
+
+    SCIM_DEBUG_IMENGINE(1) << __func__ << " (" << m_peer_id << ")\n";
+
+    trans.put_command (ISM_TRANS_CMD_LONGPRESS_CANDIDATE);
+    trans.put_data (m_peer_id);
+    trans.put_data (index);
+
+    commit_transaction (trans);
+}
+
+void
+SocketInstance::set_imdata (const char *data, unsigned int len)
+{
+    Transaction trans;
+
+    global->init_transaction (trans);
+
+    SCIM_DEBUG_IMENGINE(1) << __func__ << " (" << m_peer_id << ")\n";
+
+    trans.put_command (ISM_TRANS_CMD_SET_ISE_IMDATA);
+    trans.put_data (m_peer_id);
+    trans.put_data (data, len);
+
+    commit_transaction (trans);
+}
+
+void
 SocketInstance::reset_option ()
 {
     Transaction trans;
@@ -790,6 +949,22 @@ SocketInstance::focus_out ()
 
     trans.put_command (SCIM_TRANS_CMD_FOCUS_OUT);
     trans.put_data (m_peer_id);
+
+    commit_transaction (trans);
+}
+
+void
+SocketInstance::set_autocapital_type (int mode)
+{
+    Transaction trans;
+
+    global->init_transaction (trans);
+
+    SCIM_DEBUG_IMENGINE(1) << __func__<< " (" << m_peer_id << ")\n";
+
+    trans.put_command (SCIM_TRANS_CMD_SET_AUTOCAPITAL_TYPE);
+    trans.put_data (m_peer_id);
+    trans.put_data (mode);
 
     commit_transaction (trans);
 }
@@ -927,9 +1102,10 @@ SocketInstance::do_transaction (Transaction &trans, bool &ret)
                 {
                     WideString str;
                     AttributeList attrs;
-                    if (trans.get_data (str) && trans.get_data (attrs)) {
+                    uint32 caret;
+                    if (trans.get_data (str) && trans.get_data (attrs) && trans.get_data (caret)) {
                         SCIM_DEBUG_IMENGINE(3) << "  update_preedit_string ()\n";
-                        update_preedit_string (str, attrs);
+                        update_preedit_string (str, attrs, caret);
                     }
                     break;
                 }
@@ -1078,8 +1254,78 @@ SocketInstance::do_transaction (Transaction &trans, bool &ret)
                     cont = true;
                     break;
                 }
+                case SCIM_TRANS_CMD_GET_SELECTION:
+                {
+                    WideString text;
+                    Transaction temp_trans;
+
+                    global->init_transaction (temp_trans);
+                    if (get_selection (text)) {
+                        temp_trans.put_command (SCIM_TRANS_CMD_GET_SELECTION);
+                        temp_trans.put_data (text);
+                    } else {
+                        temp_trans.put_command (SCIM_TRANS_CMD_FAIL);
+                    }
+                    if (!global->send_transaction (temp_trans))
+                        std::cerr << "GET_SELECTION: global->send_transaction () is failed!!!\n";
+
+                    cont = true;
+                    break;
+                }
+                case SCIM_TRANS_CMD_SET_SELECTION:
+                {
+                    uint32 start;
+                    uint32 end;
+                    Transaction temp_trans;
+                    if (trans.get_data (start) && trans.get_data (end)) {
+                        global->init_transaction (temp_trans);
+                        if (set_selection ((int) start, (int) end)) {
+                            temp_trans.put_command (SCIM_TRANS_CMD_SET_SELECTION);
+                            temp_trans.put_command (SCIM_TRANS_CMD_OK);
+                        } else {
+                            temp_trans.put_command (SCIM_TRANS_CMD_FAIL);
+                        }
+                        if (!global->send_transaction (temp_trans))
+                            std::cerr << "SET_SELECTION: global->send_transaction () is failed!!!\n";
+                    }
+                    cont = true;
+                    break;
+                }
+                case SCIM_TRANS_CMD_SEND_PRIVATE_COMMAND:
+                {
+                    String command;
+                    if (trans.get_data (command)) {
+                        send_private_command (command);
+                    }
+                    break;
+                }
+                case ISM_TRANS_CMD_EXPAND_CANDIDATE:
+                {
+                    SCIM_DEBUG_IMENGINE(3) << "  expand_candidate ()\n";
+                    expand_candidate ();
+                    break;
+                }
+                case ISM_TRANS_CMD_CONTRACT_CANDIDATE:
+                {
+                    SCIM_DEBUG_IMENGINE(3) << "  contract_candidate ()\n";
+                    contract_candidate ();
+                    break;
+                }
+                case ISM_TRANS_CMD_SET_CANDIDATE_UI:
+                {
+                    SCIM_DEBUG_IMENGINE(3) << "  set_candidate_style ()\n";
+                    uint32 portrait_line, mode;
+                    if (trans.get_data (portrait_line) && trans.get_data (mode))
+                        set_candidate_style ((ISF_CANDIDATE_PORTRAIT_LINE_T)portrait_line, (ISF_CANDIDATE_MODE_T)mode);
+                    break;
+                }
+                case ISM_TRANS_CMD_TRANSACTION_CONTINUE:
+                {
+                    cont = true;
+                    break;
+                }
                 default:
-                    SCIM_DEBUG_IMENGINE(3) << "  Strange cmd: " << cmd << "\n";;
+                    SCIM_DEBUG_IMENGINE(3) << "  Strange cmd: " << cmd << "\n";
             }
         }
     } else {

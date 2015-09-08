@@ -8,6 +8,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -24,6 +25,11 @@
  * License along with this program; if not, write to the
  * Free Software Foundation, Inc., 59 Temple Place, Suite 330,
  * Boston, MA  02111-1307  USA
+ *
+ * Modifications by Samsung Electronics Co., Ltd.
+ * 1. Implement aux and preedit show/hide/update for helper ISE
+ *    a. panel_slot_select_aux ()
+ *    b. panel_slot_show_preedit_string (), panel_slot_hide_preedit_string () and panel_slot_update_preedit_string ()
  *
  * $Id: scim_x11_frontend.cpp,v 1.179.2.6 2007/06/16 06:23:38 suzhe Exp $
  *
@@ -77,18 +83,18 @@ static Pointer <X11FrontEnd> _scim_frontend (0);
 
 //Module Interface
 extern "C" {
-    void scim_module_init (void)
+    EAPI void scim_module_init (void)
     {
         SCIM_DEBUG_FRONTEND(1) << "Initializing X11 FrontEnd module...\n";
     }
 
-    void scim_module_exit (void)
+    EAPI void scim_module_exit (void)
     {
         SCIM_DEBUG_FRONTEND(1) << "Exiting X11 FrontEnd module...\n";
         _scim_frontend.reset ();
     }
 
-    void scim_frontend_module_init (const BackEndPointer &backend,
+    EAPI void scim_frontend_module_init (const BackEndPointer &backend,
                                     const ConfigPointer &config,
                                     int argc,
                                      char **argv)
@@ -103,7 +109,7 @@ extern "C" {
         }
     }
 
-    void scim_frontend_module_run (void)
+    EAPI void scim_frontend_module_run (void)
     {
         if (!_scim_frontend.null ()) {
             SCIM_DEBUG_FRONTEND(1) << "Starting X11 FrontEnd module...\n";
@@ -120,6 +126,7 @@ X11FrontEnd::X11FrontEnd (const BackEndPointer &backend,
       m_display (0),
       m_xims_window (0),
       m_server_name (server_name),
+      m_panel_client_id (0),
       m_focus_ic (0),
       m_xims_dynamic (true),
       m_wchar_ucs4_equal (scim_if_wchar_ucs4_equal ()),
@@ -262,15 +269,15 @@ X11FrontEnd::update_preedit_caret (int siid, int caret)
 }
 
 void
-X11FrontEnd::update_preedit_string (int siid, const WideString & str, const AttributeList & attrs)
+X11FrontEnd::update_preedit_string (int siid, const WideString & str, const AttributeList & attrs, int caret)
 {
     SCIM_DEBUG_FRONTEND(2) << " Update preedit string, siid=" << siid << "\n";
 
     if (is_inputing_ic (siid)) {
         if (ims_is_preedit_callback_mode (m_focus_ic))
-            ims_preedit_callback_draw (m_focus_ic, str, attrs);
+            ims_preedit_callback_draw (m_focus_ic, str, attrs, caret);
         else
-            m_panel_client.update_preedit_string (m_focus_ic->icid, str, attrs);
+            m_panel_client.update_preedit_string (m_focus_ic->icid, str, attrs, caret);
     }
 }
 
@@ -399,6 +406,32 @@ X11FrontEnd::delete_surrounding_text (int siid, int offset, int len)
     return false;
 }
 
+bool
+X11FrontEnd::get_selection (int siid, WideString &text)
+{
+    SCIM_DEBUG_FRONTEND(2) << " Get selection, siid=" << siid << "\n";
+
+    text.clear ();
+
+    if (is_inputing_ic (siid)) {
+        return false;
+    }
+
+    return false;
+}
+
+bool
+X11FrontEnd::set_selection (int siid, int start, int end)
+{
+    SCIM_DEBUG_FRONTEND(2) << " set selection, siid=" << siid << " start = " << start << " end = " << end << "\n";
+
+    if (is_inputing_ic (siid)) {
+        return false;
+    }
+
+    return false;
+}
+
 void
 X11FrontEnd::init (int argc, char **argv)
 {
@@ -423,8 +456,15 @@ X11FrontEnd::init (int argc, char **argv)
 
     SCIM_DEBUG_FRONTEND (1) << "X11 -- Connecting to panel daemon.\n";
 
-    if (m_panel_client.open_connection (m_config->get_name (), m_display_name) < 0)
+    if (m_panel_client.open_connection (m_config->get_name (), m_display_name) < 0) {
         throw FrontEndError (String ("X11 -- failed to connect to the panel daemon!"));
+    } else {
+        if (m_panel_client.get_client_id (m_panel_client_id)) {
+            m_panel_client.prepare (0);
+            m_panel_client.register_client (m_panel_client_id);
+            m_panel_client.send ();
+        }
+    }
 
     // Only use ComposeKeyFactory when it's enabled.
     if (validate_factory (SCIM_COMPOSE_KEY_FACTORY_UUID, "UTF-8"))
@@ -489,6 +529,12 @@ X11FrontEnd::run ()
                 FD_SET (xserver_fd, &active_fds);
 
                 if (m_panel_client.open_connection (m_config->get_name (), m_display_name) >= 0) {
+                    if (m_panel_client.get_client_id (m_panel_client_id)) {
+                        m_panel_client.prepare (0);
+                        m_panel_client.register_client (m_panel_client_id);
+                        m_panel_client.send ();
+                    }
+
                     panel_fd = m_panel_client.get_connection_number ();
                     FD_SET (panel_fd, &active_fds);
                     max_fd = (panel_fd > xserver_fd) ? panel_fd : xserver_fd;
@@ -562,7 +608,7 @@ X11FrontEnd::init_ims (void)
     };
 
     XIMEncoding ims_encodings[] = {
-        "COMPOUND_TEXT",
+        const_cast<char*> ("COMPOUND_TEXT"),
         0
     };
 
@@ -1278,7 +1324,7 @@ X11FrontEnd::ims_preedit_callback_done (X11IC *ic)
             << ic->icid << " Connect ID=" << ic->connect_id << "\n";
 
     // First clear the preedit string.
-    ims_preedit_callback_draw (ic, WideString ());
+    ims_preedit_callback_draw (ic, WideString (), AttributeList (), -1);
 
     ic->onspot_preedit_started = false;
 
@@ -1293,7 +1339,7 @@ X11FrontEnd::ims_preedit_callback_done (X11IC *ic)
 }
 
 void
-X11FrontEnd::ims_preedit_callback_draw (X11IC *ic, const WideString& str, const AttributeList & attrs)
+X11FrontEnd::ims_preedit_callback_draw (X11IC *ic, const WideString& str, const AttributeList & attrs, int caret)
 {
     if (!validate_ic (ic)) return;
 
@@ -1341,8 +1387,10 @@ X11FrontEnd::ims_preedit_callback_draw (X11IC *ic, const WideString& str, const 
     pcb.major_code = XIM_PREEDIT_DRAW;
     pcb.connect_id = ic->connect_id;
     pcb.icid = ic->icid;
-
-    pcb.todo.draw.caret = len;
+    if (caret >= 0 && caret <= (int)len)
+        pcb.todo.draw.caret = len;
+    else
+        pcb.todo.draw.caret = caret;
     pcb.todo.draw.chg_first = 0;
     pcb.todo.draw.chg_length = ic->onspot_preedit_length;
     pcb.todo.draw.text = &text;
@@ -1358,7 +1406,7 @@ X11FrontEnd::ims_preedit_callback_draw (X11IC *ic, const WideString& str, const 
     } else {
         text.encoding_is_wchar = false;
         text.length = 0;
-        text.string.multi_byte = "";
+        text.string.multi_byte = const_cast<char*> ("");
         IMCallCallback (m_xims, (XPointer) & pcb);
         len = 0;
     }
@@ -1665,7 +1713,6 @@ X11FrontEnd::x_error_handler (Display *display, XErrorEvent *error)
 void
 X11FrontEnd::panel_slot_reload_config (int context)
 {
-    m_config->reload ();
 }
 
 void
@@ -1859,13 +1906,14 @@ X11FrontEnd::panel_slot_hide_preedit_string (int context)
 void
 X11FrontEnd::panel_slot_update_preedit_string (int context,
                                   const WideString    &str,
-                                  const AttributeList &attrs)
+                                  const AttributeList &attrs,
+                                  int                  caret)
 {
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
 
     X11IC *ic = m_ic_manager.find_ic (context);
     if (validate_ic (ic)) {
-        update_preedit_string(ic->siid,str,attrs);
+        update_preedit_string (ic->siid, str, attrs, caret);
     }
 }
 
@@ -1947,7 +1995,7 @@ X11FrontEnd::panel_req_update_factory_info (const X11IC *ic)
             String uuid = get_instance_uuid (ic->siid);
             info = PanelFactoryInfo (uuid, utf8_wcstombs (get_factory_name (uuid)), get_factory_language (uuid), get_factory_icon_file (uuid));
         } else {
-            info = PanelFactoryInfo (String (""), String (_("English/Keyboard")), String ("C"), String (SCIM_KEYBOARD_ICON_FILE));
+            info = PanelFactoryInfo (String (""), String (_("English Keyboard")), String ("C"), String (SCIM_KEYBOARD_ICON_FILE));
         }
         m_panel_client.update_factory_info (ic->icid, info);
     }

@@ -8,6 +8,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -25,6 +26,9 @@
  * Free Software Foundation, Inc., 59 Temple Place, Suite 330,
  * Boston, MA  02111-1307  USA
  *
+ * Modifications by Samsung Electronics Co., Ltd.
+ * 1. Add add_attributes () and remove_attributes () in CommonLookupTable class
+ *
  * $Id: scim_lookup_table.h,v 1.32 2005/05/13 04:21:29 suzhe Exp $
  */
 
@@ -38,7 +42,7 @@ namespace scim {
  * @{
  */
 
-#define SCIM_LOOKUP_TABLE_MAX_PAGESIZE  128
+#define SCIM_LOOKUP_TABLE_MAX_PAGESIZE  300
 
 /**
  * @brief The base class of lookup table.
@@ -52,7 +56,7 @@ namespace scim {
  * IMEngine should use its derivation class.
  * This class is the interface that uses within FrontEnd class.
  */
-class LookupTable
+class EAPI LookupTable
 {
     class LookupTableImpl;
 
@@ -247,7 +251,7 @@ public:
  * This class implements the LookupTable interface in a common way.
  *
  */
-class CommonLookupTable : public LookupTable
+class EAPI CommonLookupTable : public LookupTable
 {
     class CommonLookupTableImpl;
 

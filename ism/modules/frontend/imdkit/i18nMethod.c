@@ -714,6 +714,9 @@ static void ReturnSelectionNotify (Xi18n i18n_core, XSelectionRequestEvent *ev)
     {
         snprintf (buf, 4096, "@transport=%s", i18n_core->address.im_addr);
     }
+    else
+        return;
+
     /*endif*/
     XChangeProperty (dpy,
                      event.xselection.requestor,

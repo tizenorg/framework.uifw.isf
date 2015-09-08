@@ -44,8 +44,8 @@ namespace scim {
 /*  SlotNode
  */
 
-SlotNode::SlotNode(Slot *slot)
-: Node(slot), is_blocked(false)
+SlotNode::SlotNode(Slot *l_slot)
+: Node(l_slot), is_blocked(false)
 {
 }
 

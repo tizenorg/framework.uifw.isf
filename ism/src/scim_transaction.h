@@ -9,6 +9,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -25,6 +26,9 @@
  * License along with this program; if not, write to the
  * Free Software Foundation, Inc., 59 Temple Place, Suite 330,
  * Boston, MA  02111-1307  USA
+ *
+ * Modifications by Samsung Electronics Co., Ltd.
+ * 1. Donot calculate checksum
  *
  * $Id: scim_transaction.h,v 1.10 2005/05/24 12:22:51 suzhe Exp $
  */
@@ -68,7 +72,7 @@ enum TransactionDataType
  * scim::Transaction and its related classes must throw
  * scim::TransactionError object when error.
  */
-class TransactionError: public Exception
+class EAPI TransactionError: public Exception
 {
 public:
     TransactionError (const String& what_arg)
@@ -82,7 +86,7 @@ class TransactionReader;
  * @brief This class is used to pack up many data and commands into one package
  *        and send them via socket.
  */
-class Transaction
+class EAPI Transaction
 {
     friend class TransactionReader;
 
@@ -226,6 +230,11 @@ public:
     void put_data (const char *raw, size_t bufsize);
 
     /**
+     * @brief Store a raw buffer into this transaction.
+     */
+    void put_dataw (const char *raw, size_t bufsize);
+
+    /**
      * @brief Store another Transaction object into this transaction.
      */
     void put_data (const Transaction &trans);
@@ -334,7 +343,7 @@ public:
 /**
  * @brief This class is used to read data from a transaction without changing it.
  */
-class TransactionReader
+class EAPI TransactionReader
 {
     class TransactionReaderImpl;
 
@@ -370,7 +379,7 @@ public:
     /**
      * @brief Copy operator.
      */
-    const TransactionReader & operator = (const TransactionReader &);
+    TransactionReader & operator = (const TransactionReader &);
 
     /**
      * @brief Attach this TransactionReader object to a Transaction.
