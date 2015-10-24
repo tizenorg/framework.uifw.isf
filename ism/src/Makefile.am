@@ -43,7 +43,8 @@ noinst_HEADERS		= ltdl.h \
 			  scim_keyboard_layout_data.h \
 			  scim_keyevent_data.h \
 			  scim_stl_map.h \
-			  isf_query_utility.h
+			  isf_query_utility.h \
+			  isf_pkg.h
 
 libscimincludedir       = $(includedir)/scim@SCIM_EPOCH@
 
@@ -142,7 +143,11 @@ libscim@SCIM_EPOCH@_la_SOURCES = \
 			  isf_imcontrol_client.cpp \
 			  isf_query_utility.cpp
 
-libscim@SCIM_EPOCH@_la_CXXFLAGS = @EFL_CFLAGS@ @DLOG_CFLAGS@ @SECURITY_SERVER_CFLAGS@ @VCONF_CFLAGS@
+libscim@SCIM_EPOCH@_la_CXXFLAGS = @EFL_CFLAGS@ \
+			  @DLOG_CFLAGS@ \
+			  @VCONF_CFLAGS@ \
+			  @SYSTEMD_CFLAGS@ \
+			  @ECORE_IPC_CFLAGS@
 
 libscim@SCIM_EPOCH@_la_LDFLAGS  = -version-info $(SCIM_CURRENT):$(SCIM_REVISION):$(SCIM_AGE) \
 			  -export-dynamic \
@@ -152,20 +157,26 @@ libscim@SCIM_EPOCH@_la_LDFLAGS  = -version-info $(SCIM_CURRENT):$(SCIM_REVISION)
 			  @LIBTOOL_EXPORT_OPTIONS@ \
 			  @LIBICONV@ \
 			  @LTLIBINTL@ \
-			  @SECURITY_SERVER_LIBS@ \
 			  @EFL_LIBS@ \
 			  @VCONF_LIBS@ \
+			  @SYSTEMD_LIBS@ \
+			  @ECORE_IPC_LIBS@ \
 			  -lstdc++
+
+if ISF_BUILD_DB_UTIL
+libscim@SCIM_EPOCH@_la_CXXFLAGS  += @DB_UTIL_CFLAGS@
+libscim@SCIM_EPOCH@_la_LDFLAGS   += @DB_UTIL_LIBS@
+endif
 
 libscim@SCIM_EPOCH@_la_LIBADD	= libltdlc.la
 
 
-bin_PROGRAMS		= scim isf-log isf-query-engines
+bin_PROGRAMS		= scim isf-log
 
-scim_SOURCES	 	= scim.cpp
-scim_CXXFLAGS		= @EFL_CFLAGS@ @PRIVILEGE_CONTROL_CFLAGS@ @VCONF_CFLAGS@ -fPIE
+scim_SOURCES	 	= scim.cpp isf_pkg.cpp
+scim_CXXFLAGS		= @EFL_CFLAGS@ @PRIVILEGE_CONTROL_CFLAGS@ @PKGMGR_INFO_CFLAGS@ @ECORE_IPC_CFLAGS@ @SMACK_CFLAGS@ @SYSTEMD_CFLAGS@ @DLOG_CFLAGS@ -fPIE
 scim_LDADD		= libscim@SCIM_EPOCH@.la
-scim_LDFLAGS		= @LTLIBINTL@ @EFL_LIBS@ @PRIVILEGE_CONTROL_LIBS@ @VCONF_LIBS@ -pie
+scim_LDFLAGS		= @LTLIBINTL@ @EFL_LIBS@ @PRIVILEGE_CONTROL_LIBS@ @PKGMGR_INFO_LIBS@ @ECORE_IPC_LIBS@ @SMACK_LIBS@ @SYSTEMD_LIBS@ @DLOG_LIBS@ -pie
 
 isf_log_SOURCES	 	= isf_log.cpp
 isf_log_LDADD		= libscim@SCIM_EPOCH@.la
@@ -177,20 +188,16 @@ isf_log_CXXFLAGS	= -fPIE
 isf_log_LDFLAGS		= @LTLIBINTL@ -rpath $(libdir) -lglib-2.0 -lgobject-2.0 -pie
 endif
 
-isf_query_engines_SOURCES  = isf_query_engines.cpp
-isf_query_engines_CXXFLAGS = @VCONF_CFLAGS@ @PRIVILEGE_CONTROL_CFLAGS@ -fPIE
-isf_query_engines_LDADD    = libscim@SCIM_EPOCH@.la
-isf_query_engines_LDFLAGS  = @LTLIBINTL@ @VCONF_LIBS@ @PRIVILEGE_CONTROL_LIBS@ -pie
-
 libexecdir		= $(libdir)/scim@SCIM_EPOCH@
 libexec_PROGRAMS        = scim-launcher scim-helper-launcher
 
-scim_launcher_SOURCES 	= scim_launcher.cpp
+scim_launcher_SOURCES 	= scim_launcher.cpp isf_pkg.cpp
 scim_launcher_LDADD	= libscim@SCIM_EPOCH@.la
-scim_launcher_CXXFLAGS  = @PRIVILEGE_CONTROL_CFLAGS@ @VCONF_CFLAGS@ -fPIE
-scim_launcher_LDFLAGS	= @LTLIBINTL@ @PRIVILEGE_CONTROL_LIBS@ @VCONF_LIBS@ -pie
+scim_launcher_CXXFLAGS  = @PRIVILEGE_CONTROL_CFLAGS@ @VCONF_CFLAGS@ @PKGMGR_INFO_CFLAGS@ @DLOG_CFLAGS@ -fPIE
+scim_launcher_LDFLAGS	= @LTLIBINTL@ @PRIVILEGE_CONTROL_LIBS@ @VCONF_LIBS@ @PKGMGR_INFO_LIBS@ @DLOG_LIBS@ -pie
 
 scim_helper_launcher_SOURCES 	= scim_helper_launcher.cpp ise_preexec.cpp
-scim_helper_launcher_CXXFLAGS	= @PRIVILEGE_CONTROL_CFLAGS@ @EFL_CFLAGS@ @PKGMGR_INFO_CFLAGS@ @DLOG_CFLAGS@ -fPIE
+scim_helper_launcher_CXXFLAGS	= @PRIVILEGE_CONTROL_CFLAGS@ @EFL_CFLAGS@ @PKGMGR_INFO_CFLAGS@ @DLOG_CFLAGS@ @ECORE_IPC_CFLAGS@ -fPIE
 scim_helper_launcher_LDADD	= libscim@SCIM_EPOCH@.la
-scim_helper_launcher_LDFLAGS	= @LTLIBINTL@ @PRIVILEGE_CONTROL_LIBS@ @EFL_LIBS@ @PKGMGR_INFO_LIBS@ @DLOG_LIBS@ -pie
+scim_helper_launcher_LDFLAGS	= @LTLIBINTL@ @PRIVILEGE_CONTROL_LIBS@ @EFL_LIBS@ @PKGMGR_INFO_LIBS@ @DLOG_LIBS@ @ECORE_IPC_LIBS@ -pie
+

@@ -48,7 +48,7 @@ namespace scim {
  * If there are large amount of hotkeys to be matched, this class can provide
  * very good performance.
  */
-class EAPI HotkeyMatcher
+class EXAPI HotkeyMatcher
 {
     class HotkeyMatcherImpl;
 
@@ -158,7 +158,7 @@ typedef struct {
 /**
  * @brief This class hold all Hotkeys for each IMEngines.
  */
-class EAPI IMEngineHotkeyMatcher
+class EXAPI IMEngineHotkeyMatcher
 {
     class IMEngineHotkeyMatcherImpl;
 
@@ -273,7 +273,7 @@ enum FrontEndHotkeyAction
 /**
  * @brief This class hold all FrontEnd specific Hotkeys, such as trigger keys, on/off keys, etc.
  */
-class EAPI FrontEndHotkeyMatcher
+class EXAPI FrontEndHotkeyMatcher
 {
     class FrontEndHotkeyMatcherImpl;
 

@@ -2,7 +2,7 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2015 Samsung Electronics Co., Ltd.
  *
  * Contact: Jihoon Kim <jihoon48.kim@samsung.com>
  *
@@ -21,12 +21,16 @@
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
-#ifndef __CENTER_POPUP_H__
-#define __CENTER_POPUP_H__
+
+#ifndef __ISE_PASSWORD_MODE_H
+#define __ISE_PASSWORD_MODE_H
 
 #include <Elementary.h>
 
-Evas_Object *               center_popup_add(Evas_Object *parent, const char *name, const char *title);
-Evas_Object *               center_popup_win_get(Evas_Object *popup);
+void ise_password_mode_bt (void *data, Evas_Object *obj, void *event_info);
 
-#endif /* __CENTER_POPUP_H__ */
+#endif /* __ISE_PASSWORD_MODE_H */
+
+/*
+vi:ts=4:ai:nowrap:expandtab
+*/

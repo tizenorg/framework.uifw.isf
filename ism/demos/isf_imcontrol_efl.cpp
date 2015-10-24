@@ -2,7 +2,7 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
  *
  * Contact: Shuo Liu <shuo0805.liu@samsung.com>, Jihoon Kim <jihoon48.kim@samsung.com>
  *
@@ -36,13 +36,23 @@ static void test_input_panel_imdata_get (void *data, Evas_Object *obj, void *eve
 static void test_input_panel_layout_set (void *data, Evas_Object *obj, void *event_info);
 static void test_input_panel_layout_get (void *data, Evas_Object *obj, void *event_info);
 static void test_input_panel_state_get (void *data, Evas_Object *obj, void *event_info);
+static void test_input_panel_language_locale_get (void *data, Evas_Object *obj, void *event_info);
 static void test_get_active_ise (void *data, Evas_Object *obj, void *event_info);
 static void test_get_ise_list (void *data, Evas_Object *obj, void *event_info);
 static void test_get_ise_info (void *data, Evas_Object *obj, void *event_info);
 static void test_get_initial_ise (void *data, Evas_Object *obj, void *event_info);
 static void test_get_ise_count (void *data, Evas_Object *obj, void *event_info);
 static void test_reset_default_ise (void *data, Evas_Object *obj, void *event_info);
+static void test_show_ime_list (void *data, Evas_Object *obj, void *event_info);
 static void test_show_ise_selector (void *data, Evas_Object *obj, void *event_info);
+static void test_show_ise_option (void *data, Evas_Object *obj, void *event_info);
+static void test_is_ime_enabled (void *data, Evas_Object *obj, void *event_info);
+static void test_get_recent_ise_geometry_get (void *data, Evas_Object *obj, void *event_info);
+
+struct _menu_item {
+    const char *name;
+    void (*func)(void *data, Evas_Object *obj, void *event_info);
+};
 
 static struct _menu_item imcontrol_menu_its[] = {
     { "PANEL GEOMETRY GET", test_input_panel_geometry_get },
@@ -53,13 +63,18 @@ static struct _menu_item imcontrol_menu_its[] = {
     { "INPUT PANEL LAYOUT SET", test_input_panel_layout_set },
     { "INPUT PANEL LAYOUT GET", test_input_panel_layout_get },
     { "INPUT PANEL STATE GET", test_input_panel_state_get },
+    { "LANGUAGE LOCALE GET", test_input_panel_language_locale_get },
     { "GET ACTIVE ISE", test_get_active_ise },
     { "GET ACTIVE ISE INFO", test_get_ise_info },
     { "GET INITIAL ISE", test_get_initial_ise },
     { "GET ISE LIST", test_get_ise_list },
     { "GET ISE COUNT", test_get_ise_count },
     { "RESET DEFAULT ISE", test_reset_default_ise },
+    { "SHOW IME LIST", test_show_ime_list },
     { "SHOW ISE SELECTOR", test_show_ise_selector },
+    { "SHOW ISE OPTION", test_show_ise_option },
+    { "IS IME ENABLED", test_is_ime_enabled },
+    { "GET RECENT ISE GEOMETRY", test_get_recent_ise_geometry_get },
 
     /* do not delete below */
     { NULL, NULL}
@@ -137,6 +152,19 @@ static void test_input_panel_state_get (void *data, Evas_Object *obj, void *even
     }
 }
 
+static void test_input_panel_language_locale_get (void *data, Evas_Object *obj, void *event_info)
+{
+    char *locale = NULL;
+
+    if (imf_context != NULL) {
+        ecore_imf_context_input_panel_language_locale_get (imf_context, &locale);
+        LOGD ("locale : %s\n", locale);
+    }
+
+    if (locale)
+        free (locale);
+}
+
 static void test_get_active_ise (void *data, Evas_Object *obj, void *event_info)
 {
     char *uuid = NULL;
@@ -202,6 +230,15 @@ static void test_reset_default_ise (void *data, Evas_Object *obj, void *event_in
         LOGW ("Reset default ISE is failed!!!\n");
 }
 
+static void test_show_ime_list (void *data, Evas_Object *obj, void *event_info)
+{
+    int ret = isf_control_show_ime_list ();
+    if (ret == 0)
+        LOGD ("Show IME list is successful!\n");
+    else
+        LOGW ("Show IME list is failed!!!\n");
+}
+
 static void test_show_ise_selector (void *data, Evas_Object *obj, void *event_info)
 {
     int ret = isf_control_show_ise_selector ();
@@ -211,14 +248,60 @@ static void test_show_ise_selector (void *data, Evas_Object *obj, void *event_in
         LOGW ("Show ISE selector is failed!!!\n");
 }
 
+static void test_show_ise_option (void *data, Evas_Object *obj, void *event_info)
+{
+    int ret = isf_control_show_ise_option_window ();
+    if (ret == 0)
+        LOGD ("Show ISE option window is successful!\n");
+    else
+        LOGW ("Show ISE option window is failed!!!\n");
+}
+
+static void test_is_ime_enabled (void *data, Evas_Object *obj, void *event_info)
+{
+    char *uuid = NULL;
+    bool enabled;
+    int ret = isf_control_get_initial_ise (&uuid);
+    if (ret > 0 && uuid) {
+        LOGD ("Get initial ISE: %s\n", uuid);
+
+        int ret = isf_control_is_ime_enabled (uuid, &enabled);
+        if (ret == 0) {
+            LOGD ("is_ime_enabled is successful! enabled : %d\n", enabled);
+        }
+        else {
+            LOGW ("is_ime_enabled is failed!\n");
+        }
+    }
+    else
+        LOGW ("Failed to get initial ISE\n");
+
+    if (uuid)
+        free (uuid);
+}
+
 static void test_get_initial_ise (void *data, Evas_Object *obj, void *event_info)
 {
     char *uuid = NULL;
     int ret = isf_control_get_initial_ise (&uuid);
     if (ret > 0 && uuid)
         LOGD ("Get initial ISE: %s\n", uuid);
+    else
+        LOGW ("Failed to get initial ISE\n");
+
     if (uuid)
         free (uuid);
+}
+
+static void test_get_recent_ise_geometry_get (void *data, Evas_Object *obj, void *event_info)
+{
+    int x, y, w, h;
+    if (isf_control_get_recent_ime_geometry (&x, &y, &w, &h) == 0) {
+        LOGD ("x=%d, y=%d, width=%d, height=%d\n", x, y, w, h);
+    }
+    else {
+        LOGW ("Failed to get recent ime geometry\n");
+    }
 }
 
 static char *gli_label_get (void *data, Evas_Object *obj, const char *part)
@@ -234,7 +317,8 @@ static void test_api (void *data, Evas_Object *obj, void *event_info)
     if (it)
         elm_genlist_item_selected_set (it, EINA_FALSE);
 
-    imcontrol_menu_its[j].func (NULL, obj, event_info);
+    if (imcontrol_menu_its[j].func)
+        imcontrol_menu_its[j].func (NULL, obj, event_info);
 }
 
 static Eina_Bool _nf_back_event_cb (void *data, Elm_Object_Item *it)
@@ -284,7 +368,8 @@ void imcontrolapi_bt (void *data, Evas_Object *obj, void *event_info)
 
     gl = _create_imcontrolapi_list (ad->naviframe);
 
-    Elm_Object_Item *navi_it = elm_naviframe_item_push (ad->naviframe, _("IM Control"), NULL, NULL, gl, NULL);
+    Evas_Object *back_btn = create_naviframe_back_button (ad);
+    Elm_Object_Item *navi_it = elm_naviframe_item_push (ad->naviframe, _("IM Control"), back_btn, NULL, gl, NULL);
     elm_naviframe_item_pop_cb_set (navi_it, _nf_back_event_cb, ad);
 }
 

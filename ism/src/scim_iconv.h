@@ -44,7 +44,7 @@ namespace scim {
 /**
  * @brief A class to convert strings between UCS-4 and local encodings.
  */
-class EAPI IConvert
+class EXAPI IConvert
 {
     class IConvertImpl;
 

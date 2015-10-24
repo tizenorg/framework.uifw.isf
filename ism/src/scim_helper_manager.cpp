@@ -8,7 +8,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2004-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -49,6 +49,12 @@
 #include "scim_private.h"
 #include "scim.h"
 #include "scim_utility.h"
+#include <dlog.h>
+
+#ifdef LOG_TAG
+# undef LOG_TAG
+#endif
+#define LOG_TAG             "SCIM_HELPER_MANAGER"
 
 
 namespace scim {
@@ -100,10 +106,18 @@ public:
     void run_helper (const String &uuid, const String &config_name, const String &display)
     {
         SCIM_DEBUG_MAIN(1) << __FUNCTION__ << "...\n";
-        if (!uuid.length () || !m_helpers.size ())
+        if (!uuid.length ()) {
+            LOGW ("Invalid uuid");
             return;
-        if (!m_socket_client.is_connected () && !open_connection ())
+        }
+        if (!m_socket_client.is_connected () && !open_connection ()) {
+            LOGW ("m_socket_client connection failed");
             return;
+        }
+        if (!m_helpers.size ()) {
+            get_helper_list ();
+            LOGD ("helper size:%d", m_helpers.size ());
+        }
 
         Transaction trans;
         for (int i = 0; i < 3; ++i) {

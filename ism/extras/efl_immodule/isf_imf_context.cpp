@@ -2,7 +2,7 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
  *
  * Contact: Jihoon Kim <jihoon48.kim@samsung.com>, Haifeng Deng <haifeng.deng@samsung.com>
  *
@@ -39,12 +39,12 @@
 
 #include <Evas.h>
 #include <Ecore_Evas.h>
+#include <Ecore_Input.h>
 #include <Ecore_X.h>
 #include <X11/XKBlib.h>
 #include <X11/keysym.h>
 #include <X11/Xutil.h>
 #include <glib.h>
-#include <utilX.h>
 #include <vconf.h>
 #include <vconf-keys.h>
 
@@ -63,6 +63,11 @@
 #define SHIFT_MODE_LOCK 0xffe6
 #define SHIFT_MODE_ENABLE 0x9fe7
 #define SHIFT_MODE_DISABLE 0x9fe8
+
+#define REMOTE_CONTROLLER                               "HWKeys"
+#define PANEL_KEY                                       "Virtual Remote"
+#define SMART_RC_REMOTE                                 "Advanced Touch REMOTE"
+#define FUNCTION_OSD                                    "function-osd"
 
 #define E_PROP_DEVICEMGR_INPUTWIN                       "DeviceMgr Input Window"
 
@@ -373,7 +378,6 @@ static IMEngineInstancePointer                          _fallback_instance;
 PanelClient                                             _panel_client;
 static int                                              _panel_client_id            = 0;
 
-static bool                                             _panel_initialized          = false;
 static int                                              _active_helper_option       = 0;
 
 static Ecore_Fd_Handler                                *_panel_iochannel_read_handler = 0;
@@ -387,13 +391,14 @@ static Ecore_Event_Handler                             *_key_up_handler         
 static bool                                             _on_the_spot                = true;
 static bool                                             _shared_input_method        = false;
 static bool                                             _change_keyboard_mode_by_touch = false;
+static bool                                             _change_keyboard_mode_by_focus_move = false;
+static bool                                             _hide_ise_based_on_focus    = false;
 static bool                                             _support_hw_keyboard_mode   = false;
 
 static double                                           space_key_time              = 0.0;
 
 static Eina_Bool                                        autoperiod_allow            = EINA_FALSE;
 static Eina_Bool                                        autocap_allow               = EINA_FALSE;
-static Eina_Bool                                        desktop_mode                = EINA_FALSE;
 
 static bool                                             _x_key_event_is_valid       = false;
 
@@ -427,22 +432,16 @@ public:
 
 static FinalizeHandler                                  _finalize_handler;
 
-EAPI EcoreIMFContextISF *
+EcoreIMFContextISF *
 get_focused_ic ()
 {
     return _focused_ic;
 }
 
-EAPI int
+int
 get_panel_client_id (void)
 {
     return _panel_client_id;
-}
-
-EAPI Eina_Bool
-get_desktop_mode ()
-{
-    return desktop_mode;
 }
 
 /* Function Implementations */
@@ -567,14 +566,42 @@ _key_down_cb (void *data, int type, void *event)
 {
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
 
+    Eina_Bool ret = EINA_FALSE;
     Ecore_Event_Key *ev = (Ecore_Event_Key *)event;
     Ecore_IMF_Context *active_ctx = get_using_ic (ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_SHOW);
     if (!ev || !ev->keyname || !active_ctx) return ECORE_CALLBACK_PASS_ON;
 
-    if (ecore_imf_context_input_panel_state_get (active_ctx) != ECORE_IMF_INPUT_PANEL_STATE_HIDE) {
+    EcoreIMFContextISF *ic = (EcoreIMFContextISF*) ecore_imf_context_data_get (active_ctx);
+    if (!ic) return ECORE_CALLBACK_PASS_ON;
+
+    Ecore_X_Window client_win = client_window_id_get (active_ctx);
+    Ecore_X_Window focus_win = ecore_x_window_focus_get ();
+
+    if ((client_win == focus_win) && ((_hide_ise_based_on_focus) ? (_focused_ic != 0):(true))) {
         if (filter_keys (ev->keyname, SCIM_CONFIG_HOTKEYS_FRONTEND_HIDE_ISE)) {
+            if (get_keyboard_mode () == TOOLBAR_HELPER_MODE) {
+                if (ecore_imf_context_input_panel_state_get (active_ctx) == ECORE_IMF_INPUT_PANEL_STATE_HIDE)
+                    return ECORE_CALLBACK_PASS_ON;
+            }
             LOGD ("%s key is pressed.\n", ev->keyname);
-            return ECORE_CALLBACK_DONE;
+            if (_active_helper_option & ISM_HELPER_PROCESS_KEYBOARD_KEYEVENT) {
+                KeyEvent key;
+                scim_string_to_key (key, ev->key);
+                LOGD ("process hide_ise_key_event to handle it in the helper: %s", ev->keyname);
+                void *pvoid = &ret;
+                _panel_client.prepare (ic->id);
+                _panel_client.process_key_event (key, (int*) pvoid);
+                _panel_client.send ();
+            }
+            if (ret) {
+                return ECORE_CALLBACK_DONE;
+            }
+            else {
+                Ecore_IMF_Input_Panel_State state = ecore_imf_context_input_panel_state_get (active_ctx);
+                if (state == ECORE_IMF_INPUT_PANEL_STATE_SHOW ||
+                    state == ECORE_IMF_INPUT_PANEL_STATE_WILL_SHOW)
+                    return ECORE_CALLBACK_DONE;
+            }
         }
     }
     return ECORE_CALLBACK_PASS_ON;
@@ -586,21 +613,46 @@ _key_up_cb (void *data, int type, void *event)
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
 
     unsigned int val = 0;
-    Ecore_IMF_Context *active_ctx = get_using_ic (ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_SHOW);
-
+    Eina_Bool ret = EINA_FALSE;
     Ecore_Event_Key *ev = (Ecore_Event_Key *)event;
+    Ecore_IMF_Context *active_ctx = get_using_ic (ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_SHOW);
     if (!ev || !ev->keyname || !active_ctx) return ECORE_CALLBACK_PASS_ON;
+
+    EcoreIMFContextISF *ic = (EcoreIMFContextISF*) ecore_imf_context_data_get (active_ctx);
+    if (!ic) return ECORE_CALLBACK_PASS_ON;
 
     Ecore_X_Window client_win = client_window_id_get (active_ctx);
     Ecore_X_Window focus_win = ecore_x_window_focus_get ();
 
-    if (client_win == focus_win) {
-        if (ecore_imf_context_input_panel_state_get (active_ctx) != ECORE_IMF_INPUT_PANEL_STATE_HIDE) {
-            if (filter_keys (ev->keyname, SCIM_CONFIG_HOTKEYS_FRONTEND_HIDE_ISE)) {
-                LOGD ("%s key is released.\n", ev->keyname);
-                isf_imf_context_reset (active_ctx);
-                isf_imf_context_input_panel_instant_hide (active_ctx);
+    if ((client_win == focus_win) && ((_hide_ise_based_on_focus) ? (_focused_ic != 0):(true))) {
+        if (filter_keys (ev->keyname, SCIM_CONFIG_HOTKEYS_FRONTEND_HIDE_ISE)) {
+            if (get_keyboard_mode () == TOOLBAR_HELPER_MODE) {
+                if (ecore_imf_context_input_panel_state_get (active_ctx) == ECORE_IMF_INPUT_PANEL_STATE_HIDE)
+                    return ECORE_CALLBACK_PASS_ON;
+            }
+            LOGD ("%s key is released.\n", ev->keyname);
+            if (_active_helper_option & ISM_HELPER_PROCESS_KEYBOARD_KEYEVENT) {
+                KeyEvent key;
+                scim_string_to_key (key, ev->key);
+                key.mask = SCIM_KEY_ReleaseMask;
+                key.mask &= _valid_key_mask;
+                LOGD ("process hide_ise_key_event to handle it in the helper: %s", ev->keyname);
+                void *pvoid = &ret;
+                _panel_client.prepare (ic->id);
+                _panel_client.process_key_event (key, (int*) pvoid);
+                _panel_client.send ();
+            }
+            if (ret) {
                 return ECORE_CALLBACK_DONE;
+            }
+            else {
+                Ecore_IMF_Input_Panel_State state = ecore_imf_context_input_panel_state_get (active_ctx);
+                if (state == ECORE_IMF_INPUT_PANEL_STATE_SHOW ||
+                    state == ECORE_IMF_INPUT_PANEL_STATE_WILL_SHOW) {
+                    isf_imf_context_reset (active_ctx);
+                    isf_imf_context_input_panel_instant_hide (active_ctx);
+                    return ECORE_CALLBACK_DONE;
+                }
             }
         }
     }
@@ -628,36 +680,7 @@ _key_up_cb (void *data, int type, void *event)
     return ECORE_CALLBACK_PASS_ON;
 }
 
-static void
-_check_desktop_mode (Ecore_X_Window win)
-{
-    char *profile = ecore_x_e_window_profile_get (win);
-    if (profile && (strcmp (profile, "desktop") == 0)) {
-        desktop_mode = EINA_TRUE;
-    } else {
-        desktop_mode = EINA_FALSE;
-    }
-
-    if (profile)
-        free (profile);
-}
-
-static Eina_Bool
-_x_prop_change (void *data, int type, void *event)
-{
-    Ecore_X_Event_Window_Property *e = (Ecore_X_Event_Window_Property *)event;
-    Ecore_X_Window xwin = (Ecore_X_Window)data;
-
-    if (e->win != xwin) return ECORE_CALLBACK_PASS_ON;
-
-    if (e->atom == ECORE_X_ATOM_E_PROFILE) {
-        _check_desktop_mode (e->win);
-    }
-
-    return ECORE_CALLBACK_PASS_ON;
-}
-
-EAPI int
+int
 register_key_handler ()
 {
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
@@ -673,7 +696,7 @@ register_key_handler ()
     return EXIT_SUCCESS;
 }
 
-EAPI int
+int
 unregister_key_handler ()
 {
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
@@ -696,7 +719,7 @@ set_prediction_allow (Ecore_IMF_Context *ctx, bool prediction)
 {
     EcoreIMFContextISF *context_scim = (EcoreIMFContextISF *)ecore_imf_context_data_get (ctx);
 
-    if (context_scim && context_scim->impl && context_scim == _focused_ic) {
+    if (context_scim && context_scim->impl && context_scim->impl->si && context_scim == _focused_ic) {
         _panel_client.prepare (context_scim->id);
         context_scim->impl->si->set_prediction_allow (prediction);
         _panel_client.send ();
@@ -907,7 +930,7 @@ done:
     return ret;
 }
 
-EAPI Eina_Bool
+Eina_Bool
 caps_mode_check (Ecore_IMF_Context *ctx, Eina_Bool force, Eina_Bool noti)
 {
     Eina_Bool uppercase;
@@ -1060,7 +1083,7 @@ static void input_language_changed_cb (keynode_t *key, void* data)
     get_input_language ();
 }
 
-EAPI void context_scim_imdata_get (Ecore_IMF_Context *ctx, void* data, int* length)
+void context_scim_imdata_get (Ecore_IMF_Context *ctx, void* data, int* length)
 {
     EcoreIMFContextISF *context_scim = (EcoreIMFContextISF *)ecore_imf_context_data_get (ctx);
 
@@ -1075,51 +1098,27 @@ EAPI void context_scim_imdata_get (Ecore_IMF_Context *ctx, void* data, int* leng
     }
 }
 
-EAPI void
+void
 imengine_layout_set (Ecore_IMF_Context *ctx, Ecore_IMF_Input_Panel_Layout layout)
 {
     EcoreIMFContextISF *context_scim = (EcoreIMFContextISF *)ecore_imf_context_data_get (ctx);
 
-    if (context_scim && context_scim->impl && context_scim == _focused_ic) {
+    if (context_scim && context_scim->impl && context_scim->impl->si && context_scim == _focused_ic) {
         _panel_client.prepare (context_scim->id);
         context_scim->impl->si->set_layout (layout);
         _panel_client.send ();
     }
 }
 
-/* Public functions */
-/**
- * isf_imf_context_new
- *
- * This function will be called by Ecore IMF.
- * Create a instance of type EcoreIMFContextISF.
- *
- * Return value: A pointer to the newly created EcoreIMFContextISF instance
- */
-EAPI EcoreIMFContextISF *
-isf_imf_context_new (void)
+void
+scim_initialize (void)
 {
-    SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
-
-    int val;
-
-    EcoreIMFContextISF *context_scim = new EcoreIMFContextISF;
-    if (context_scim == NULL) {
-        std::cerr << "memory allocation failed in " << __FUNCTION__ << "\n";
-        return NULL;
-    }
-
-    if (_context_count == 0) {
-        _context_count = getpid () % 50000;
-    }
-    context_scim->id = _context_count++;
-
     if (!_scim_initialized) {
+        _scim_initialized = true;
         ecore_x_init (NULL);
         initialize ();
-        _scim_initialized = true;
         isf_imf_input_panel_init ();
-
+        int val;
         /* get autoperiod allow vconf value */
         if (vconf_get_bool (VCONFKEY_AUTOPERIOD_ALLOW_BOOL, &val) == 0) {
             if (val == EINA_TRUE)
@@ -1141,22 +1140,11 @@ isf_imf_context_new (void)
 
         vconf_notify_key_changed (VCONFKEY_ISF_INPUT_LANGUAGE, input_language_changed_cb, NULL);
     }
-
-    return context_scim;
 }
 
-/**
- * isf_imf_context_shutdown
- *
- * It will be called when the scim im module is unloaded by ecore. It will do some
- * cleanup job.
- */
-EAPI void
-isf_imf_context_shutdown (void)
+static void
+_scim_finalize (void)
 {
-    SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
-    ConfigBase::set (0);
-    _default_instance.reset();
     if (_scim_initialized) {
         _scim_initialized = false;
 
@@ -1172,7 +1160,50 @@ isf_imf_context_shutdown (void)
     }
 }
 
-EAPI void
+/* Public functions */
+/**
+ * isf_imf_context_new
+ *
+ * This function will be called by Ecore IMF.
+ * Create a instance of type EcoreIMFContextISF.
+ *
+ * Return value: A pointer to the newly created EcoreIMFContextISF instance
+ */
+EcoreIMFContextISF *
+isf_imf_context_new (void)
+{
+    SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
+
+    EcoreIMFContextISF *context_scim = new EcoreIMFContextISF;
+    if (context_scim == NULL) {
+        std::cerr << "memory allocation failed in " << __FUNCTION__ << "\n";
+        return NULL;
+    }
+
+    if (_context_count == 0) {
+        _context_count = getpid () % 50000;
+    }
+    context_scim->id = _context_count++;
+
+    return context_scim;
+}
+
+/**
+ * isf_imf_context_shutdown
+ *
+ * It will be called when the scim im module is unloaded by ecore. It will do some
+ * cleanup job.
+ */
+void
+isf_imf_context_shutdown (void)
+{
+    SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
+    ConfigBase::set (0);
+    _default_instance.reset();
+    _scim_finalize ();
+}
+
+void
 isf_imf_context_add (Ecore_IMF_Context *ctx)
 {
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
@@ -1183,35 +1214,6 @@ isf_imf_context_add (Ecore_IMF_Context *ctx)
 
     context_scim->impl = NULL;
 
-    if (_backend.null ())
-        return;
-
-    IMEngineInstancePointer si;
-
-    // Use the default instance if "shared input method" mode is enabled.
-    if (_shared_input_method && !_default_instance.null ()) {
-        si = _default_instance;
-        SCIM_DEBUG_FRONTEND(2) << "use default instance: " << si->get_id () << " " << si->get_factory_uuid () << "\n";
-    }
-
-    // Not in "shared input method" mode, or no default instance, create an instance.
-    if (si.null ()) {
-        IMEngineFactoryPointer factory = _backend->get_default_factory (_language, "UTF-8");
-        if (factory.null ()) return;
-        si = factory->create_instance ("UTF-8", _instance_count++);
-        if (si.null ()) return;
-        LOGD ("create_instance: %s",si->get_factory_uuid ().c_str ());
-        attach_instance (si);
-        SCIM_DEBUG_FRONTEND(2) << "create new instance: " << si->get_id () << " " << si->get_factory_uuid () << "\n";
-    }
-
-    // If "shared input method" mode is enabled, and there is no default instance,
-    // then store this instance as default one.
-    if (_shared_input_method && _default_instance.null ()) {
-        SCIM_DEBUG_FRONTEND(2) << "update default instance.\n";
-        _default_instance = si;
-    }
-
     context_scim->ctx                       = ctx;
     context_scim->impl                      = new_ic_impl (context_scim);
     if (context_scim->impl == NULL) {
@@ -1219,7 +1221,6 @@ isf_imf_context_add (Ecore_IMF_Context *ctx)
         return;
     }
 
-    context_scim->impl->si                  = si;
     context_scim->impl->client_window       = 0;
     context_scim->impl->client_canvas       = NULL;
     context_scim->impl->preedit_caret       = 0;
@@ -1241,18 +1242,17 @@ isf_imf_context_add (Ecore_IMF_Context *ctx)
         context_scim->next = _ic_list;
     _ic_list = context_scim;
 
-    if (_shared_input_method)
-        context_scim->impl->is_on = _config->read (String (SCIM_CONFIG_FRONTEND_IM_OPENED_BY_DEFAULT), context_scim->impl->is_on);
-
-    _panel_client.prepare (context_scim->id);
-    _panel_client.register_input_context (context_scim->id, si->get_factory_uuid ());
-    set_ic_capabilities (context_scim);
-    _panel_client.send ();
+    if (_shared_input_method) {
+        if (_config)
+            context_scim->impl->is_on = _config->read (String (SCIM_CONFIG_FRONTEND_IM_OPENED_BY_DEFAULT), context_scim->impl->is_on);
+        else
+            LOGW ("Failed to read in config\n");
+    }
 
     SCIM_DEBUG_FRONTEND(2) << "input context created: id = " << context_scim->id << "\n";
 }
 
-EAPI void
+void
 isf_imf_context_del (Ecore_IMF_Context *ctx)
 {
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
@@ -1260,7 +1260,6 @@ isf_imf_context_del (Ecore_IMF_Context *ctx)
     if (!_ic_list) return;
 
     EcoreIMFContextISF *context_scim = (EcoreIMFContextISF*)ecore_imf_context_data_get (ctx);
-    Ecore_IMF_Input_Panel_State l_input_panel_state = ecore_imf_context_input_panel_state_get (ctx);
 
     if (context_scim) {
         if (context_scim->id != _ic_list->id) {
@@ -1282,11 +1281,12 @@ isf_imf_context_del (Ecore_IMF_Context *ctx)
     if (context_scim && context_scim->impl) {
         _panel_client.prepare (context_scim->id);
 
-        if (context_scim == _focused_ic)
+        if (context_scim == _focused_ic && context_scim->impl->si)
             context_scim->impl->si->focus_out ();
 
         if (input_panel_ctx == ctx && _scim_initialized) {
             LOGD ("ctx : %p\n", ctx);
+            Ecore_IMF_Input_Panel_State l_input_panel_state = ecore_imf_context_input_panel_state_get (ctx);
             if (l_input_panel_state == ECORE_IMF_INPUT_PANEL_STATE_WILL_SHOW ||
                 l_input_panel_state == ECORE_IMF_INPUT_PANEL_STATE_SHOW) {
                 ecore_imf_context_input_panel_hide (ctx);
@@ -1352,7 +1352,7 @@ isf_imf_context_del (Ecore_IMF_Context *ctx)
  * may be used in order to correctly position status windows, and may also
  * be used for purposes internal to the Input Method Context.
  */
-EAPI void
+void
 isf_imf_context_client_canvas_set (Ecore_IMF_Context *ctx, void *canvas)
 {
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
@@ -1377,7 +1377,7 @@ isf_imf_context_client_canvas_set (Ecore_IMF_Context *ctx, void *canvas)
  * This window is used in order to correctly position status windows,
  * and may also be used for purposes internal to the Input Method Context.
  */
-EAPI void
+void
 isf_imf_context_client_window_set (Ecore_IMF_Context *ctx, void *window)
 {
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
@@ -1390,10 +1390,6 @@ isf_imf_context_client_window_set (Ecore_IMF_Context *ctx, void *window)
         if ((context_scim->impl->client_window != 0) &&
                 (context_scim->impl->client_window != _client_window)) {
             _client_window = context_scim->impl->client_window;
-
-            _check_desktop_mode (_client_window);
-
-            ecore_event_handler_add (ECORE_X_EVENT_WINDOW_PROPERTY, _x_prop_change, window);
         }
     }
 }
@@ -1406,7 +1402,7 @@ isf_imf_context_client_window_set (Ecore_IMF_Context *ctx, void *window)
  *
  * Notify the Input Method Context that the widget to which its correspond has gained focus.
  */
-EAPI void
+void
 isf_imf_context_focus_in (Ecore_IMF_Context *ctx)
 {
     EcoreIMFContextISF *context_scim = (EcoreIMFContextISF *)ecore_imf_context_data_get (ctx);
@@ -1414,10 +1410,9 @@ isf_imf_context_focus_in (Ecore_IMF_Context *ctx)
     if (!context_scim)
         return;
 
-    if (!_panel_initialized)
-        panel_initialize ();
-
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__<< "(" << context_scim->id << ")...\n";
+
+    scim_initialize ();
 
     if (_focused_ic) {
         if (_focused_ic == context_scim) {
@@ -1427,6 +1422,27 @@ isf_imf_context_focus_in (Ecore_IMF_Context *ctx)
         SCIM_DEBUG_FRONTEND(1) << "Focus out previous IC first: " << _focused_ic->id << "\n";
         if (_focused_ic->ctx)
             isf_imf_context_focus_out (_focused_ic->ctx);
+    }
+
+    if (_change_keyboard_mode_by_focus_move) {
+        TOOLBAR_MODE_T kbd_mode = TOOLBAR_HELPER_MODE;
+        unsigned int val = 0;
+        //To get the current keyboard mode
+        if (ecore_x_window_prop_card32_get (ecore_x_window_root_first_get (), ecore_x_atom_get (PROP_X_EXT_KEYBOARD_INPUT_DETECTED), &val, 1) > 0) {
+            if (val == 1) {
+                kbd_mode = TOOLBAR_KEYBOARD_MODE;
+            } else {
+                kbd_mode = TOOLBAR_HELPER_MODE;
+            }
+        } else {
+            kbd_mode = TOOLBAR_HELPER_MODE;
+        }
+
+        //if h/w keyboard mode, keyboard mode will be changed to s/w mode when the entry get the focus.
+        if (kbd_mode == TOOLBAR_KEYBOARD_MODE) {
+            LOGD ("Keyboard mode is changed H/W->S/W because of focus_in.\n");
+            isf_imf_context_set_keyboard_mode (ctx, TOOLBAR_HELPER_MODE);
+        }
     }
 
     bool need_cap   = false;
@@ -1452,7 +1468,11 @@ isf_imf_context_focus_in (Ecore_IMF_Context *ctx)
                 context_scim->impl->shared_si = true;
                 context_scim->impl->si = _default_instance;
 
-                context_scim->impl->is_on = _config->read (String (SCIM_CONFIG_FRONTEND_IM_OPENED_BY_DEFAULT), context_scim->impl->is_on);
+                if (_config)
+                    context_scim->impl->is_on = _config->read (String (SCIM_CONFIG_FRONTEND_IM_OPENED_BY_DEFAULT), context_scim->impl->is_on);
+                else
+                    LOGW ("Failed to load in config\n");
+
                 context_scim->impl->preedit_string.clear ();
                 context_scim->impl->preedit_attrlist.clear ();
                 context_scim->impl->preedit_caret = 0;
@@ -1478,36 +1498,39 @@ isf_imf_context_focus_in (Ecore_IMF_Context *ctx)
             }
         }
 
-        context_scim->impl->si->set_frontend_data (static_cast <void*> (context_scim));
+        if (context_scim->impl->si) {
+            context_scim->impl->si->set_frontend_data (static_cast <void*> (context_scim));
 
-        if (need_reg) _panel_client.register_input_context (context_scim->id, context_scim->impl->si->get_factory_uuid ());
-        if (need_cap) set_ic_capabilities (context_scim);
+            if (need_reg) _panel_client.register_input_context (context_scim->id, context_scim->impl->si->get_factory_uuid ());
+            if (need_cap) set_ic_capabilities (context_scim);
 
-        save_current_xid (ctx);
+            save_current_xid (ctx);
 
-        panel_req_focus_in (context_scim);
-//        panel_req_update_spot_location (context_scim);
-//        panel_req_update_factory_info (context_scim);
+            panel_req_focus_in (context_scim);
+            //        panel_req_update_spot_location (context_scim);
+            //        panel_req_update_factory_info (context_scim);
 
-        if (need_reset) context_scim->impl->si->reset ();
-        if (context_scim->impl->is_on) {
-            _panel_client.turn_on (context_scim->id);
-//            _panel_client.hide_preedit_string (context_scim->id);
-//            _panel_client.hide_aux_string (context_scim->id);
-//            _panel_client.hide_lookup_table (context_scim->id);
-            context_scim->impl->si->focus_in ();
-            context_scim->impl->si->set_layout (ecore_imf_context_input_panel_layout_get (ctx));
-            context_scim->impl->si->set_prediction_allow (context_scim->impl->prediction_allow);
-            LOGD ("ctx : %p. set autocapital type : %d\n", ctx, context_scim->impl->autocapital_type);
-            context_scim->impl->si->set_autocapital_type (context_scim->impl->autocapital_type);
-            context_scim->impl->si->set_input_hint (context_scim->impl->input_hint);
-            context_scim->impl->si->update_bidi_direction (context_scim->impl->bidi_direction);
-            if (context_scim->impl->imdata)
-                context_scim->impl->si->set_imdata ((const char *)context_scim->impl->imdata, context_scim->impl->imdata_size);
-        } else {
-            _panel_client.turn_off (context_scim->id);
+            if (need_reset) context_scim->impl->si->reset ();
+            if (context_scim->impl->is_on) {
+                _panel_client.turn_on (context_scim->id);
+                //            _panel_client.hide_preedit_string (context_scim->id);
+                //            _panel_client.hide_aux_string (context_scim->id);
+                //            _panel_client.hide_lookup_table (context_scim->id);
+                context_scim->impl->si->focus_in ();
+                context_scim->impl->si->set_layout (ecore_imf_context_input_panel_layout_get (ctx));
+                context_scim->impl->si->set_prediction_allow (context_scim->impl->prediction_allow);
+                LOGD ("ctx : %p. set autocapital type : %d\n", ctx, context_scim->impl->autocapital_type);
+                context_scim->impl->si->set_autocapital_type (context_scim->impl->autocapital_type);
+                context_scim->impl->si->set_input_hint (context_scim->impl->input_hint);
+                context_scim->impl->si->update_bidi_direction (context_scim->impl->bidi_direction);
+                if (context_scim->impl->imdata)
+                    context_scim->impl->si->set_imdata ((const char *)context_scim->impl->imdata, context_scim->impl->imdata_size);
+            } else {
+                _panel_client.turn_off (context_scim->id);
+            }
         }
 
+        _panel_client.get_active_helper_option (&_active_helper_option);
         _panel_client.send ();
         context_scim->impl->next_shift_status = 0;
         context_scim->impl->shift_mode_enabled = 0;
@@ -1536,11 +1559,10 @@ isf_imf_context_focus_in (Ecore_IMF_Context *ctx)
  *
  * Notify the Input Method Context that the widget to which its correspond has lost focus.
  */
-EAPI void
+void
 isf_imf_context_focus_out (Ecore_IMF_Context *ctx)
 {
     EcoreIMFContextISF *context_scim = (EcoreIMFContextISF *)ecore_imf_context_data_get (ctx);
-    Eina_Bool is_popup_win = EINA_FALSE;
 
     if (!context_scim) return;
 
@@ -1552,10 +1574,8 @@ isf_imf_context_focus_out (Ecore_IMF_Context *ctx)
 
         LOGD ("ctx : %p\n", ctx);
 
-        is_popup_win = check_focus_out_by_popup_win (ctx);
-
-        if (!is_popup_win) {
-            if (ecore_imf_context_input_panel_enabled_get (ctx))
+        if (ecore_imf_context_input_panel_enabled_get (ctx)) {
+            if (!check_focus_out_by_popup_win (ctx))
                 ecore_imf_context_input_panel_hide (ctx);
         }
 
@@ -1598,7 +1618,7 @@ isf_imf_context_focus_out (Ecore_IMF_Context *ctx)
  * position has been made. This will typically cause the Input Method Context
  * to clear the preedit state.
  */
-EAPI void
+void
 isf_imf_context_reset (Ecore_IMF_Context *ctx)
 {
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
@@ -1635,7 +1655,7 @@ isf_imf_context_reset (Ecore_IMF_Context *ctx)
  *
  * Notify the Input Method Context that a change in the cursor position has been made.
  */
-EAPI void
+void
 isf_imf_context_cursor_position_set (Ecore_IMF_Context *ctx, int cursor_pos)
 {
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
@@ -1674,7 +1694,7 @@ isf_imf_context_cursor_position_set (Ecore_IMF_Context *ctx, int cursor_pos)
  *
  * Notify the Input Method Context that a change in the cursor location has been made.
  */
-EAPI void
+void
 isf_imf_context_cursor_location_set (Ecore_IMF_Context *ctx, int cx, int cy, int cw, int ch)
 {
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
@@ -1730,7 +1750,7 @@ isf_imf_context_cursor_location_set (Ecore_IMF_Context *ctx, int cx, int cy, int
  * To set the input mode of input method. The definition of Ecore_IMF_Input_Mode
  * is in Ecore_IMF.h.
  */
-EAPI void
+void
 isf_imf_context_input_mode_set (Ecore_IMF_Context *ctx, Ecore_IMF_Input_Mode input_mode)
 {
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
@@ -1755,7 +1775,7 @@ isf_imf_context_input_mode_set (Ecore_IMF_Context *ctx, Ecore_IMF_Input_Mode inp
  *
  * To get the preedit string of the input method.
  */
-EAPI void
+void
 isf_imf_context_preedit_string_get (Ecore_IMF_Context *ctx, char** str, int *cursor_pos)
 {
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
@@ -1784,7 +1804,7 @@ isf_imf_context_preedit_string_get (Ecore_IMF_Context *ctx, char** str, int *cur
     }
 }
 
-EAPI void
+void
 isf_imf_context_preedit_string_with_attributes_get (Ecore_IMF_Context *ctx, char** str, Eina_List **attrs, int *cursor_pos)
 {
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
@@ -1916,7 +1936,7 @@ isf_imf_context_preedit_string_with_attributes_get (Ecore_IMF_Context *ctx, char
  * If is 0 (default is 1), then the IM context may use some other method to
  * display feedback, such as displaying it in a child of the root window.
  */
-EAPI void
+void
 isf_imf_context_use_preedit_set (Ecore_IMF_Context* ctx, Eina_Bool use_preedit)
 {
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << " = " << (use_preedit == EINA_TRUE ? "true" : "false") << "...\n";
@@ -1951,7 +1971,7 @@ isf_imf_context_use_preedit_set (Ecore_IMF_Context* ctx, Eina_Bool use_preedit)
  *
  * Set whether the IM context should use the prediction.
  */
-EAPI void
+void
 isf_imf_context_prediction_allow_set (Ecore_IMF_Context* ctx, Eina_Bool prediction)
 {
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << " = " << (prediction == EINA_TRUE ? "true" : "false") << "...\n";
@@ -1974,7 +1994,7 @@ isf_imf_context_prediction_allow_set (Ecore_IMF_Context* ctx, Eina_Bool predicti
  *
  * Return value: the prediction allow flag for the IM context
  */
-EAPI Eina_Bool
+Eina_Bool
 isf_imf_context_prediction_allow_get (Ecore_IMF_Context* ctx)
 {
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
@@ -1999,7 +2019,7 @@ isf_imf_context_prediction_allow_get (Ecore_IMF_Context* ctx)
  *
  * Set autocapital type for the IM context.
  */
-EAPI void
+void
 isf_imf_context_autocapital_type_set (Ecore_IMF_Context* ctx, Ecore_IMF_Autocapital_Type autocapital_type)
 {
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << " = " << autocapital_type << "...\n";
@@ -2033,7 +2053,7 @@ isf_imf_context_autocapital_type_set (Ecore_IMF_Context* ctx, Ecore_IMF_Autocapi
  * the event was not handled), but there is no obligation of any events to be
  * submitted to this function.
  */
-EAPI Eina_Bool
+Eina_Bool
 isf_imf_context_filter_event (Ecore_IMF_Context *ctx, Ecore_IMF_Event_Type type, Ecore_IMF_Event *event)
 {
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
@@ -2050,12 +2070,27 @@ isf_imf_context_filter_event (Ecore_IMF_Context *ctx, Ecore_IMF_Event_Type type,
 
     if (type == ECORE_IMF_EVENT_KEY_DOWN) {
         Ecore_IMF_Event_Key_Down *ev = (Ecore_IMF_Event_Key_Down *)event;
+        scim_set_device_info (key, ev->dev_name ? ev->dev_name : "", ev->dev_class, ev->dev_subclass);
         timestamp = ev->timestamp;
+
+        if (filter_keys (ev->keyname, SCIM_CONFIG_HOTKEYS_FRONTEND_IGNORE_KEY))
+            return EINA_TRUE;
 
         /* Hardware input detect code */
         if (ev->timestamp > 1 && get_keyboard_mode () == TOOLBAR_HELPER_MODE && _support_hw_keyboard_mode &&
             scim_string_to_key (key, ev->key) &&
-            key.code != 0xFF69 /* Cancel (Power + Volume down) key */) {
+#ifdef _TV
+            key.code != 0xFF69 && !((key.code >= SCIM_KEY_Left) && (key.code <= SCIM_KEY_Down)) && key.code != 0xFF0D && key.code != 0x002d && key.code != 0xff67 &&  key.code != 0x1008ff26 &&
+            !((key.code >= SCIM_KEY_0) && (key.code <= SCIM_KEY_9)) &&
+                /* Cancel (Power + Volume down), Right, Left, Up, Down, Return, minus, menu,0~9 key */
+#else
+            key.code != 0xFF69 && ev->dev_name &&
+#endif
+            strcmp (ev->dev_name, REMOTE_CONTROLLER) &&
+            strcmp (ev->dev_name, PANEL_KEY) &&
+            strcmp (ev->dev_name, FUNCTION_OSD) &&
+            strcmp (ev->dev_name, SMART_RC_REMOTE)) {
+                /* 0xFF69 is "Cancel" (Power + Volume down)*/
             isf_imf_context_set_keyboard_mode (ctx, TOOLBAR_KEYBOARD_MODE);
             _panel_client.prepare (ic->id);
             _panel_client.get_active_helper_option (&_active_helper_option);
@@ -2063,9 +2098,6 @@ isf_imf_context_filter_event (Ecore_IMF_Context *ctx, Ecore_IMF_Event_Type type,
             ISF_SAVE_LOG ("Changed keyboard mode from S/W to H/W (code: %x, name: %s)\n", key.code, ev->keyname);
             LOGD ("Hardware keyboard mode, active helper option: %d", _active_helper_option);
         }
-
-        if (filter_keys (ev->keyname, SCIM_CONFIG_HOTKEYS_FRONTEND_IGNORE_KEY))
-            return EINA_TRUE;
     }
     else if (type == ECORE_IMF_EVENT_KEY_UP) {
         Ecore_IMF_Event_Key_Up *ev = (Ecore_IMF_Event_Key_Up *)event;
@@ -2087,12 +2119,14 @@ isf_imf_context_filter_event (Ecore_IMF_Context *ctx, Ecore_IMF_Event_Type type,
         Ecore_IMF_Event_Key_Down *ev = (Ecore_IMF_Event_Key_Down *)event;
         timestamp = ev->timestamp;
         scim_string_to_key (key, ev->key);
+        scim_set_device_info (key, ev->dev_name ? ev->dev_name : "", ev->dev_class, ev->dev_subclass);
         key.mask |= _ecore_imf_modifier_to_scim_mask (ev->modifiers);
         key.mask |= _ecore_imf_lock_to_scim_mask (ev->locks);
     } else if (type == ECORE_IMF_EVENT_KEY_UP) {
         Ecore_IMF_Event_Key_Up *ev = (Ecore_IMF_Event_Key_Up *)event;
         timestamp = ev->timestamp;
         scim_string_to_key (key, ev->key);
+        scim_set_device_info (key, ev->dev_name ? ev->dev_name : "", ev->dev_class, ev->dev_subclass);
         key.mask = SCIM_KEY_ReleaseMask;
         key.mask |= _ecore_imf_modifier_to_scim_mask (ev->modifiers);
         key.mask |= _ecore_imf_lock_to_scim_mask (ev->locks);
@@ -2147,11 +2181,20 @@ isf_imf_context_filter_event (Ecore_IMF_Context *ctx, Ecore_IMF_Event_Type type,
         }
         if (!_focused_ic || !_focused_ic->impl || !_focused_ic->impl->is_on) {
             ret = EINA_FALSE;
-        } else if (get_keyboard_mode () == TOOLBAR_KEYBOARD_MODE && (_active_helper_option & ISM_HELPER_PROCESS_KEYBOARD_KEYEVENT)) {
+        } else if (_active_helper_option & ISM_HELPER_PROCESS_KEYBOARD_KEYEVENT) {
             void *pvoid = &ret;
             _panel_client.process_key_event (key, (int*)pvoid);
+            if (!ret && !(_active_helper_option & ISM_HELPER_WITHOUT_IMENGINE)) {
+                if (_focused_ic->impl->si)
+                    ret = _focused_ic->impl->si->process_key_event (key);
+                else
+                    ret = EINA_FALSE;
+            }
         } else {
-            ret = _focused_ic->impl->si->process_key_event (key);
+            if (_focused_ic->impl->si)
+                ret = _focused_ic->impl->si->process_key_event (key);
+            else
+                ret = EINA_FALSE;
         }
 
         if (ret == EINA_FALSE) {
@@ -2175,15 +2218,14 @@ isf_imf_context_filter_event (Ecore_IMF_Context *ctx, Ecore_IMF_Event_Type type,
  * @param[in] data pointer of data to sets up to ISE
  * @param[in] length length of data
  */
-EAPI void isf_imf_context_imdata_set (Ecore_IMF_Context *ctx, const void* data, int length)
+void isf_imf_context_imdata_set (Ecore_IMF_Context *ctx, const void* data, int length)
 {
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << " data length ( " << length << ") ...\n";
     EcoreIMFContextISF *context_scim = (EcoreIMFContextISF *)ecore_imf_context_data_get (ctx);
 
     if (context_scim == NULL || data == NULL || length <= 0)
         return;
-
-    if (context_scim && context_scim->impl) {
+    if (context_scim->impl) {
         if (context_scim->impl->imdata)
             free (context_scim->impl->imdata);
 
@@ -2208,14 +2250,14 @@ EAPI void isf_imf_context_imdata_set (Ecore_IMF_Context *ctx, const void* data, 
  * @param[out] data pointer of data to return
  * @param[out] length length of data
  */
-EAPI void isf_imf_context_imdata_get (Ecore_IMF_Context *ctx, void* data, int* length)
+void isf_imf_context_imdata_get (Ecore_IMF_Context *ctx, void* data, int* length)
 {
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
 
     isf_imf_context_input_panel_imdata_get (ctx, data, length);
 }
 
-EAPI void
+void
 isf_imf_context_input_hint_set (Ecore_IMF_Context *ctx, Ecore_IMF_Input_Hints hint)
 {
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
@@ -2224,10 +2266,10 @@ isf_imf_context_input_hint_set (Ecore_IMF_Context *ctx, Ecore_IMF_Input_Hints hi
 
     if (context_scim && context_scim->impl) {
         if (context_scim->impl->input_hint != hint) {
-            LOGD ("ctx : %p, input hint : %#x\n", ctx, hint);
             context_scim->impl->input_hint = hint;
 
             if (context_scim->impl->si && context_scim == _focused_ic) {
+                LOGD ("ctx : %p, input hint : %#x\n", ctx, hint);
                 _panel_client.prepare (context_scim->id);
                 context_scim->impl->si->set_input_hint (hint);
                 panel_req_set_input_hint (context_scim, hint);
@@ -2237,7 +2279,7 @@ isf_imf_context_input_hint_set (Ecore_IMF_Context *ctx, Ecore_IMF_Input_Hints hi
     }
 }
 
-EAPI void
+void
 isf_imf_context_bidi_direction_set (Ecore_IMF_Context *ctx, Ecore_IMF_BiDi_Direction direction)
 {
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
@@ -2246,10 +2288,10 @@ isf_imf_context_bidi_direction_set (Ecore_IMF_Context *ctx, Ecore_IMF_BiDi_Direc
 
     if (context_scim && context_scim->impl) {
         if (context_scim->impl->bidi_direction != direction) {
-            LOGD ("ctx : %p, bidi direction : %#x\n", ctx, direction);
             context_scim->impl->bidi_direction = direction;
 
             if (context_scim->impl->si && context_scim == _focused_ic) {
+                LOGD ("ctx : %p, bidi direction : %#x\n", ctx, direction);
                 _panel_client.prepare (context_scim->id);
                 context_scim->impl->si->update_bidi_direction (direction);
                 panel_req_update_bidi_direction (context_scim, direction);
@@ -2484,7 +2526,7 @@ panel_slot_process_key_event (int context, const KeyEvent &key)
         if (feed_key_event (ic, _key, false)) return;
         _panel_client.prepare (ic->id);
         if (!filter_hotkeys (ic, _key)) {
-            if (!_focused_ic || !_focused_ic->impl->is_on ||
+            if (!_focused_ic || !_focused_ic->impl->is_on || !_focused_ic->impl->si ||
                     !_focused_ic->impl->si->process_key_event (_key)) {
                 _fallback_instance->process_key_event (_key);
             }
@@ -2596,9 +2638,12 @@ panel_slot_reset_keyboard_ise (int context)
                     return;
             }
         }
-        _panel_client.prepare (ic->id);
-        ic->impl->si->reset ();
-        _panel_client.send ();
+
+        if (ic->impl->si) {
+            _panel_client.prepare (ic->id);
+            ic->impl->si->reset ();
+            _panel_client.send ();
+        }
     }
 }
 
@@ -2608,7 +2653,8 @@ panel_slot_update_keyboard_ise (int context)
     EcoreIMFContextISF *ic = find_ic (context);
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << " context=" << context << " ic=" << ic << "\n";
 
-    _backend->add_module (_config, "socket", false);
+    if (_config)
+        _backend->add_module (_config, "socket", false);
 }
 
 static void
@@ -3041,7 +3087,7 @@ filter_keys (const char *keyname, const char *config_path)
 {
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
 
-    if (!keyname)
+    if (!keyname || !_config)
         return false;
 
     std::vector <String> keys;
@@ -3085,8 +3131,9 @@ check_socket_frontend (void)
     return true;
 }
 
+#if !defined(HAVE_SYSTEMD)
 static int
-launch_socket_frontend ()
+_launch_socket_frontend ()
 {
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
 
@@ -3114,6 +3161,7 @@ launch_socket_frontend ()
         "socket",
         NULL);
 }
+#endif
 
 static bool
 panel_initialize (void)
@@ -3133,7 +3181,12 @@ panel_initialize (void)
         }
         if (!connected) {
             LOGD ("Socket FrontEnd does not exist, launching new one\n");
-            launch_socket_frontend ();
+#if !defined(HAVE_SYSTEMD)
+            /* If socket activation for scim deamon process is enabled,
+               Disable launching scim_launcher process by app request
+            */
+            _launch_socket_frontend ();
+#endif
         }
     }
 
@@ -3143,7 +3196,7 @@ panel_initialize (void)
         if (p) display_name = String (p);
     }
 
-    if (_panel_client.open_connection (_config->get_name (), display_name) >= 0) {
+    if (_config && (_panel_client.open_connection (_config->get_name (), display_name) >= 0)) {
         if (_panel_client.get_client_id (_panel_client_id)) {
             _panel_client.prepare (0);
             _panel_client.register_client (_panel_client_id);
@@ -3180,8 +3233,6 @@ panel_initialize (void)
             }
         }
 
-        _panel_initialized = true;
-
         return true;
     }
     std::cerr << "panel_initialize () failed!!!\n";
@@ -3193,7 +3244,6 @@ panel_finalize (void)
 {
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
 
-    _panel_initialized = false;
     _panel_client.close_connection ();
 
     if (_panel_iochannel_read_handler) {
@@ -3250,8 +3300,12 @@ turn_on_ic (EcoreIMFContextISF *ic)
 
         //Record the IC on/off status
         if (_shared_input_method) {
-            _config->write (String (SCIM_CONFIG_FRONTEND_IM_OPENED_BY_DEFAULT), true);
-            _config->flush ();
+            if (_config) {
+                _config->write (String (SCIM_CONFIG_FRONTEND_IM_OPENED_BY_DEFAULT), true);
+                _config->flush ();
+            }
+            else
+                LOGW ("Failed to write in config\n");
         }
 
         if (ic->impl->use_preedit && ic->impl->preedit_string.length ()) {
@@ -3289,8 +3343,12 @@ turn_off_ic (EcoreIMFContextISF *ic)
 
         //Record the IC on/off status
         if (_shared_input_method) {
-            _config->write (String (SCIM_CONFIG_FRONTEND_IM_OPENED_BY_DEFAULT), false);
-            _config->flush ();
+            if (_config) {
+                _config->write (String (SCIM_CONFIG_FRONTEND_IM_OPENED_BY_DEFAULT), false);
+                _config->flush ();
+            }
+            else
+                LOGW ("Failed to write in config\n");
         }
 
         if (ic->impl->use_preedit && ic->impl->preedit_string.length ()) {
@@ -3356,6 +3414,7 @@ initialize (void)
         }
 
         if (!check_result) {
+#if ENABLE_IME_EMBED_APP
             //get modules list
             scim_get_imengine_module_list (engine_list);
             scim_get_helper_module_list (helper_list);
@@ -3366,8 +3425,13 @@ initialize (void)
             }
             for (it = helper_list.begin (); it != helper_list.end (); it++)
                 load_engine_list.push_back (*it);
-
-            launch_socket_frontend ();
+#endif
+#if !defined(HAVE_SYSTEMD)
+            /* If socket activation for scim deamon process is enabled,
+               Disable launching scim_launcher process by app request
+            */
+            _launch_socket_frontend ();
+#endif
             manual = false;
         }
 
@@ -3477,8 +3541,12 @@ finalize (void)
         // In case in "shared input method" mode,
         // all contexts share only one instance,
         // so we need point the reference pointer correctly before finalizing.
-        _used_ic_impl_list->si->set_frontend_data (static_cast <void*> (_used_ic_impl_list->parent));
-        isf_imf_context_del (_used_ic_impl_list->parent->ctx);
+        if (_used_ic_impl_list->si) {
+            _used_ic_impl_list->si->set_frontend_data (static_cast <void*> (_used_ic_impl_list->parent));
+        }
+        if (_used_ic_impl_list->parent && _used_ic_impl_list->parent->ctx) {
+            isf_imf_context_del (_used_ic_impl_list->parent->ctx);
+        }
     }
 
     delete_all_ic_impl ();
@@ -3490,13 +3558,13 @@ finalize (void)
     _backend.reset ();
 
     SCIM_DEBUG_FRONTEND(2) << " Releasing Config...\n";
-    _config.reset ();
+    if (_config)
+      _config.reset ();
+
     _config_connection.disconnect ();
     ConfigBase::set (0);
     _focused_ic = NULL;
     _ic_list = NULL;
-
-    _scim_initialized = false;
 
     _panel_client.reset_signal_handler ();
     panel_finalize ();
@@ -3506,6 +3574,9 @@ static void
 open_next_factory (EcoreIMFContextISF *ic)
 {
     if (!check_valid_ic (ic))
+        return;
+
+    if (!ic->impl->si)
         return;
 
     SCIM_DEBUG_FRONTEND(2) << __FUNCTION__ << " context=" << ic->id << "\n";
@@ -3520,7 +3591,7 @@ open_next_factory (EcoreIMFContextISF *ic)
         attach_instance (ic->impl->si);
         _backend->set_default_factory (_language, sf->get_uuid ());
         _panel_client.register_input_context (ic->id, sf->get_uuid ());
-        _panel_client.set_candidate_style (ic->id, ONE_LINE_CANDIDATE, FIXED_CANDIDATE_WINDOW);
+        _panel_client.set_candidate_style (ic->id, ONE_LINE_CANDIDATE, SOFT_CANDIDATE_WINDOW);
         set_ic_capabilities (ic);
         turn_on_ic (ic);
 
@@ -3537,6 +3608,9 @@ open_previous_factory (EcoreIMFContextISF *ic)
     if (!check_valid_ic (ic))
         return;
 
+    if (!ic->impl->si)
+        return;
+
     SCIM_DEBUG_FRONTEND(2) << __FUNCTION__ << " context=" << ic->id << "\n";
     IMEngineFactoryPointer sf = _backend->get_previous_factory ("", "UTF-8", ic->impl->si->get_factory_uuid ());
 
@@ -3549,7 +3623,7 @@ open_previous_factory (EcoreIMFContextISF *ic)
         attach_instance (ic->impl->si);
         _backend->set_default_factory (_language, sf->get_uuid ());
         _panel_client.register_input_context (ic->id, sf->get_uuid ());
-        _panel_client.set_candidate_style (ic->id, ONE_LINE_CANDIDATE, FIXED_CANDIDATE_WINDOW);
+        _panel_client.set_candidate_style (ic->id, ONE_LINE_CANDIDATE, SOFT_CANDIDATE_WINDOW);
         set_ic_capabilities (ic);
         turn_on_ic (ic);
 
@@ -3567,10 +3641,13 @@ open_specific_factory (EcoreIMFContextISF *ic,
     if (!check_valid_ic (ic))
         return;
 
+    if (!ic->impl->si)
+        return;
+
     SCIM_DEBUG_FRONTEND(2) << __FUNCTION__ << " context=" << ic->id << "\n";
 
     // The same input method is selected, just turn on the IC.
-    if (ic->impl->si && (ic->impl->si->get_factory_uuid () == uuid)) {
+    if (ic->impl->si->get_factory_uuid () == uuid) {
         turn_on_ic (ic);
         return;
     }
@@ -3611,8 +3688,12 @@ open_specific_factory (EcoreIMFContextISF *ic,
 
             //Record the IC on/off status
             if (_shared_input_method) {
-                _config->write (String (SCIM_CONFIG_FRONTEND_IM_OPENED_BY_DEFAULT), false);
-                _config->flush ();
+                if (_config) {
+                    _config->write (String (SCIM_CONFIG_FRONTEND_IM_OPENED_BY_DEFAULT), false);
+                    _config->flush ();
+                }
+                else
+                    LOGW ("Failed to write in config\n");
             }
 
             if (ic->impl->use_preedit && ic->impl->preedit_string.length ()) {
@@ -4498,6 +4579,8 @@ reload_config_callback (const ConfigPointer &config)
     _on_the_spot = config->read (String (SCIM_CONFIG_FRONTEND_ON_THE_SPOT), _on_the_spot);
     _shared_input_method = config->read (String (SCIM_CONFIG_FRONTEND_SHARED_INPUT_METHOD), _shared_input_method);
     _change_keyboard_mode_by_touch = scim_global_config_read (String (SCIM_GLOBAL_CONFIG_CHANGE_KEYBOARD_MODE_BY_TOUCH), _change_keyboard_mode_by_touch);
+    _change_keyboard_mode_by_focus_move = scim_global_config_read (String (SCIM_GLOBAL_CONFIG_CHANGE_KEYBOARD_MODE_BY_FOCUS_MOVE), _change_keyboard_mode_by_focus_move);
+    _hide_ise_based_on_focus = scim_global_config_read (String (SCIM_GLOBAL_CONFIG_HIDE_ISE_BASED_ON_FOCUS), _hide_ise_based_on_focus);
     _support_hw_keyboard_mode = scim_global_config_read (String (SCIM_GLOBAL_CONFIG_SUPPORT_HW_KEYBOARD_MODE), _support_hw_keyboard_mode);
 
     // Get keyboard layout setting

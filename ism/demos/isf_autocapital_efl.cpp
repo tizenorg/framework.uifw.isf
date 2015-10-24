@@ -2,7 +2,7 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
  *
  * Contact: Shuo Liu <shuo0805.liu@samsung.com>, Jihoon Kim <jihoon48.kim@samsung.com>
  *
@@ -25,6 +25,27 @@
 #include "isf_demo_efl.h"
 #include "isf_autocapital_efl.h"
 
+struct _menu_item {
+    const char *name;
+    const char *guide_text;
+    Elm_Autocapital_Type autocap;
+    Eina_Bool caps_lock_mode;
+};
+
+static struct _menu_item _menu_its[] = {
+    { N_("NONE type"), N_("click to enter"), ELM_AUTOCAPITAL_TYPE_NONE, EINA_FALSE },
+    { N_("WORD type"), N_("click to enter"), ELM_AUTOCAPITAL_TYPE_WORD, EINA_FALSE },
+    { N_("SENTENCE type"), N_("click to enter"), ELM_AUTOCAPITAL_TYPE_SENTENCE, EINA_FALSE },
+    { N_("ALLCHARACTER type"), N_("click to enter"), ELM_AUTOCAPITAL_TYPE_ALLCHARACTER, EINA_FALSE },
+    { N_("NONE type - CAPS LOCK"), N_("click to enter"), ELM_AUTOCAPITAL_TYPE_NONE, EINA_TRUE },
+    { N_("WORD type - CAPS LOCK"), N_("click to enter"), ELM_AUTOCAPITAL_TYPE_WORD, EINA_TRUE },
+    { N_("SENTENCE type - CAPS LOCK"), N_("click to enter"), ELM_AUTOCAPITAL_TYPE_SENTENCE, EINA_TRUE },
+    { N_("ALLCHARACTER type - CAPS LOCK"), N_("click to enter"), ELM_AUTOCAPITAL_TYPE_ALLCHARACTER, EINA_TRUE },
+
+    /* do not delete below */
+    { NULL, NULL, ELM_AUTOCAPITAL_TYPE_NONE, EINA_FALSE }
+};
+
 static Evas_Object *_create_ef_layout (Evas_Object *parent, const char *label, const char *guide_text, Elm_Autocapital_Type autocap, Eina_Bool caps_lock_mode)
 {
     Evas_Object *en;
@@ -46,47 +67,19 @@ static Evas_Object * create_inner_layout (void *data)
     struct appdata *ad = (struct appdata *)data;
     Evas_Object *bx = NULL;
     Evas_Object *ef = NULL;
-
     Evas_Object *parent = ad->naviframe;
+    int idx = 0;
 
     bx = elm_box_add (parent);
     evas_object_size_hint_weight_set (bx, EVAS_HINT_EXPAND, 0.0);
     evas_object_size_hint_align_set (bx, EVAS_HINT_FILL, 0.0);
     evas_object_show (bx);
 
-    /* NONE type */
-    ef = _create_ef_layout (parent, _("NONE type"), _("click to enter"), ELM_AUTOCAPITAL_TYPE_NONE, EINA_FALSE);
-    elm_box_pack_end (bx, ef);
-
-    /* WORD type */
-    ef = _create_ef_layout (parent, _("WORD type"), _("click to enter"), ELM_AUTOCAPITAL_TYPE_WORD, EINA_FALSE);
-    elm_box_pack_end (bx, ef);
-
-    /* Sentence type */
-    ef = _create_ef_layout (parent, _("SENTENCE type"), _("click to enter"), ELM_AUTOCAPITAL_TYPE_SENTENCE, EINA_FALSE);
-    elm_box_pack_end (bx, ef);
-
-    /* ALLCHARACTER type */
-    ef = _create_ef_layout (parent, _("ALLCHARACTER type"), _("click to enter"), ELM_AUTOCAPITAL_TYPE_ALLCHARACTER, EINA_FALSE);
-    elm_box_pack_end (bx, ef);
-
-    /* Caps lock mode ON */
-
-    /* NONE type */
-    ef = _create_ef_layout (parent, _("NONE type - CAPS LOCK"), _("click to enter"), ELM_AUTOCAPITAL_TYPE_NONE, EINA_TRUE);
-    elm_box_pack_end (bx, ef);
-
-    /* WORD type */
-    ef = _create_ef_layout (parent, _("WORD type - CAPS LOCK"), _("click to enter"), ELM_AUTOCAPITAL_TYPE_WORD, EINA_TRUE);
-    elm_box_pack_end (bx, ef);
-
-    /* Sentence type */
-    ef = _create_ef_layout (parent, _("SENTENCE type - CAPS LOCK"), _("click to enter"), ELM_AUTOCAPITAL_TYPE_SENTENCE, EINA_TRUE);
-    elm_box_pack_end (bx, ef);
-
-    /* ALLCHARACTER type */
-    ef = _create_ef_layout (parent, _("ALLCHARACTER type - CAPS LOCK"), _("click to enter"), ELM_AUTOCAPITAL_TYPE_ALLCHARACTER, EINA_TRUE);
-    elm_box_pack_end (bx, ef);
+    while (_menu_its[idx].name != NULL) {
+        ef = _create_ef_layout (parent, _menu_its[idx].name, _menu_its[idx].guide_text, _menu_its[idx].autocap, _menu_its[idx].caps_lock_mode);
+        elm_box_pack_end (bx, ef);
+        ++idx;
+    }
 
     return bx;
 }

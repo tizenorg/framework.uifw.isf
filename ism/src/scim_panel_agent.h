@@ -13,7 +13,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2004-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -76,6 +76,14 @@ typedef struct _ISE_INFO
     uint32 option;
     TOOLBAR_MODE_T type;
 } ISE_INFO;
+
+typedef struct _HELPER_ISE_INFO {
+    std::vector<String> appid;
+    std::vector<String> label;
+    std::vector<uint32> is_enabled;
+    std::vector<uint32> is_preinstalled;
+    std::vector<uint32> has_option;
+} HELPER_ISE_INFO;
 
 typedef Slot0<void>
         PanelAgentSlotVoid;
@@ -140,6 +148,9 @@ typedef Slot3<void, const String &, const AttributeList &, int>
 typedef Slot1<void, std::vector<String> &>
         PanelAgentSlotStringVector;
 
+typedef Slot1<bool, HELPER_ISE_INFO &>
+        PanelAgentSlotBoolHelperInfo;
+
 typedef Slot1<bool, std::vector<String> &>
         PanelAgentSlotBoolStringVector;
 
@@ -148,6 +159,9 @@ typedef Slot2<void, char *, std::vector<String> &>
 
 typedef Slot2<bool, const String &, ISE_INFO &>
         PanelAgentSlotStringISEINFO;
+
+typedef Slot2<bool, String, int &>
+        PanelAgentSlotStringInt;
 
 typedef Slot1<void, const KeyEvent &>
         PanelAgentSlotKeyEvent;
@@ -160,6 +174,9 @@ typedef Slot2<void, const String &, bool>
 
 typedef Slot6<bool, String, String &, String &, int &, int &, String &>
         PanelAgentSlotBoolString4int2;
+
+typedef Slot3<bool, int, int, String>
+        PanelAgentSlotIntIntString;
 
 typedef struct DefaultIse
 {
@@ -184,7 +201,7 @@ typedef struct DefaultIse
  * two signals are used to provide a thread lock to PanelAgent, so that PanelAgent
  * can run correctly within a multi-threading Panel program.
  */
-class EAPI PanelAgent
+class EXAPI PanelAgent
 {
     class PanelAgentImpl;
     PanelAgentImpl *m_impl;
@@ -1010,6 +1027,48 @@ public:
     Connection signal_connect_get_ise_list               (PanelAgentSlotBoolStringVector    *slot);
 
     /**
+     * @brief Signal: Get the info of all helper ise.
+     *
+     * slot prototype: bool get_all_helper_ise_info (HELPER_ISE_INFO &);
+     */
+    Connection signal_connect_get_all_helper_ise_info    (PanelAgentSlotBoolHelperInfo     *slot);
+
+    /**
+     * @brief Signal: Update "has_option" column of ime_info DB by Application ID
+     *
+     * slot prototype: void set_enable_helper_ise_info (const String &, bool );
+     */
+    Connection signal_connect_set_has_option_helper_ise_info     (PanelAgentSlotStringBool     *slot);
+
+    /**
+     * @brief Signal: Update "is_enable" column of ime_info DB by Application ID
+     *
+     * slot prototype: void set_enable_helper_ise_info (const String &, bool );
+     */
+    Connection signal_connect_set_enable_helper_ise_info     (PanelAgentSlotStringBool     *slot);
+
+    /**
+     * @brief Signal: Launch inputmethod-setting-list application
+     *
+     * slot prototype: void show_helper_ise_list (void);
+     */
+    Connection signal_connect_show_helper_ise_list  (PanelAgentSlotVoid       *slot);
+
+    /**
+     * @brief Signal: Launch inputmethod-setting-selector application
+     *
+     * slot prototype: void show_helper_ise_selector (void);
+     */
+    Connection signal_connect_show_helper_ise_selector  (PanelAgentSlotVoid   *slot);
+
+    /**
+     * @brief Signal: Checks if the specific IME is enabled or disabled in the system keyboard setting
+     *
+     * slot prototype: bool is_helper_ise_enabled (const String, int &);
+     */
+    Connection signal_connect_is_helper_ise_enabled  (PanelAgentSlotStringInt   *slot);
+
+    /**
      * @brief Signal: Get the ISE information according to UUID.
      *
      * slot prototype: bool get_ise_information (String, String &, String &, int &, int &);
@@ -1165,6 +1224,14 @@ public:
      */
     Connection signal_connect_get_ise_state              (PanelAgentSlotInt2                *slot);
 
+    /**
+     * @brief Signal: Get the recent input panel geometry information.
+     *
+     * slot prototype: void get_recent_ise_geometry (rectinfo &info);
+     */
+    Connection signal_connect_get_recent_ise_geometry    (PanelAgentSlotRect                *slot);
+
+    Connection signal_connect_check_privilege_by_sockfd  (PanelAgentSlotIntIntString        *slot);
 };
 
 /**  @} */

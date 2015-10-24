@@ -4,7 +4,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -107,8 +107,16 @@ public:
         m_frontend->update_preedit_string (si->get_id (), str, attrs, caret);
     }
 
+    void slot_update_preedit_utf8_string (IMEngineInstanceBase * si, const char * buf, int buflen, const AttributeList & attrs, int caret) {
+        m_frontend->update_preedit_utf8_string (si->get_id (), buf, buflen, attrs, caret);
+    }
+
     void slot_update_aux_string     (IMEngineInstanceBase * si, const WideString & str, const AttributeList & attrs) {
         m_frontend->update_aux_string (si->get_id (), str, attrs);
+    }
+
+    void slot_update_aux_utf8_string(IMEngineInstanceBase * si, const char * buf, int buflen, const AttributeList & attrs) {
+        m_frontend->update_aux_utf8_string (si->get_id (), buf, buflen, attrs);
     }
 
     void slot_update_lookup_table   (IMEngineInstanceBase * si, const LookupTable & table) {
@@ -117,6 +125,10 @@ public:
 
     void slot_commit_string         (IMEngineInstanceBase * si, const WideString & str) {
         m_frontend->commit_string (si->get_id (), str);
+    }
+
+    void slot_commit_utf8_string    (IMEngineInstanceBase * si, const char * buf, int buflen) {
+        m_frontend->commit_utf8_string (si->get_id (), buf, buflen);
     }
 
     void slot_forward_key_event     (IMEngineInstanceBase * si, const KeyEvent & key) {
@@ -199,13 +211,19 @@ public:
             slot (this, &FrontEndBase::FrontEndBaseImpl::slot_update_preedit_caret));
         si->signal_connect_update_preedit_string (
             slot (this, &FrontEndBase::FrontEndBaseImpl::slot_update_preedit_string));
+        si->signal_connect_update_preedit_utf8_string (
+            slot (this, &FrontEndBase::FrontEndBaseImpl::slot_update_preedit_utf8_string));
         si->signal_connect_update_aux_string (
             slot (this, &FrontEndBase::FrontEndBaseImpl::slot_update_aux_string));
+        si->signal_connect_update_aux_utf8_string (
+            slot (this, &FrontEndBase::FrontEndBaseImpl::slot_update_aux_utf8_string));
         si->signal_connect_update_lookup_table (
             slot (this, &FrontEndBase::FrontEndBaseImpl::slot_update_lookup_table));
 
         si->signal_connect_commit_string (
             slot (this, &FrontEndBase::FrontEndBaseImpl::slot_commit_string));
+        si->signal_connect_commit_utf8_string (
+            slot (this, &FrontEndBase::FrontEndBaseImpl::slot_commit_utf8_string));
 
         si->signal_connect_forward_key_event (
             slot (this, &FrontEndBase::FrontEndBaseImpl::slot_forward_key_event));
@@ -879,7 +897,15 @@ FrontEndBase::update_preedit_string (int id, const WideString & str, const Attri
 {
 }
 void
+FrontEndBase::update_preedit_utf8_string (int id, const char * buf, int buflen, const AttributeList & attrs, int caret)
+{
+}
+void
 FrontEndBase::update_aux_string     (int id, const WideString & str, const AttributeList & attrs)
+{
+}
+void
+FrontEndBase::update_aux_utf8_string(int id, const char * buf, int buflen, const AttributeList & attrs)
 {
 }
 void
@@ -891,7 +917,11 @@ FrontEndBase::commit_string         (int id, const WideString & str)
 {
 }
 void
-FrontEndBase::forward_key_event      (int id, const KeyEvent & key)
+FrontEndBase::commit_utf8_string    (int id, const char * buf, int buflen)
+{
+}
+void
+FrontEndBase::forward_key_event     (int id, const KeyEvent & key)
 {
 }
 void

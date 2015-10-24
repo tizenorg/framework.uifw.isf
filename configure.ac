@@ -1,6 +1,6 @@
 # Process this file with autoconf to produce a configure script
 #AC_INIT(scim, 1.4.7, suzhe@tsinghua.org.cn)
-AC_INIT(isf, 2.4.8317, isf@samsung.com)
+AC_INIT(isf, 2.4.9401, isf@samsung.com)
 AC_CONFIG_SRCDIR([ism/src/scim.h])
 
 ###########################################################
@@ -10,7 +10,7 @@ AC_CONFIG_SRCDIR([ism/src/scim.h])
 # ISF version
 ISF_MAJOR_VERSION=2
 ISF_MINOR_VERSION=4
-ISF_MICRO_VERSION=8317
+ISF_MICRO_VERSION=9401
 
 ISF_VERSION=$ISF_MAJOR_VERSION.$ISF_MINOR_VERSION.$ISF_MICRO_VERSION
 
@@ -205,46 +205,36 @@ AC_CHECK_FUNCS([gethostbyname gethostbyname_r socket bind accept connect listen]
 
 AM_ICONV
 
-# Check gconf library
-PKG_CHECK_MODULES(GCONF, [gconf-2.0 phonestatus noti-service],
-                  [ISF_HAS_GCONF=yes],
-                  [ISF_HAS_GCONF=no])
-
-if test "$ISF_HAS_GCONF" = "yes"; then
-  AC_DEFINE(HAVE_GCONF,1,[Have GConf functions.])
-fi
-
 # Check ECORE
 PKG_CHECK_MODULES(ECORE, [ecore])
 
+# Check ECORE_IPC library
+PKG_CHECK_MODULES(ECORE_IPC, [ecore-ipc])
+
+# Check ELEMENTARY library
+PKG_CHECK_MODULES(ELEMENTARY, [elementary edje])
+
 # Check EFL library
-PKG_CHECK_MODULES(EFL, [elementary ecore-x evas ecore ecore-evas ecore-file edje ecore-input ecore-ipc ecore-imf],
+PKG_CHECK_MODULES(EFL, [ecore-x evas ecore ecore-evas ecore-file ecore-input ecore-imf],
                   [ISF_HAS_EFL=yes],
                   [ISF_HAS_EFL=no])
 
 if test "$ISF_HAS_EFL" = "yes"; then
   EFL_LIBDIR=`$PKG_CONFIG --variable=libdir ecore-imf`
+  ECORE_IMF_MODULE_ARCH=`$PKG_CONFIG --variable=module_arch ecore`
   if test -z "$EFL_LIBDIR)"; then
     EFL_LIBDIR="$libdir"
   fi
-  EFL_IM_MODULEDIR=$EFL_LIBDIR/ecore/immodules
+  EFL_IM_MODULEDIR=$EFL_LIBDIR/ecore_imf/modules/isf/$ECORE_IMF_MODULE_ARCH
   AC_SUBST(EFL_LIBDIR)
   AC_SUBST(EFL_IM_MODULEDIR)
 fi
 
 # Check EFL assist library
-PKG_CHECK_MODULES(EFL_ASSIST, [efl-assist])
+PKG_CHECK_MODULES(EFL_EXTENSION, [efl-extension])
 
 # Check x11 library
 PKG_CHECK_MODULES(X11, [x11])
-
-# Check ui-gadget library
-PKG_CHECK_MODULES(UIGADGET, [ui-gadget-1],
-                  [ISF_HAS_UIGADGET=yes],
-                  [ISF_HAS_UIGADGET=no])
-
-# Check utilX library
-PKG_CHECK_MODULES(UTILX, [utilX])
 
 # Check appcore-efl library
 PKG_CHECK_MODULES(APPCORE_EFL, [appcore-efl])
@@ -255,10 +245,8 @@ PKG_CHECK_MODULES(DLOG, [dlog >= 0])
 # Check privilege control library
 PKG_CHECK_MODULES(PRIVILEGE_CONTROL, [libprivilege-control >= 0])
 
-# Check minicontrol library
-PKG_CHECK_MODULES(MINICONTROL_PROVIDER, [minicontrol-provider],
-                  [ISF_HAS_MINICONTROL=yes],
-                  [ISF_HAS_MINICONTROL=no])
+# Check smack library
+PKG_CHECK_MODULES(SMACK, [libsmack >= 0])
 
 # Check notification library
 PKG_CHECK_MODULES(NOTIFICATION, [notification],
@@ -298,10 +286,26 @@ PKG_CHECK_MODULES(FEEDBACK, [feedback],
 # Check package manager
 PKG_CHECK_MODULES(PACKAGE_MANAGER, [capi-appfw-package-manager])
 
+# Check App Control
+PKG_CHECK_MODULES(APP_CONTROL, [capi-appfw-app-control])
+
+# Check appfw library
+PKG_CHECK_MODULES(APPFW, [capi-appfw-application])
+
 # Check core package manager
 PKG_CHECK_MODULES(PKGMGR_INFO, [pkgmgr-info],
                   [ISF_HAS_PKGMGR_INFO=yes],
                   [ISF_HAS_PKGMGR_INFO=no])
+
+# Check db-util library
+PKG_CHECK_MODULES(DB_UTIL, [db-util],
+                  [ISF_HAS_DB_UTIL=yes],
+                  [ISF_HAS_DB_UTIL=no])
+
+# Check systemd library
+PKG_CHECK_MODULES(SYSTEMD, [libsystemd],
+                  [ISF_HAS_SYSTEMD=yes],
+                  [ISF_HAS_SYSTEMD=no])
 
 if test "$ISF_HAS_VCONF" = "yes"; then
   AC_DEFINE(HAVE_VCONF,1,[Have VConf functions.])
@@ -315,20 +319,16 @@ if test "$ISF_HAS_FEEDBACK" = "yes"; then
   AC_DEFINE(HAVE_FEEDBACK,1,[Have Feedback functions.])
 fi
 
-if test "$ISF_HAS_MINICONTROL" = "yes"; then
-  AC_DEFINE(HAVE_MINICONTROL,1,[Have Minicontrol functions.])
-fi
-
 if test "$ISF_HAS_NOTIFICATION" = "yes"; then
   AC_DEFINE(HAVE_NOTIFICATION,1,[Have Notification functions.])
 fi
 
-if test "$ISF_HAS_UIGADGET" = "yes"; then
-  AC_DEFINE(HAVE_UIGADGET,1,[Have UI gadget functions.])
-fi
-
 if test "$ISF_HAS_PKGMGR_INFO" = "yes"; then
   AC_DEFINE(HAVE_PKGMGR_INFO,1,[Have Package manager functions.])
+fi
+
+if test "$ISF_HAS_SYSTEMD" = "yes"; then
+  AC_DEFINE(HAVE_SYSTEMD,1,[Have systemd functions.])
 fi
 
 # Check GTK2 library
@@ -457,11 +457,6 @@ AC_ARG_ENABLE(panel-efl,
               enable_panel_efl=no,
               enable_panel_efl=check)
 
-AC_ARG_ENABLE(setting-efl,
-              [  --disable-setting-efl     Do not build EFL Setting],
-              enable_setting_efl=no,
-              enable_setting_efl=check)
-
 AC_ARG_ENABLE(tray-icon,
               [  --disable-tray-icon       Do not build Tray Icon],
               enable_tray_icon=no,
@@ -471,6 +466,16 @@ AC_ARG_ENABLE(multiwindow-support,
               [  --disable-multiwindow-support       Do not build Multiwindow Support],
               enable_multiwindow_support=no,
               enable_multiwindow_support=yes)
+
+AC_ARG_ENABLE(lazy-launch,
+              [  --enable-lazy-launch      Launch ISF when focusing in entry],
+              enable_lazy_launch=yes,
+              enable_lazy_launch=no)
+
+AC_ARG_ENABLE(ime-embed-app,
+              [  --disable-ime-embed-app      Do not load IME in application when socket invalidate],
+              enable_ime_embed_app=no,
+              enable_ime_embed_app=yes)
 
 if test "$have_x" = "yes"; then
   SCIM_BUILD_X11_UTILS=1
@@ -597,19 +602,21 @@ if test "$enable_panel_efl" != "no"; then
   fi
 fi
 
-ISF_BUILD_SETTING_EFL=0
-if test "$enable_setting_efl" != "no"; then
-  enable_setting_efl=no
-  if test "$ISF_HAS_EFL" = "yes" -a "$ISF_HAS_VCONF" = "yes"; then
-    ISF_BUILD_SETTING_EFL=1
-    enable_setting_efl=yes
-  fi
-fi
-
 #if nothing needs libscim-gtkutils, just disable it
 if test "$enable_panel_gtk" != "yes"; then
   enable_gtk_utils=no
   SCIM_BUILD_GTK_UTILS=0
+fi
+
+if test "$enable_lazy_launch" = "yes"; then
+  AC_DEFINE(ENABLE_LAZY_LAUNCH,1,[Launch ISF when focusing in entry])
+  ISF_INSTALL_SYSTEMD_SCRIPT=0
+else
+  ISF_INSTALL_SYSTEMD_SCRIPT=1
+fi
+
+if test "$enable_ime_embed_app" = "yes"; then
+  AC_DEFINE(ENABLE_IME_EMBED_APP,1,[Load imengine in application side when socket invalidate])
 fi
 
 AM_CONDITIONAL(SCIM_LD_VERSION_SCRIPT,
@@ -657,14 +664,11 @@ AM_CONDITIONAL(ISF_BUILD_EFL_IMMODULE,
 AM_CONDITIONAL(ISF_BUILD_PANEL_EFL,
                 [test "$enable_panel_efl" = "yes"])
 
-AM_CONDITIONAL(ISF_BUILD_SETTING_EFL,
-                [test "$enable_setting_efl" = "yes"])
+AM_CONDITIONAL(ISF_BUILD_DB_UTIL,
+                [test "$ISF_HAS_DB_UTIL" = "yes"])
 
-AM_CONDITIONAL(ISF_BUILD_WITH_GCONF,
-                [test "$ISF_HAS_GCONF" = "yes"])
-
-AM_CONDITIONAL(ISF_BUILD_MINICONTROL,
-                [test "$ISF_HAS_MINICONTROL" = "yes"])
+AM_CONDITIONAL(ISF_INSTALL_SYSTEMD_SCRIPT,
+                [test "$enable_lazy_launch" = "no"])
 
 AC_SUBST(SCIM_BUILD_TESTS)
 AC_SUBST(SCIM_BUILD_CONFIG_SIMPLE)
@@ -681,8 +685,8 @@ AC_SUBST(SCIM_BUILD_GTK_UTILS)
 AC_SUBST(SCIM_BUILD_X11_UTILS)
 AC_SUBST(ISF_BUILD_EFL_IMMODULE)
 AC_SUBST(ISF_BUILD_PANEL_EFL)
-AC_SUBST(ISF_BUILD_SETTING_EFL)
-AC_SUBST(ISF_BUILD_WITH_GCONF)
+AC_SUBST(ISF_BUILD_DB_UTIL)
+AC_SUBST(ISF_INSTALL_SYSTEMD_SCRIPT)
 
 ISF_BUILDING_DLL="-DISF_BUILDING_DLL"
 AC_SUBST(ISF_BUILDING_DLL)
@@ -729,6 +733,7 @@ AC_CONFIG_FILES([Makefile
                  ism/extras/gtk2_immodule/Makefile
                  ism/extras/efl_immodule/Makefile
                  ism/extras/efl_panel/Makefile
+                 ism/extras/kbd_mode_changer/Makefile
                  ism/demos/Makefile
                  intltool-extract
                  intltool-merge
@@ -769,9 +774,12 @@ Module options:
   EFL  IMModule            $enable_efl_immodule
   EFL  IMModule dir        $EFL_IM_MODULEDIR
   EFL  Panel GUI           $enable_panel_efl
-  EFL  Setting             $enable_setting_efl
 
   Enable TrayIcon          $enable_tray_icon
   Enable MultiWindow       $enable_multiwindow_support
+  Enable LazyLaunch        $enable_lazy_launch
+  Enable IME Embed         $enable_ime_embed_app
+
+  With systemd             $ISF_HAS_SYSTEMD
 ])
 

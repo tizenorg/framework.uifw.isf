@@ -11,7 +11,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -47,7 +47,7 @@ namespace scim {
  * scim::BackEndBase and its derived classes must throw
  * scim::BackEndError object when error.
  */
-class EAPI BackEndError: public Exception
+class EXAPI BackEndError: public Exception
 {
 public:
     BackEndError (const String& what_arg)
@@ -65,7 +65,7 @@ public:
  * Most developer should just use the default implementation
  * scim::CommonBackEnd.
  */
-class EAPI BackEndBase : public ReferencedObject
+class EXAPI BackEndBase : public ReferencedObject
 {
     class BackEndBaseImpl;
 
@@ -215,7 +215,7 @@ typedef Pointer <BackEndBase> BackEndPointer;
 /**
  * @brief The default implementation of scim::BackEndBase interface.
  */
-class EAPI CommonBackEnd : public BackEndBase
+class EXAPI CommonBackEnd : public BackEndBase
 {
     class CommonBackEndImpl;
     CommonBackEndImpl *m_impl;
@@ -249,16 +249,8 @@ public:
     virtual void release_module (const std::vector<String> &use_uuids,
                                  const String del_uuid);
 
-    void add_module_info_from_cache_file (const ConfigPointer &config,
+    void add_module_info_from_db (const ConfigPointer &config,
                                           std::vector<String> &modules);
-
-    void update_module_info (const ConfigPointer &config,
-                             std::vector<String> &current_modules,
-                             std::vector<String> &modules);
-
-    void add_imengine_module_info (const String module_name,
-                                   const ConfigPointer &config);
-
 };
 
 } /* namespace scim */

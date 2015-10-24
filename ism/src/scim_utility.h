@@ -8,7 +8,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -73,7 +73,7 @@ namespace scim {
  *
  * @return number of chars in s actually converted.
  */
-EAPI int utf8_mbtowc (ucs4_t *pwc, const unsigned char *src, int src_len);
+EXAPI int utf8_mbtowc (ucs4_t *pwc, const unsigned char *src, int src_len);
 
 /**
  * @brief Convert an ucs4 code to utf8 char sequence.
@@ -84,7 +84,7 @@ EAPI int utf8_mbtowc (ucs4_t *pwc, const unsigned char *src, int src_len);
  *
  * @return the number of bytes actually written into dest.
  */
-EAPI int utf8_wctomb (unsigned char *dest, ucs4_t wc, int dest_size);
+EXAPI int utf8_wctomb (unsigned char *dest, ucs4_t wc, int dest_size);
 
 /**
  * @brief Convert an utf8 string to an ucs4 string.
@@ -92,7 +92,7 @@ EAPI int utf8_wctomb (unsigned char *dest, ucs4_t wc, int dest_size);
  * @param str source utf8 string.
  * @return the destination widestring.
  */
-EAPI WideString utf8_mbstowcs (const String & str);
+EXAPI WideString utf8_mbstowcs (const String & str);
 
 /**
  * @brief Convert an utf8 string to an ucs4 string.
@@ -101,7 +101,7 @@ EAPI WideString utf8_mbstowcs (const String & str);
  * @param len length of the source string.
  * @return the destination widestring.
  */
-EAPI WideString utf8_mbstowcs (const char *str, int len = -1);
+EXAPI WideString utf8_mbstowcs (const char *str, int len = -1);
 
 /**
  * @brief Convert an ucs4 string to an utf8 string.
@@ -110,7 +110,7 @@ EAPI WideString utf8_mbstowcs (const char *str, int len = -1);
  *
  * @return the destination utf8 string.
  */
-EAPI String utf8_wcstombs (const WideString & wstr);
+EXAPI String utf8_wcstombs (const WideString & wstr);
 
 /**
  * @brief Convert an ucs4 string to an utf8 string.
@@ -120,7 +120,7 @@ EAPI String utf8_wcstombs (const WideString & wstr);
  *
  * @return the destination utf8 string.
  */
-EAPI String utf8_wcstombs (const ucs4_t *wstr, int len = -1);
+EXAPI String utf8_wcstombs (const ucs4_t *wstr, int len = -1);
 
 /**
  * @brief Read a wide char from istream.
@@ -131,7 +131,7 @@ EAPI String utf8_wcstombs (const ucs4_t *wstr, int len = -1);
  *
  * @return if equal to 0 then got the end of the stream or error occurred.
  */
-EAPI ucs4_t utf8_read_wchar (std::istream &is);
+EXAPI ucs4_t utf8_read_wchar (std::istream &is);
 
 /**
  * @brief Write a wide char to ostream.
@@ -142,7 +142,7 @@ EAPI ucs4_t utf8_read_wchar (std::istream &is);
  * @param wc the wide char to be written to the stream.
  * @return the same stream object reference.
  */
-EAPI std::ostream & utf8_write_wchar (std::ostream &os, ucs4_t wc);
+EXAPI std::ostream & utf8_write_wchar (std::ostream &os, ucs4_t wc);
 
 /**
  * @brief Read a wide string from istream.
@@ -154,7 +154,7 @@ EAPI std::ostream & utf8_write_wchar (std::ostream &os, ucs4_t wc);
  * @param rm_delim if the delim should be removed from the destination string.
  * @return the wide string read from the given stream.
  */
-EAPI WideString utf8_read_wstring (std::istream &is, ucs4_t delim = (ucs4_t) '\n', bool rm_delim = true);
+EXAPI WideString utf8_read_wstring (std::istream &is, ucs4_t delim = (ucs4_t) '\n', bool rm_delim = true);
 
 /**
  * @brief Write a wide string to ostream.
@@ -165,7 +165,7 @@ EAPI WideString utf8_read_wstring (std::istream &is, ucs4_t delim = (ucs4_t) '\n
  * @param wstr the wide string to be written into the stream.
  * @return the same stream object reference.
  */
-EAPI std::ostream & utf8_write_wstring (std::ostream &os, const WideString & wstr);
+EXAPI std::ostream & utf8_write_wstring (std::ostream &os, const WideString & wstr);
 
 /**
  * @brief Convert an uint32 variable into a sequence of bytes.
@@ -173,7 +173,7 @@ EAPI std::ostream & utf8_write_wstring (std::ostream &os, const WideString & wst
  * @param bytes the buffer to store the result.
  * @param n the variable to be converted.
  */
-EAPI inline
+EXAPI inline
 void scim_uint32tobytes (unsigned char *bytes, uint32 n)
 {
     bytes [0] = (unsigned char) ((n & 0xFF));
@@ -188,7 +188,7 @@ void scim_uint32tobytes (unsigned char *bytes, uint32 n)
  * @param bytes the buffer contains the bytes to be converted.
  * @return the result uint32 value.
  */
-EAPI inline
+EXAPI inline
 uint32 scim_bytestouint32 (const unsigned char *bytes)
 {
     return  ((uint32) bytes [0])
@@ -203,7 +203,7 @@ uint32 scim_bytestouint32 (const unsigned char *bytes)
  * @param bytes the buffer to store the result.
  * @param n the variable to be converted.
  */
-EAPI inline
+EXAPI inline
 void scim_uint16tobytes (unsigned char *bytes, uint16 n)
 {
     bytes [0] = (unsigned char) ((n & 0xFF));
@@ -216,7 +216,7 @@ void scim_uint16tobytes (unsigned char *bytes, uint16 n)
  * @param bytes the buffer contains the bytes to be converted.
  * @return the result uint16 value.
  */
-EAPI inline
+EXAPI inline
 uint16 scim_bytestouint16 (const unsigned char *bytes)
 {
     return  ((uint16) bytes [0]) | (((uint16) bytes [1]) << 8);
@@ -228,7 +228,7 @@ uint16 scim_bytestouint16 (const unsigned char *bytes)
  * @param locale the locale to be tested.
  * @return If the locale is valid, it's the good locale name, otherwise empty.
  */
-EAPI String scim_validate_locale (const String& locale);
+EXAPI String scim_validate_locale (const String& locale);
 
 /**
  * @brief Get the encoding for a locale.
@@ -236,19 +236,19 @@ EAPI String scim_validate_locale (const String& locale);
  * @param locale the name of the locale.
  * @return The encoding used by the given locale.
  */
-EAPI String scim_get_locale_encoding (const String& locale);
+EXAPI String scim_get_locale_encoding (const String& locale);
 
 /**
  * @brief Get current system locale.
  * @return The current system locale.
  */
-EAPI String scim_get_current_locale ();
+EXAPI String scim_get_current_locale ();
 
 /**
  * @brief Get current system language.
  * @return The current system language.
  */
-EAPI String scim_get_current_language ();
+EXAPI String scim_get_current_language ();
 
 /**
  * @brief Get the max length of the multibyte char of a locale.
@@ -256,7 +256,7 @@ EAPI String scim_get_current_language ();
  * @param locale the name of the locale.
  * @return the maxlen of this locale.
  */
-EAPI int scim_get_locale_maxlen (const String& locale);
+EXAPI int scim_get_locale_maxlen (const String& locale);
 
 /**
  * @brief Split string list into a string vector according to the delim char.
@@ -266,7 +266,7 @@ EAPI int scim_get_locale_maxlen (const String& locale);
  * @param delim the delimiter to split the strings.
  * @return the number of the strings in the result list.
  */
-EAPI int scim_split_string_list (std::vector<String>& vec, const String& str, char delim = ',');
+EXAPI int scim_split_string_list (std::vector<String>& vec, const String& str, char delim = ',');
 
 /**
  * @brief Combine a string vector into one string list, separated by char delim.
@@ -275,43 +275,43 @@ EAPI int scim_split_string_list (std::vector<String>& vec, const String& str, ch
  * @param delim the delimiter which should be put between two strings.
  * @return the result string.
  */
-EAPI String scim_combine_string_list (const std::vector<String>& vec, char delim = ',');
+EXAPI String scim_combine_string_list (const std::vector<String>& vec, char delim = ',');
 
 /**
  * @brief Get machine endian type
  * @return 1 little endian, 0 big endian
  */
-EAPI bool scim_is_little_endian ();
+EXAPI bool scim_is_little_endian ();
 
 /**
  * @brief Test if wchar_t is using UCS4 encoding.
  */
-EAPI bool scim_if_wchar_ucs4_equal ();
+EXAPI bool scim_if_wchar_ucs4_equal ();
 
 /**
  * @brief Convert a half width unicode char to its full width counterpart.
  */
-EAPI ucs4_t scim_wchar_to_full_width (ucs4_t code);
+EXAPI ucs4_t scim_wchar_to_full_width (ucs4_t code);
 
 /**
  * @brief Convert a full width unicode char to its half width counterpart.
  */
-EAPI ucs4_t scim_wchar_to_half_width (ucs4_t code);
+EXAPI ucs4_t scim_wchar_to_half_width (ucs4_t code);
 
 /**
  * @brief Get the home dir of current user.
  */
-EAPI String scim_get_home_dir ();
+EXAPI String scim_get_home_dir ();
 
 /**
  * @brief Get the name of current user.
  */
-EAPI String scim_get_user_name ();
+EXAPI String scim_get_user_name ();
 
 /**
  * @brief Get SCIM data dir of current user.
  */
-EAPI String scim_get_user_data_dir ();
+EXAPI String scim_get_user_data_dir ();
 
 /**
  * @brief Load a file into memory.
@@ -324,7 +324,7 @@ EAPI String scim_get_user_data_dir ();
  * @return the size of the data actually loaded (mostly, it's the file size),
  *         zero means load failed.
  */
-EAPI size_t scim_load_file (const String &filename, char **bufptr);
+EXAPI size_t scim_load_file (const String &filename, char **bufptr);
 
 /**
  * @brief Make a directory.
@@ -333,28 +333,28 @@ EAPI size_t scim_load_file (const String &filename, char **bufptr);
  *
  * @return true if sucess.
  */
-EAPI bool scim_make_dir (const String &dir);
+EXAPI bool scim_make_dir (const String &dir);
 
 /**
  * @brief Get the localized name of a language id.
  * @param lang the language id.
  * @return the localized name of this language, in utf8 encoding.
  */
-EAPI String scim_get_language_name (const String &lang);
+EXAPI String scim_get_language_name (const String &lang);
 
 /**
  * @brief Get the English name of a language id.
  * @param lang the language id.
  * @return the English name of this language, in utf8 encoding.
  */
-EAPI String scim_get_language_name_english (const String &lang);
+EXAPI String scim_get_language_name_english (const String &lang);
 
 /**
  * @brief Get the untranslated name of a language id.
  * @param lang the language id.
  * @return the untranslated name of this language, in utf8 encoding.
  */
-EAPI String scim_get_language_name_untranslated (const String &lang);
+EXAPI String scim_get_language_name_untranslated (const String &lang);
 
 /**
  * @brief Get the supported locales for a language.
@@ -364,21 +364,21 @@ EAPI String scim_get_language_name_untranslated (const String &lang);
  * @param lang the language id.
  * @return the supported locales separated by comma.
  */
-EAPI String scim_get_language_locales (const String &lang);
+EXAPI String scim_get_language_locales (const String &lang);
 
 /**
  * @brief Get the language id for a locale.
  * @param locale the locale name
  * @return the language id for this locale.
  */
-EAPI String scim_get_locale_language (const String &locale);
+EXAPI String scim_get_locale_language (const String &locale);
 
 /**
  * @brief Test if the language is valid, and return the good language code.
  * @param lang the language to be tested.
  * @return If the language is valid, return the good language id, otherwise return "~other".
  */
-EAPI String scim_validate_language (const String &lang);
+EXAPI String scim_validate_language (const String &lang);
 
 /**
  * @brief Get the normalized language id of a language.
@@ -393,7 +393,7 @@ EAPI String scim_validate_language (const String &lang);
  * @param lang the original language
  * @return the normalized language code.
  */
-EAPI String scim_get_normalized_language (const String &lang);
+EXAPI String scim_get_normalized_language (const String &lang);
 
 /**
  * @brief Launch a SCIM process with specific options.
@@ -410,7 +410,7 @@ EAPI String scim_get_normalized_language (const String &lang);
  * @return Return 0 means the process started/exited without any problem, otherwise
  *         means an error occurred.
  */
-EAPI int  scim_launch (bool          daemon,
+EXAPI int  scim_launch (bool          daemon,
                   const String &config,
                   const String &imengines,
                   const String &frontend,
@@ -431,7 +431,7 @@ EAPI int  scim_launch (bool          daemon,
  * @return Return 0 means the process started/exited without any problem, otherwise
  *         means an error occurred.
  */
-EAPI int scim_launch_panel (bool          daemon,
+EXAPI int scim_launch_panel (bool          daemon,
                        const String &config,
                        const String &display,
                        char * const  argv [] = 0);
@@ -441,19 +441,19 @@ EAPI int scim_launch_panel (bool          daemon,
  *
  * @param usec The amount of microseconds to be sleeped.
  */
-EAPI void scim_usleep (unsigned int usec);
+EXAPI void scim_usleep (unsigned int usec);
 
 /**
  * @brief Switch process into daemon mode.
  */
-EAPI void scim_daemon ();
+EXAPI void scim_daemon ();
 
 /**
  * @brief Save string to ISF log file.
  *
  * @param str The string to be saved.
  */
-EAPI void isf_save_log (const char *fmt, ...);
+EXAPI void isf_save_log (const char *fmt, ...);
 
 #define ISF_SAVE_LOG(fmt, arg...) \
     do{ \
@@ -493,7 +493,7 @@ void ISF_PROF_DEBUG_TIME_END (char const* format, char const* func, int line);
     #define ISF_LOG(fmt, ...)
 #endif
 
-EAPI void gettime (clock_t clock_start, const char* str);
+EXAPI void gettime (clock_t clock_start, const char* str);
 
 typedef struct rectinfo
 {

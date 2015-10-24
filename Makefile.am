@@ -27,7 +27,7 @@ AUX_DIST                = $(ac_aux_dir)/config.guess \
 EXTRA_DIST		= config.rpath \
 			  mkinstalldirs \
 			  bootstrap \
-	      		  scim.spec \
+			  scim.spec \
 			  intltool-extract.in \
 			  intltool-merge.in \
 			  intltool-update.in
@@ -43,7 +43,7 @@ MAINTAINERCLEANFILES 	= Makefile.in \
 
 DISTCLEANFILES		= isf.pc scim.pc scim-gtkutils.pc intltool-extract intltool-merge intltool-update
 
-CLEANFILES		= *.bak 
+CLEANFILES		= *.bak
 
 ACLOCAL			= aclocal -I $(ac_aux_dir)/ism
 
@@ -57,11 +57,18 @@ pkgconfig_DATA          = isf.pc scim.pc \
 			  $(GTK_UTILS_PKGCONFIG)
 
 smackdir = /etc/smack/accesses.d/
-smack_DATA = isf.rule
+smack_DATA = isf.rule org.tizen.isf-kbd-mode-changer.rule
+
+kbdmodechangerxmldir = /usr/share/packages/
+kbdmodechangerxml_DATA = org.tizen.isf-kbd-mode-changer.xml
+
+if ISF_INSTALL_SYSTEMD_SCRIPT
+SYSTEMD_SCRIPT = scim.service scim.socket
+endif
 
 # $(libdir) will be /usr/lib64 on x86_64 arch, so hard-coded.
-systemduserunitdir = /usr/lib/systemd/user
-systemduserunit_DATA = scim.service
+systemdsystemunitdir = /usr/lib/systemd/system
+systemdsystemunit_DATA = $(SYSTEMD_SCRIPT)
 
 ACLOCAL_AMFLAGS = -I ism/m4
 
@@ -74,5 +81,9 @@ uninstall-local:
 	rm -rf @SCIM_MODULE_PATH@
 
 install-data-hook:
-	$(mkinstalldirs) $(DESTDIR)$(systemduserunitdir)/core-efl.target.wants
-	ln -sf ../scim.service $(DESTDIR)$(systemduserunitdir)/core-efl.target.wants/scim.service
+if ISF_INSTALL_SYSTEMD_SCRIPT
+	$(mkinstalldirs) $(DESTDIR)$(systemdsystemunitdir)/sockets.target.wants
+	ln -sf ../scim.socket $(DESTDIR)$(systemdsystemunitdir)/sockets.target.wants/scim.socket
+	$(mkinstalldirs) $(DESTDIR)$(systemdsystemunitdir)/multi-user.target.wants
+	ln -sf ../scim.service $(DESTDIR)$(systemdsystemunitdir)/multi-user.target.wants/scim.service
+endif

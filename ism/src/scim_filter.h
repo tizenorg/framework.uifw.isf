@@ -50,7 +50,7 @@ namespace scim {
  * scim::FilterFactoryBase, scim::FilterInstanceBase
  * and their derived classes must throw scim::FilterError object when error.
  */
-class EAPI FilterError: public Exception
+class EXAPI FilterError: public Exception
 {
 public:
     FilterError (const String& what_arg)
@@ -84,7 +84,7 @@ struct FilterInfo
  * Because multiple objects of one FilterFactory class maybe used at the same time
  * to filter several real IMEngineFactory objects.
  */
-class EAPI FilterFactoryBase : public IMEngineFactoryBase
+class EXAPI FilterFactoryBase : public IMEngineFactoryBase
 {
     IMEngineFactoryPointer m_orig;
 
@@ -272,7 +272,7 @@ typedef Pointer <FilterFactoryBase> FilterFactoryPointer;
  * All FilterInstance classes should derive from this base class,
  * and some base methods should be override in the derived classes.
  */
-class EAPI FilterInstanceBase : public IMEngineInstanceBase
+class EXAPI FilterInstanceBase : public IMEngineInstanceBase
 {
     class FilterInstanceBaseImpl;
 

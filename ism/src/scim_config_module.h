@@ -67,7 +67,7 @@ typedef ConfigPointer (*ConfigModuleCreateConfigFunc) ();
  * This is a wrapper of scim::Module class, which is specially
  * for manipulating the config modules.
  */
-class EAPI ConfigModule
+class EXAPI ConfigModule
 {
     Module      m_module;
 
@@ -125,7 +125,7 @@ public:
  * @param mod_list - the result list will be stored here.
  * @return the number of the modules, equal to mod_list.size ().
  */
-EAPI int scim_get_config_module_list (std::vector <String>& mod_list);
+EXAPI int scim_get_config_module_list (std::vector <String>& mod_list);
 
 /** @} */
 

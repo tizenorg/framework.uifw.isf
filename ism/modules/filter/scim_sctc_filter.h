@@ -2,9 +2,9 @@
  * definition of SCTCFilter (Simplified Chinese <-> Traditional Chinese Filter) related classes.
  */
 
-/* 
+/*
  * Smart Common Input Method
- * 
+ *
  * Copyright (c) 2005 James Su <suzhe@tsinghua.org.cn>
  *
  *
@@ -45,7 +45,7 @@ enum SCTCWorkMode
     SCTC_MODE_FORCE_TC_TO_SC
 };
 
-class EAPI SCTCFilterFactory : public FilterFactoryBase
+class EXAPI SCTCFilterFactory : public FilterFactoryBase
 {
     bool   m_sc_ok;
     String m_sc_encoding;
@@ -64,12 +64,12 @@ public:
     virtual String      get_icon_file () const;
     virtual WideString  get_authors () const;
     virtual WideString  get_help () const;
-    virtual bool        validate_encoding (const String& encoding) const; 
+    virtual bool        validate_encoding (const String& encoding) const;
     virtual bool        validate_locale (const String& locale) const;
     virtual IMEngineInstancePointer create_instance (const String& encoding, int id = -1);
 };
 
-class EAPI SCTCFilterInstance : public FilterInstanceBase
+class EXAPI SCTCFilterInstance : public FilterInstanceBase
 {
     SCTCFilterFactory *m_factory;
 

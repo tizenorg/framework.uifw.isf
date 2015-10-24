@@ -8,7 +8,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -74,7 +74,7 @@ typedef IMEngineFactoryPointer (*IMEngineModuleCreateFactoryFunc) (unsigned int 
  * This is a wrapper of scim::Module class, which is specially
  * for manipulating the IMEngine modules.
  */
-class EAPI IMEngineModule
+class EXAPI IMEngineModule
 {
     Module m_module;
     String m_module_name;
@@ -155,7 +155,7 @@ public:
  * @param mod_list - the result list will be stored here.
  * @return the number of the modules, equal to mod_list.size ().
  */
-EAPI int scim_get_imengine_module_list (std::vector <String> &mod_list);
+EXAPI int scim_get_imengine_module_list (std::vector <String> &mod_list);
 
 /** @} */
 

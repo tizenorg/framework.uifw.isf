@@ -34,6 +34,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <scim_panel_common.h>
+#include "isf_query_utility.h"
 
 namespace scim {
 
@@ -86,38 +88,58 @@ _scim_get_module_paths (std::vector <String> &paths, const String &type)
     }
 }
 
-EAPI int
+EXAPI int
 scim_get_module_list (std::vector <String>& mod_list, const String& type)
 {
+    unsigned int i = 0;
+    std::vector<String> mname;
     std::vector<String> paths;
-    _scim_get_module_paths (paths, type);
 
     mod_list.clear ();
 
-    for (std::vector<String>::iterator i = paths.begin (); i!= paths.end (); ++i) {
-        DIR *dir = opendir (i->c_str ());
-        if (dir) {
-            struct dirent direntp, *result = NULL;
-            struct dirent *file = NULL;
+    if (type.compare("Helper") == 0) {
+        isf_db_select_module_name_by_mode(TOOLBAR_HELPER_MODE, mname);
+        for (i = 0; i < mname.size(); i++)
+            mod_list.push_back(mname[i]);
+    }
+    else if (type.compare("IMEngine") == 0) {
+        isf_db_select_module_name_by_mode(TOOLBAR_KEYBOARD_MODE, mname);
+        for (i = 0; i < mname.size(); i++)
+            mod_list.push_back(mname[i]);
 
-            if (readdir_r (dir, &direntp, &result) == 0 && result){
-                file = result;
-            }
-            while (file) {
-                struct stat filestat;
-                String absfn = *i + String (SCIM_PATH_DELIM_STRING) + file->d_name;
-                if (stat (absfn.c_str (), &filestat) == 0) {
-                    if (S_ISREG (filestat.st_mode)) {
-                        String mod_name = String (file->d_name);
-                        mod_list.push_back (mod_name.substr (0, mod_name.find_last_of ('.')));
+        struct stat sb;
+        stat("/usr/lib/scim-1.0/1.4.0/IMEngine/socket.so", &sb);
+        if (S_ISREG(sb.st_mode))
+            mod_list.push_back("socket");
+    }
+    else {
+        _scim_get_module_paths (paths, type);
+
+        for (std::vector<String>::iterator i = paths.begin (); i!= paths.end (); ++i) {
+            DIR *dir = opendir (i->c_str ());
+            if (dir) {
+                struct dirent direntp, *result = NULL;
+                struct dirent *file = NULL;
+
+                if (readdir_r (dir, &direntp, &result) == 0 && result){
+                    file = result;
+                }
+                while (file) {
+                    struct stat filestat;
+                    String absfn = *i + String (SCIM_PATH_DELIM_STRING) + file->d_name;
+                    if (stat (absfn.c_str (), &filestat) == 0) {
+                        if (S_ISREG (filestat.st_mode)) {
+                            String mod_name = String (file->d_name);
+                            mod_list.push_back (mod_name.substr (0, mod_name.find_last_of ('.')));
+                        }
+                    }
+
+                    if (readdir_r (dir, &direntp, &file) != 0) {
+                        break;
                     }
                 }
-
-                if (readdir_r (dir, &direntp, &file) != 0){
-                    break;
-                }
+                closedir (dir);
             }
-            closedir (dir);
         }
     }
     std::sort (mod_list.begin (), mod_list.end ());
@@ -165,6 +187,8 @@ Module::load (const String &name, const String &type)
     if (is_resident ())
         return false;
 
+    unsigned int i = 0;
+    std::vector<String> mpath;
     std::vector <String> paths;
     std::vector <String>::iterator it;
 
@@ -175,13 +199,33 @@ Module::load (const String &name, const String &type)
     ModuleInitFunc new_init;
     ModuleExitFunc new_exit;
 
-    _scim_get_module_paths (paths, type);
+    if (type.compare("Helper") == 0) {
+        isf_db_select_module_path_by_mode(TOOLBAR_HELPER_MODE, mpath);
+        for (i = 0; i < mpath.size(); i++) {
+            module_path = mpath[i] + String (SCIM_PATH_DELIM_STRING) + name;
+            new_handle = lt_dlopenext (module_path.c_str ());
+            if (new_handle)
+                break;
+        }
+    }
+    else if (type.compare("IMEngine") == 0 && name.compare("socket")) {
+        isf_db_select_module_path_by_mode(TOOLBAR_KEYBOARD_MODE, mpath);
+        for (i = 0; i < mpath.size(); i++) {
+            module_path = mpath[i] + String (SCIM_PATH_DELIM_STRING) + name;
+            new_handle = lt_dlopenext (module_path.c_str ());
+            if (new_handle)
+                break;
+        }
+    }
+    else {
+        _scim_get_module_paths (paths, type);
 
-    for (it = paths.begin (); it != paths.end (); ++it) {
-        module_path = *it + String (SCIM_PATH_DELIM_STRING) + name;
-        new_handle = lt_dlopenext (module_path.c_str ());
-        if (new_handle)
-            break;
+        for (it = paths.begin (); it != paths.end (); ++it) {
+            module_path = *it + String (SCIM_PATH_DELIM_STRING) + name;
+            new_handle = lt_dlopenext (module_path.c_str ());
+            if (new_handle)
+                break;
+        }
     }
 
     if (!new_handle) {

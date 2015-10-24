@@ -45,7 +45,7 @@ namespace scim {
  * All other exception classes in namespace scim
  * should be derived from this class.
  */
-class EAPI Exception: public std::exception
+class EXAPI Exception: public std::exception
 {
     String m_what;
 public:

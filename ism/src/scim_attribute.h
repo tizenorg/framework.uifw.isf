@@ -94,7 +94,7 @@ const unsigned int SCIM_ATTR_DECORATE_BGCOLOR4   = 8;    ///< Draw the text in u
  * You may use SCIM_RGB_COLOR_RED, SCIM_RGB_COLOR_GREEN and SCIM_RGB_COLOR_BLUE to extract
  * the RGB color later.
  */
-class EAPI Attribute
+class EXAPI Attribute
 {
     unsigned int  m_start;
     unsigned int  m_length;

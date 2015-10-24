@@ -8,7 +8,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -61,6 +61,9 @@ typedef Signal2<void, IMEngineInstanceBase*,const String&>
 typedef Signal2<void, IMEngineInstanceBase*,const WideString&>
         IMEngineSignalWideString;
 
+typedef Signal3<void, IMEngineInstanceBase*,const char*,int>
+        IMEngineSignalUTF8String;
+
 typedef Signal2<void, IMEngineInstanceBase*,const KeyEvent&>
         IMEngineSignalKeyEvent;
 
@@ -79,8 +82,14 @@ typedef Signal3<void, IMEngineInstanceBase*,const String&,const Transaction&>
 typedef Signal4<void, IMEngineInstanceBase*,const WideString&,const AttributeList&,int>
         IMEngineSignalWideStringAttributeListInt;
 
+typedef Signal5<void, IMEngineInstanceBase*,const char*,int,const AttributeList&,int>
+        IMEngineSignalUTF8StringAttributeListInt;
+
 typedef Signal3<void, IMEngineInstanceBase*,const WideString&,const AttributeList&>
         IMEngineSignalWideStringAttributeList;
+
+typedef Signal4<void, IMEngineInstanceBase*,const char*,int,const AttributeList&>
+        IMEngineSignalUTF8StringAttributeList;
 
 typedef Signal5<bool, IMEngineInstanceBase*,WideString&,int&,int,int>
         IMEngineSignalGetSurroundingText;
@@ -121,8 +130,11 @@ public:
 
     IMEngineSignalInt                     m_signal_update_preedit_caret;
     IMEngineSignalWideStringAttributeListInt m_signal_update_preedit_string;
+    IMEngineSignalUTF8StringAttributeListInt m_signal_update_preedit_utf8_string;
     IMEngineSignalWideStringAttributeList m_signal_update_aux_string;
+    IMEngineSignalUTF8StringAttributeList m_signal_update_aux_utf8_string;
     IMEngineSignalWideString              m_signal_commit_string;
+    IMEngineSignalUTF8String              m_signal_commit_utf8_string;
     IMEngineSignalLookupTable             m_signal_update_lookup_table;
 
     IMEngineSignalKeyEvent                m_signal_forward_key_event;
@@ -534,9 +546,21 @@ IMEngineInstanceBase::signal_connect_update_preedit_string (IMEngineSlotWideStri
 }
 
 Connection
+IMEngineInstanceBase::signal_connect_update_preedit_utf8_string (IMEngineSlotUTF8StringAttributeListInt *slot)
+{
+    return m_impl->m_signal_update_preedit_utf8_string.connect (slot);
+}
+
+Connection
 IMEngineInstanceBase::signal_connect_update_aux_string (IMEngineSlotWideStringAttributeList *slot)
 {
     return m_impl->m_signal_update_aux_string.connect (slot);
+}
+
+Connection
+IMEngineInstanceBase::signal_connect_update_aux_utf8_string (IMEngineSlotUTF8StringAttributeList *slot)
+{
+    return m_impl->m_signal_update_aux_utf8_string.connect (slot);
 }
 
 Connection
@@ -549,6 +573,12 @@ Connection
 IMEngineInstanceBase::signal_connect_commit_string (IMEngineSlotWideString *slot)
 {
     return m_impl->m_signal_commit_string.connect (slot);
+}
+
+Connection
+IMEngineInstanceBase::signal_connect_commit_utf8_string (IMEngineSlotUTF8String *slot)
+{
+    return m_impl->m_signal_commit_utf8_string.connect (slot);
 }
 
 Connection
@@ -691,6 +721,14 @@ IMEngineInstanceBase::update_preedit_string (const WideString    &str,
 }
 
 void
+IMEngineInstanceBase::update_preedit_string (const char    *buf,
+                                             int                  buflen,
+                                             const AttributeList &attrs)
+{
+    m_impl->m_signal_update_preedit_utf8_string (this, buf, buflen, attrs, -1);
+}
+
+void
 IMEngineInstanceBase::update_preedit_string (const WideString    &str,
                                              const AttributeList &attrs,
                                              int            caret)
@@ -699,10 +737,27 @@ IMEngineInstanceBase::update_preedit_string (const WideString    &str,
 }
 
 void
+IMEngineInstanceBase::update_preedit_string (const char    *buf,
+                                             int                  buflen,
+                                             const AttributeList &attrs,
+                                             int            caret)
+{
+    m_impl->m_signal_update_preedit_utf8_string (this, buf, buflen, attrs, caret);
+}
+
+void
 IMEngineInstanceBase::update_aux_string (const WideString    &str,
                                          const AttributeList &attrs)
 {
     m_impl->m_signal_update_aux_string (this, str, attrs);
+}
+
+void
+IMEngineInstanceBase::update_aux_string (const char    *buf,
+                                         int                  buflen,
+                                         const AttributeList &attrs)
+{
+    m_impl->m_signal_update_aux_utf8_string (this, buf, buflen, attrs);
 }
 
 void
@@ -715,6 +770,13 @@ void
 IMEngineInstanceBase::commit_string (const WideString &str)
 {
     m_impl->m_signal_commit_string (this, str);
+}
+
+void
+IMEngineInstanceBase::commit_string (const char    *buf,
+                                     int                  buflen)
+{
+    m_impl->m_signal_commit_utf8_string (this, buf, buflen);
 }
 
 void

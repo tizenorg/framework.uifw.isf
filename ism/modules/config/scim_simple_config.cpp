@@ -52,22 +52,22 @@
 using namespace scim;
 
 extern "C" {
-    EAPI void scim_module_init (void)
+    EXAPI void scim_module_init (void)
     {
         SCIM_DEBUG_CONFIG(1) << "Initializing Simple Config module...\n";
     }
 
-    EAPI void scim_module_exit (void)
+    EXAPI void scim_module_exit (void)
     {
         SCIM_DEBUG_CONFIG(1) << "Exiting Simple Config module...\n";
     }
 
-    EAPI void scim_config_module_init ()
+    EXAPI void scim_config_module_init ()
     {
         SCIM_DEBUG_CONFIG(1) << "Initializing Simple Config module (more)...\n";
     }
 
-    EAPI ConfigPointer scim_config_module_create_config ()
+    EXAPI ConfigPointer scim_config_module_create_config ()
     {
         SCIM_DEBUG_CONFIG(1) << "Creating a Simple Config instance...\n";
         return new SimpleConfig ();

@@ -8,7 +8,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -90,7 +90,7 @@ public:
         free (m_buffer);
     }
 
-    const TransactionHolder & operator = (const TransactionHolder &other) {
+    TransactionHolder & operator = (const TransactionHolder &other) {
         m_ref = other.m_ref;
         m_buffer_size = other.m_buffer_size;
         m_write_pos = other.m_write_pos;
@@ -378,7 +378,7 @@ Transaction::put_data (const WideString &str)
 void
 Transaction::put_data (const KeyEvent &key)
 {
-    m_holder->request_buffer_size (1 + sizeof (uint32) + sizeof (uint16) * 2);
+    m_holder->request_buffer_size (1 + sizeof (uint32) + sizeof (uint16) * 4 + sizeof (uint32) + key.dev_name.length ());
 
     m_holder->m_buffer [m_holder->m_write_pos++] = (unsigned char) SCIM_TRANS_DATA_KEYEVENT;
 
@@ -393,6 +393,23 @@ Transaction::put_data (const KeyEvent &key)
     scim_uint16tobytes (m_holder->m_buffer + m_holder->m_write_pos, key.layout);
 
     m_holder->m_write_pos += sizeof (uint16);
+
+    scim_uint16tobytes (m_holder->m_buffer + m_holder->m_write_pos, key.dev_class);
+
+    m_holder->m_write_pos += sizeof (uint16);
+
+    scim_uint16tobytes (m_holder->m_buffer + m_holder->m_write_pos, key.dev_subclass);
+
+    m_holder->m_write_pos += sizeof (uint16);
+
+    scim_uint32tobytes (m_holder->m_buffer + m_holder->m_write_pos, key.dev_name.length ());
+
+    m_holder->m_write_pos += sizeof (uint32);
+
+    if (key.dev_name.length ())
+        memcpy (m_holder->m_buffer + m_holder->m_write_pos, key.dev_name.c_str (), key.dev_name.length ());
+
+    m_holder->m_write_pos += key.dev_name.length ();
 }
 
 void
@@ -947,7 +964,7 @@ TransactionReader::get_data (KeyEvent &key)
         m_impl->m_holder->m_write_pos > m_impl->m_read_pos &&
         m_impl->m_holder->m_buffer [m_impl->m_read_pos] == SCIM_TRANS_DATA_KEYEVENT) {
 
-        if (m_impl->m_holder->m_write_pos < (m_impl->m_read_pos + sizeof (uint32) * 2 + 1))
+        if (m_impl->m_holder->m_write_pos < (m_impl->m_read_pos + sizeof (uint32) + sizeof (uint16) * 4 + sizeof (uint32) + 1))
             return false;
 
         m_impl->m_read_pos ++;
@@ -961,6 +978,29 @@ TransactionReader::get_data (KeyEvent &key)
         key.layout = scim_bytestouint16 (m_impl->m_holder->m_buffer + m_impl->m_read_pos);
         m_impl->m_read_pos += sizeof (uint16);
 
+        key.dev_class = scim_bytestouint16 (m_impl->m_holder->m_buffer + m_impl->m_read_pos);
+        m_impl->m_read_pos += sizeof (uint16);
+
+        key.dev_subclass = scim_bytestouint16 (m_impl->m_holder->m_buffer + m_impl->m_read_pos);
+        m_impl->m_read_pos += sizeof (uint16);
+
+        size_t len;
+        size_t old_read_pos = m_impl->m_read_pos;
+
+        len = scim_bytestouint32 (m_impl->m_holder->m_buffer + m_impl->m_read_pos);
+        m_impl->m_read_pos += sizeof (uint32);
+
+        if (m_impl->m_holder->m_write_pos < (m_impl->m_read_pos + len)) {
+            m_impl->m_read_pos = old_read_pos;
+            return false;
+        }
+
+        if (len)
+            key.dev_name = String (m_impl->m_holder->m_buffer + m_impl->m_read_pos, m_impl->m_holder->m_buffer + m_impl->m_read_pos + len);
+        else
+            key.dev_name = String ("");
+
+        m_impl->m_read_pos += len;
         return true;
     }
     return false;

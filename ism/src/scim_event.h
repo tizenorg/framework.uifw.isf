@@ -2009,7 +2009,7 @@ typedef std::vector<KeyEvent> KeyEventList;
  * @param key - the KeyEvent to be converted.
  * @return true if success.
  */
-EAPI bool scim_key_to_string (String &str, const KeyEvent & key);
+EXAPI bool scim_key_to_string (String &str, const KeyEvent & key);
 
 /**
  * @brief Convert a string to a KeyEvent.
@@ -2017,7 +2017,7 @@ EAPI bool scim_key_to_string (String &str, const KeyEvent & key);
  * @param str - the string to be converted.
  * @return true if success.
  */
-EAPI bool scim_string_to_key (KeyEvent &key, const String & str);
+EXAPI bool scim_string_to_key (KeyEvent &key, const String & str);
 
 /**
  * @brief Convert a set of KeyEvents to a string.
@@ -2025,7 +2025,7 @@ EAPI bool scim_string_to_key (KeyEvent &key, const String & str);
  * @param keylist - the keys to be converted.
  * @return true if success.
  */
-EAPI bool scim_key_list_to_string (String &str, const KeyEventList & keylist);
+EXAPI bool scim_key_list_to_string (String &str, const KeyEventList & keylist);
 
 /**
  * @brief Covnert a string to a set of KeyEvents.
@@ -2033,28 +2033,28 @@ EAPI bool scim_key_list_to_string (String &str, const KeyEventList & keylist);
  * @param str - the string to be converted.
  * @return true if success.
  */
-EAPI bool scim_string_to_key_list (KeyEventList &keylist, const String &str);
+EXAPI bool scim_string_to_key_list (KeyEventList &keylist, const String &str);
 
 /**
  * @brief Convert a Keyboard Layout enum value to its String name.
  * @param layout The Keyboard Layout type.
  * @return The name of this layout.
  */
-EAPI String scim_keyboard_layout_to_string (KeyboardLayout layout);
+EXAPI String scim_keyboard_layout_to_string (KeyboardLayout layout);
 
 /**
  * @brief Convert a String name to the corresponding Keyboard Layout value.
  * @param str The Keyboard Layout name.
  * @return The Keyboard Layout type corresponding to this name, or SCIM_KEYBOARD_Unknown.
  */
-EAPI KeyboardLayout scim_string_to_keyboard_layout (const String &str);
+EXAPI KeyboardLayout scim_string_to_keyboard_layout (const String &str);
 
 /**
  * @brief Get the display name of a Keyboard Layout enum value.
  * @param layout The Keyboard Layout type.
  * @return The localized display name of this layout.
  */
-EAPI String scim_keyboard_layout_get_display_name (KeyboardLayout layout);
+EXAPI String scim_keyboard_layout_get_display_name (KeyboardLayout layout);
 
 /**
  * @brief Get default Keyboard Layout setting.
@@ -2065,7 +2065,7 @@ EAPI String scim_keyboard_layout_get_display_name (KeyboardLayout layout);
  * This function is mainly used by FrontEnds and Setup tools.
  * IMEngines should not use it.
  */
-EAPI KeyboardLayout scim_get_default_keyboard_layout ();
+EXAPI KeyboardLayout scim_get_default_keyboard_layout ();
 
 /**
  * @brief Change the default Keyboard Layout setting.
@@ -2076,7 +2076,16 @@ EAPI KeyboardLayout scim_get_default_keyboard_layout ();
  * This function is mainly used by FrontEnds and Setup tools.
  * IMEngines should not use it.
  */
-EAPI void scim_set_default_keyboard_layout (KeyboardLayout layout);
+EXAPI void scim_set_default_keyboard_layout (KeyboardLayout layout);
+
+/**
+ * @brief Set a device name of KeyEvent.
+ * @param key - the result KeyEvent will be stored here.
+ * @param str - the device name.
+ * @param dev_class - the device class.
+ * @param dev_subclass - the device subclass.
+ */
+EXAPI void scim_set_device_info (KeyEvent &key, String str, uint16 dev_class, uint16 dev_subclass);
 
 /**
  * @brief The class to store a keyboard event.
@@ -2088,11 +2097,14 @@ EAPI void scim_set_default_keyboard_layout (KeyboardLayout layout);
  * It also contains the Keyboard Layout information. IMEngines can
  * map a KeyEvent to another layout by calling method #map_to_layout().
  */
-struct EAPI KeyEvent
+struct EXAPI KeyEvent
 {
     uint32 code;    /**< key code */
     uint16 mask;    /**< modifier keys' mask */
     uint16 layout;  /**< keyboard layout identifier */
+    String dev_name;  /**< The device name of the key pressed */
+    uint16 dev_class; /**< The device class of the key pressed */
+    uint16 dev_subclass; /**< The device subclass of the key pressed */
 
     /**
      * @brief Default constructor.
@@ -2100,8 +2112,8 @@ struct EAPI KeyEvent
      * @param m - the key masks.
      * @param l - the keyboard layout
      */
-    KeyEvent (uint32 c = 0, uint16 m = 0, uint16 l = 0)
-        : code (c), mask (m), layout (l) { }
+    KeyEvent (uint32 c = 0, uint16 m = 0, uint16 l = 0, uint16 dc = 0, uint16 ds = 0, String d = "")
+        : code (c), mask (m), layout (l), dev_name (d), dev_class (dc), dev_subclass (ds) { }
 
     /**
      * @brief Constructor, construct a key event from a string.
@@ -2109,7 +2121,7 @@ struct EAPI KeyEvent
      * @param str the key string, eg. "Control+space"
      */
     KeyEvent (const String &str)
-        : code (0), mask (0), layout (0) { scim_string_to_key (*this, str); }
+        : code (0), mask (0), layout (0), dev_name (""), dev_class (0), dev_subclass (0) { scim_string_to_key (*this, str); }
 
     /**
      * @brief Check if this KeyEvent is empty.

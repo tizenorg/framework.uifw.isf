@@ -17,7 +17,7 @@
 
 MAINTAINERCLEANFILES	= Makefile.in
 
-INST_ICONS		= keyboard.png pop_play.png
+INST_ICONS		= keyboard.png pop_play.png noti_icon_hwkbd_module.png noti_icon_ise_selector.png
 
 SCTC_FILTER_ICONS	= sctc.png \
 			  sctc-sc-to-tc.png \

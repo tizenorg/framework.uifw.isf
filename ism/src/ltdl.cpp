@@ -2604,10 +2604,10 @@ foreach_dirinpath (
   LT_DLMUTEX_LOCK ();
 
   if (!search_path || !*search_path)
-    {
-      LT_DLMUTEX_SETERROR (LT_DLSTRERROR (FILE_NOT_FOUND));
-      goto cleanup;
-    }
+  {
+    LT_DLMUTEX_SETERROR (LT_DLSTRERROR (FILE_NOT_FOUND));
+    goto cleanup;
+  }
 
   if (canonicalize_path (search_path, &canonical) != 0)
     goto cleanup;
@@ -2618,36 +2618,36 @@ foreach_dirinpath (
   {
     char *dir_name = 0;
     while ((dir_name = argz_next (argz, argz_len, dir_name)))
+    {
+      size_t lendir = LT_STRLEN (dir_name);
+
+      if ((int)(lendir +1 +lenbase) >= filenamesize)
       {
-	size_t lendir = LT_STRLEN (dir_name);
-
-	if ((int)(lendir +1 +lenbase) >= filenamesize)
-	{
-	  LT_DLFREE (filename);
-	  filenamesize	= lendir +1 +lenbase +1; /* "/d" + '/' + "f" + '\0' */
-	  filename	= LT_EMALLOC (char, filenamesize);
-	  if (!filename)
-	    goto cleanup;
-	}
-
-	assert (filenamesize > (int)lendir);
-	strncpy (filename, dir_name, filenamesize);
-
-	if (base_name && *base_name)
-	  {
-	    if (filename[lendir -1] != '/')
-	      filename[lendir++] = '/';
-	      strncpy (filename + lendir, base_name, filenamesize - lendir);
-	  }
-
-	if ((result = (*func) (filename, data1, data2)))
-	  {
-	    break;
-	  }
+        LT_DLFREE (filename);
+        filenamesize	= lendir +1 +lenbase +1; /* "/d" + '/' + "f" + '\0' */
+        filename	= LT_EMALLOC (char, filenamesize);
+        if (!filename)
+          goto cleanup;
       }
+
+      assert (filenamesize > (int)lendir);
+      strncpy (filename, dir_name, filenamesize);
+
+      if (base_name && *base_name)
+      {
+        if (filename[lendir -1] != '/')
+          filename[lendir++] = '/';
+        strncpy (filename + lendir, base_name, filenamesize - lendir);
+      }
+
+      if ((result = (*func) (filename, data1, data2)))
+      {
+        break;
+      }
+    }
   }
 
- cleanup:
+cleanup:
   LT_DLFREE (argz);
   LT_DLFREE (canonical);
   LT_DLFREE (filename);

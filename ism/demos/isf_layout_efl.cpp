@@ -2,7 +2,7 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
  *
  * Contact: Shuo Liu <shuo0805.liu@samsung.com>, Jihoon Kim <jihoon48.kim@samsung.com>
  *
@@ -25,16 +25,41 @@
 #include "isf_demo_efl.h"
 #include "isf_layout_efl.h"
 #include <Ecore_X.h>
-#include <utilX.h>
 
-static void _exit_key_cb (void *data, Evas_Object *obj, void *event_info)
-{
-    elm_exit ();
-}
+struct _menu_item {
+    const char *name;
+    const char *guide_text;
+    Elm_Input_Panel_Layout layout;
+    int layout_variation;
+};
+
+static struct _menu_item _menu_its[] = {
+    { N_("NORMAL LAYOUT"), N_("click to enter TEXT"), ELM_INPUT_PANEL_LAYOUT_NORMAL, 0 },
+    { N_("NUMBER LAYOUT"), N_("click to enter NUMBER"), ELM_INPUT_PANEL_LAYOUT_NUMBER, 0 },
+    { N_("EMAIL LAYOUT"), N_("click to enter EMAIL"), ELM_INPUT_PANEL_LAYOUT_EMAIL, 0 },
+    { N_("URL LAYOUT"), N_("click to enter URL"), ELM_INPUT_PANEL_LAYOUT_URL, 0 },
+    { N_("PHONENUMBER LAYOUT"), N_("click to enter PHONENUMBER"), ELM_INPUT_PANEL_LAYOUT_PHONENUMBER, 0 },
+    { N_("IP LAYOUT"), N_("click to enter IP"), ELM_INPUT_PANEL_LAYOUT_IP, 0 },
+    { N_("MONTH LAYOUT"), N_("click to enter MONTH"), ELM_INPUT_PANEL_LAYOUT_MONTH, 0 },
+    { N_("NUMBERONLY LAYOUT"), N_("click to enter NUMBERONLY"), ELM_INPUT_PANEL_LAYOUT_NUMBERONLY, ELM_INPUT_PANEL_LAYOUT_NUMBERONLY_VARIATION_NORMAL },
+    { N_("NUMBERONLY - SIGNED"), N_("click to enter NUMBERONLY WITH SIGNED"), ELM_INPUT_PANEL_LAYOUT_NUMBERONLY, ELM_INPUT_PANEL_LAYOUT_NUMBERONLY_VARIATION_SIGNED },
+    { N_("NUMBERONLY - DECIMAL"), N_("click to enter NUMBERONLY WITH DECIMAL"), ELM_INPUT_PANEL_LAYOUT_NUMBERONLY, ELM_INPUT_PANEL_LAYOUT_NUMBERONLY_VARIATION_DECIMAL },
+    { N_("NUMBERONLY - SIGNED AND DECIMAL"), N_("click to enter NUMBERONLY WITH SIGNED AND DECIMAL"), ELM_INPUT_PANEL_LAYOUT_NUMBERONLY, ELM_INPUT_PANEL_LAYOUT_NUMBERONLY_VARIATION_SIGNED_AND_DECIMAL },
+    { N_("DATETIME LAYOUT"), N_("click to enter DATETIME"), ELM_INPUT_PANEL_LAYOUT_DATETIME, 0},
+    { N_("PASSWORD LAYOUT"), N_("click to enter PASSWORD"), ELM_INPUT_PANEL_LAYOUT_PASSWORD, 0},
+    { N_("PASSWORD NUMBERONLY LAYOUT"), N_("click to enter PASSWORD NUMBERONLY"), ELM_INPUT_PANEL_LAYOUT_PASSWORD, ELM_INPUT_PANEL_LAYOUT_PASSWORD_VARIATION_NUMBERONLY },
+    { N_("Emoticon LAYOUT"), N_("click to enter Emoticon"), ELM_INPUT_PANEL_LAYOUT_EMOTICON, 0},
+    { N_("TERMINAL LAYOUT"), N_("click to enter TERMINAL"), ELM_INPUT_PANEL_LAYOUT_TERMINAL, 0},
+
+    /* do not delete below */
+    { NULL, NULL, ELM_INPUT_PANEL_LAYOUT_NORMAL, 0 }
+};
+
+static Ecore_Event_Handler *prop_handler = NULL;
 
 static void _back_key_cb (void *data, Evas_Object *obj, void *event_info)
 {
-    ecore_x_test_fake_key_press (KEY_END);
+    ecore_x_test_fake_key_press ("XF86Back");
 }
 
 static void _rotate_cb (void *data, Evas_Object *obj, void *event_info)
@@ -147,6 +172,7 @@ _prop_change_cb (void *data, int type, void *event)
 {
     Ecore_X_Event_Window_Property *ev;
     ev = (Ecore_X_Event_Window_Property *)event;
+    if (!ev) return ECORE_CALLBACK_PASS_ON;
 
     if (ev->atom == ECORE_X_ATOM_E_VIRTUAL_KEYBOARD_STATE) {
         LOGD ("[ECORE_X_ATOM_E_VIRTUAL_KEYBOARD_STATE] ");
@@ -204,112 +230,48 @@ static Evas_Object *_create_ef_layout (Evas_Object *parent, const char *label, c
     return ef;
 }
 
+static void
+_layout_del_cb (void *data EINA_UNUSED, Evas *e EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event_info EINA_UNUSED)
+{
+    if (prop_handler) {
+        ecore_event_handler_del (prop_handler);
+        prop_handler = NULL;
+    }
+}
+
 static Evas_Object * create_inner_layout (void *data)
 {
     struct appdata *ad = (struct appdata *)data;
     Evas_Object *bx = NULL;
     Evas_Object *ef = NULL;
     Evas_Object *parent = ad->naviframe;
+    int idx = 0;
 
     bx = elm_box_add (parent);
     evas_object_size_hint_weight_set (bx, EVAS_HINT_EXPAND, 0.0);
     evas_object_size_hint_align_set (bx, EVAS_HINT_FILL, 0.0);
     evas_object_show (bx);
 
-    /* Normal Layout */
-    ef = _create_ef_layout (parent, _("NORMAL LAYOUT"), _("click to enter TEXT"), ELM_INPUT_PANEL_LAYOUT_NORMAL);
-    elm_box_pack_end (bx, ef);
-
-    /* Number Layout */
-    ef = _create_ef_layout (parent, _("NUMBER LAYOUT"), _("click to enter NUMBER"), ELM_INPUT_PANEL_LAYOUT_NUMBER);
-    elm_box_pack_end (bx, ef);
-
-    /* Email Layout */
-    ef = _create_ef_layout (parent, _("EMAIL LAYOUT"), _("click to enter EMAIL"), ELM_INPUT_PANEL_LAYOUT_EMAIL);
-    elm_box_pack_end (bx, ef);
-
-    /* URL Layout */
-    ef = _create_ef_layout (parent, _("URL LAYOUT"), _("click to enter URL"), ELM_INPUT_PANEL_LAYOUT_URL);
-    elm_box_pack_end (bx, ef);
-
-    /* Phonenumber Layout */
-    ef = _create_ef_layout (parent, _("PHONENUMBER LAYOUT"), _("click to enter PHONENUMBER"), ELM_INPUT_PANEL_LAYOUT_PHONENUMBER);
-    elm_box_pack_end (bx, ef);
-
-    /* IP Layout */
-    ef = _create_ef_layout (parent, _("IP LAYOUT"), _("click to enter IP"), ELM_INPUT_PANEL_LAYOUT_IP);
-    elm_box_pack_end (bx, ef);
-
-    /* Month Layout */
-    ef = _create_ef_layout (parent, _("MONTH LAYOUT"), _("click to enter MONTH"), ELM_INPUT_PANEL_LAYOUT_MONTH);
-    elm_box_pack_end (bx, ef);
-
-    /* Number Only Layout */
-    ef = _create_ef_layout (parent, _("NUMBERONLY LAYOUT"), _("click to enter NUMBERONLY"), ELM_INPUT_PANEL_LAYOUT_NUMBERONLY, ELM_INPUT_PANEL_LAYOUT_NUMBERONLY_VARIATION_NORMAL);
-    elm_box_pack_end (bx, ef);
-
-    /* Number Only with signed Layout */
-    ef = _create_ef_layout (parent, _("NUMBERONLY - SIGNED"), _("click to enter NUMBERONLY WITH SIGNED"), ELM_INPUT_PANEL_LAYOUT_NUMBERONLY, ELM_INPUT_PANEL_LAYOUT_NUMBERONLY_VARIATION_SIGNED);
-    elm_box_pack_end (bx, ef);
-
-    /* Number Only with decimal Layout */
-    ef = _create_ef_layout (parent, _("NUMBERONLY - DECIMAL"), _("click to enter NUMBERONLY WITH DECIMAL"), ELM_INPUT_PANEL_LAYOUT_NUMBERONLY, ELM_INPUT_PANEL_LAYOUT_NUMBERONLY_VARIATION_DECIMAL);
-    elm_box_pack_end (bx, ef);
-
-    /* Number Only with signed and decimal Layout */
-    ef = _create_ef_layout (parent, _("NUMBERONLY - SIGNED AND DECIMAL"), _("click to enter NUMBERONLY WITH SIGNED AND DECIMAL"), ELM_INPUT_PANEL_LAYOUT_NUMBERONLY, ELM_INPUT_PANEL_LAYOUT_NUMBERONLY_VARIATION_SIGNED_AND_DECIMAL);
-    elm_box_pack_end (bx, ef);
-
-    /* Datetime Layout */
-    ef = _create_ef_layout (parent, _("DATETIME LAYOUT"), _("click to enter DATETIME"), ELM_INPUT_PANEL_LAYOUT_DATETIME);
-    elm_box_pack_end (bx, ef);
-
-    /* Password Layout */
-    ef = _create_ef_layout (parent, _("PASSWORD LAYOUT"), _("click to enter PASSWORD"), ELM_INPUT_PANEL_LAYOUT_PASSWORD);
-    elm_box_pack_end (bx, ef);
-
-    /* Password numberonly Layout */
-    ef = _create_ef_layout (parent, _("PASSWORD NUMBERONLY LAYOUT"), _("click to enter PASSWORD NUMBERONLY"), ELM_INPUT_PANEL_LAYOUT_PASSWORD, ELM_INPUT_PANEL_LAYOUT_PASSWORD_VARIATION_NUMBERONLY);
-    elm_box_pack_end (bx, ef);
-
-    /* Emoticon Layout */
-    ef = _create_ef_layout (parent, _("Emoticon LAYOUT"), _("click to enter Emoticon"), ELM_INPUT_PANEL_LAYOUT_EMOTICON);
-    elm_box_pack_end (bx, ef);
-
-    /* Terminal Layout */
-    ef = _create_ef_layout (parent, _("TERMINAL LAYOUT"), _("click to enter TERMINAL"), ELM_INPUT_PANEL_LAYOUT_TERMINAL);
-    elm_box_pack_end (bx, ef);
+    while (_menu_its[idx].name != NULL) {
+        ef = _create_ef_layout (parent, _menu_its[idx].name, _menu_its[idx].guide_text, _menu_its[idx].layout, _menu_its[idx].layout_variation);
+        elm_box_pack_end (bx, ef);
+        ++idx;
+    }
 
     /* create back key event generation button */
-    Evas_Object *back_key_btn = elm_button_add (parent);
-    elm_object_text_set (back_key_btn, "Generate BACK key");
+    Evas_Object *back_key_btn = create_button (parent, "Generate BACK key");
     evas_object_smart_callback_add (back_key_btn, "clicked", _back_key_cb, (void *)ad);
-    evas_object_size_hint_weight_set (back_key_btn, EVAS_HINT_EXPAND, 0.0);
-    evas_object_size_hint_align_set (back_key_btn, EVAS_HINT_FILL, 0);
-    evas_object_show (back_key_btn);
     elm_box_pack_end (bx, back_key_btn);
     elm_object_focus_allow_set (back_key_btn, EINA_FALSE);
 
     /* Click to rotate button */
-    Evas_Object *rotate_btn = elm_button_add (parent);
-    elm_object_text_set (rotate_btn, "rotate");
+    Evas_Object *rotate_btn = create_button (parent, "rotate");
     evas_object_smart_callback_add (rotate_btn, "clicked", _rotate_cb, (void *)ad);
-    evas_object_size_hint_weight_set (rotate_btn, EVAS_HINT_EXPAND, 0.0);
-    evas_object_size_hint_align_set (rotate_btn, EVAS_HINT_FILL, 0);
-    evas_object_show (rotate_btn);
     elm_box_pack_end (bx, rotate_btn);
 
-    /* Click to exit button */
-    Evas_Object *exit_btn = elm_button_add (parent);
-    elm_object_text_set (exit_btn, "Exit");
-    evas_object_smart_callback_add (exit_btn, "clicked", _exit_key_cb, (void *)ad);
-    evas_object_size_hint_weight_set (exit_btn, EVAS_HINT_EXPAND, 0.0);
-    evas_object_size_hint_align_set (exit_btn, EVAS_HINT_FILL, 0);
-    evas_object_show (exit_btn);
-    elm_box_pack_end (bx, exit_btn);
-    elm_object_focus_allow_set (exit_btn, EINA_FALSE);
+    prop_handler = ecore_event_handler_add (ECORE_X_EVENT_WINDOW_PROPERTY, _prop_change_cb, NULL);
 
-    ecore_event_handler_add (ECORE_X_EVENT_WINDOW_PROPERTY, _prop_change_cb, NULL);
+    evas_object_event_callback_add (bx, EVAS_CALLBACK_DEL, _layout_del_cb, NULL);
 
     return bx;
 }

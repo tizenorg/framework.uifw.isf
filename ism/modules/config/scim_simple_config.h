@@ -4,7 +4,7 @@
 
 /*
  * Smart Common Input Method
- * 
+ *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
  *
  *
@@ -36,7 +36,7 @@ namespace scim {
 
 const int SCIM_MAX_CONFIG_LINE_LENGTH = 16384;
 
-class EAPI SimpleConfig : public ConfigBase
+class EXAPI SimpleConfig : public ConfigBase
 {
 #if SCIM_USE_STL_EXT_HASH_MAP
 typedef __gnu_cxx::hash_map <String, String, scim_hash_string> KeyValueRepository;
@@ -60,7 +60,7 @@ public:
     virtual bool valid () const;
 
     virtual String get_name () const;
-    
+
     // String
     virtual bool read (const String& key, String *pStr) const;
 

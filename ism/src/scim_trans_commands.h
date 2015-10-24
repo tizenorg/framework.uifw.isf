@@ -631,6 +631,12 @@ const int ISM_TRANS_CMD_REGISTER_PANEL_CLIENT             = 1015;
 const int ISM_TRANS_CMD_GET_ISE_STATE                     = 1016;
 const int ISM_TRANS_CMD_GET_ACTIVE_HELPER_OPTION          = 1017;
 const int ISM_TRANS_CMD_SET_INITIAL_ISE_BY_UUID           = 1018;
+const int ISM_TRANS_CMD_GET_ALL_HELPER_ISE_INFO           = 1019;
+const int ISM_TRANS_CMD_SET_ENABLE_HELPER_ISE_INFO        = 1020;
+const int ISM_TRANS_CMD_SHOW_HELPER_ISE_LIST              = 1021;
+const int ISM_TRANS_CMD_SHOW_HELPER_ISE_SELECTOR          = 1022;
+const int ISM_TRANS_CMD_IS_HELPER_ISE_ENABLED             = 1023;
+const int ISM_TRANS_CMD_GET_RECENT_ISE_GEOMETRY           = 1024;
 
 /* IMControl to ISE */
 const int ISM_TRANS_CMD_SET_ISE_MODE                      = 1108;
@@ -650,6 +656,7 @@ const int ISM_TRANS_CMD_GET_RETURN_KEY_DISABLE            = 1121;
 const int ISM_TRANS_CMD_SET_INPUT_MODE                    = 1122;
 const int ISM_TRANS_CMD_SET_INPUT_HINT                    = 1123;
 const int ISM_TRANS_CMD_UPDATE_BIDI_DIRECTION             = 1124;
+const int ISM_TRANS_CMD_SHOW_ISE_OPTION_WINDOW            = 1125;
 
 /* ISE/Panel to IMControl */
 const int ISM_TRANS_CMD_UPDATE_ISE_INPUT_CONTEXT          = 1151;
@@ -683,6 +690,7 @@ const int ISM_TRANS_CMD_LONGPRESS_CANDIDATE               = 1254;
 const int ISM_TRANS_CMD_UPDATE_LOOKUP_TABLE               = 1255;
 const int ISM_TRANS_CMD_CANDIDATE_SHOW                    = 1256;
 const int ISM_TRANS_CMD_CANDIDATE_HIDE                    = 1257;
+const int ISM_TRANS_CMD_CHECK_OPTION_WINDOW               = 1258;
 
 const int ISM_TRANS_CMD_TURN_ON_LOG                       = 1301;
 

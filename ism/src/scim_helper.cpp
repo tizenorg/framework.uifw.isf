@@ -8,7 +8,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2004-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -49,8 +49,16 @@
 
 #include "scim_private.h"
 #include "scim.h"
+#include <scim_panel_common.h>
+#include "isf_query_utility.h"
+#include <dlog.h>
 
-EAPI scim::CommonLookupTable g_helper_candidate_table;
+#ifdef LOG_TAG
+# undef LOG_TAG
+#endif
+#define LOG_TAG             "SCIM_HELPER"
+
+EXAPI scim::CommonLookupTable g_helper_candidate_table;
 
 namespace scim {
 
@@ -176,6 +184,8 @@ public:
     HelperAgentSignalUintVoid           signal_set_input_mode;
     HelperAgentSignalUintVoid           signal_set_input_hint;
     HelperAgentSignalUintVoid           signal_update_bidi_direction;
+    HelperAgentSignalVoid               signal_show_option_window;
+    HelperAgentSignalUintVoid           signal_check_option_window;
 
 public:
     HelperAgentImpl () : magic (0), magic_active (0), timeout (-1), focused_ic ((uint32) -1) { }
@@ -228,7 +238,7 @@ HelperAgent::open_connection (const HelperInfo &info,
     }
     std::cerr << " Connected :" << i << "\n";
     ISF_LOG ("  Connected :%d\n", i);
-    ISF_SAVE_LOG ("Connection to PanelAgent succeeded, %d\n", i);
+    LOGD ("Connection to PanelAgent succeeded, %d", i);
 
     /* Let's retry 10 times when failed */
     int open_connection_retries = 0;
@@ -259,17 +269,27 @@ HelperAgent::open_connection (const HelperInfo &info,
     }
 
     ISF_LOG ("scim_socket_open_connection () is successful.\n");
-    ISF_SAVE_LOG ("scim_socket_open_connection successful\n");
+    LOGD ("scim_socket_open_connection successful");
+
+    bool match = false;
+    std::vector<ImeInfoDB> ime_info_db;
+    isf_db_select_all_ime_info (ime_info_db);
+    for (i = 0; i < (int)ime_info_db.size (); i++) {
+        if (ime_info_db[i].appid.compare (info.uuid) == 0) {
+            match = true;
+            break;
+        }
+    }
 
     m_impl->send.clear ();
     m_impl->send.put_command (SCIM_TRANS_CMD_REQUEST);
     m_impl->send.put_data (magic);
     m_impl->send.put_command (SCIM_TRANS_CMD_PANEL_REGISTER_HELPER);
     m_impl->send.put_data (info.uuid);
-    m_impl->send.put_data (info.name);
-    m_impl->send.put_data (info.icon);
+    m_impl->send.put_data (match? ime_info_db[i].label : info.name);
+    m_impl->send.put_data (match? ime_info_db[i].iconpath : info.icon);
     m_impl->send.put_data (info.description);
-    m_impl->send.put_data (info.option);
+    m_impl->send.put_data (match? ime_info_db[i].options : info.option);
 
     if (!m_impl->send.write_to_socket (m_impl->socket, magic)) {
         m_impl->socket.close ();
@@ -327,10 +347,10 @@ HelperAgent::open_connection (const HelperInfo &info,
     m_impl->send.put_data (magic);
     m_impl->send.put_command (SCIM_TRANS_CMD_PANEL_REGISTER_ACTIVE_HELPER);
     m_impl->send.put_data (info.uuid);
-    m_impl->send.put_data (info.name);
-    m_impl->send.put_data (info.icon);
+    m_impl->send.put_data (match? ime_info_db[i].label : info.name);
+    m_impl->send.put_data (match? ime_info_db[i].iconpath : info.icon);
     m_impl->send.put_data (info.description);
-    m_impl->send.put_data (info.option);
+    m_impl->send.put_data (match? ime_info_db[i].options : info.option);
 
     if (!m_impl->send.write_to_socket (m_impl->socket_active, magic)) {
         ISF_SAVE_LOG ("Helper_Active write_to_socket() failed\n");
@@ -503,7 +523,7 @@ HelperAgent::filter_event ()
             }
             case ISM_TRANS_CMD_SHOW_ISE_PANEL:
             {
-                ISF_SAVE_LOG ("Helper ISE received ISM_TRANS_CMD_SHOW_ISE_PANEL message\n");
+                LOGD ("Helper ISE received ISM_TRANS_CMD_SHOW_ISE_PANEL message");
 
                 char   *data = NULL;
                 size_t  len;
@@ -515,7 +535,7 @@ HelperAgent::filter_event ()
             }
             case ISM_TRANS_CMD_HIDE_ISE_PANEL:
             {
-                ISF_SAVE_LOG ("Helper ISE received ISM_TRANS_CMD_HIDE_ISE_PANEL message\n");
+                LOGD ("Helper ISE received ISM_TRANS_CMD_HIDE_ISE_PANEL message");
 
                 m_impl->signal_ise_hide (this, ic, ic_uuid);
                 break;
@@ -843,6 +863,21 @@ HelperAgent::filter_event ()
 
                 if (m_impl->recv.get_data (bidi_direction))
                     m_impl->signal_update_bidi_direction (this, bidi_direction);
+                break;
+            }
+            case ISM_TRANS_CMD_SHOW_ISE_OPTION_WINDOW:
+            {
+                m_impl->signal_show_option_window (this, ic, ic_uuid);
+                break;
+            }
+            case ISM_TRANS_CMD_CHECK_OPTION_WINDOW:
+            {
+                uint32 avail = 0;
+                m_impl->signal_check_option_window (this, avail);
+                m_impl->send.clear ();
+                m_impl->send.put_command (SCIM_TRANS_CMD_REPLY);
+                m_impl->send.put_data (avail);
+                m_impl->send.write_to_socket (m_impl->socket);
                 break;
             }
             default:
@@ -2060,7 +2095,7 @@ HelperAgent::signal_connect_set_return_key_disable (HelperAgentSlotUintVoid *slo
  * This signal is used to send keyboard key event to Helper ISE.
  *
  * The prototype of the slot is:
- * void process_key_event (const HelperAgent *agent, uint32 &ret);
+ * void process_key_event (const HelperAgent *agent, KeyEvent &key, uint32 &ret);
  */
 Connection
 HelperAgent::signal_connect_process_key_event (HelperAgentSlotKeyEventUint *slot)
@@ -2472,6 +2507,34 @@ Connection
 HelperAgent::signal_connect_longpress_candidate (HelperAgentSlotInt *slot)
 {
     return m_impl->signal_longpress_candidate.connect (slot);
+}
+
+/**
+ * @brief Connect a slot to Helper show option window.
+ *
+ * This signal is used to do request the ISE to show option window.
+ *
+ * The prototype of the slot is:
+ * void show_option_window (const HelperAgent *agent, int ic, const String &uuid);
+ */
+Connection
+HelperAgent::signal_connect_show_option_window (HelperAgentSlotVoid *slot)
+{
+    return m_impl->signal_show_option_window.connect (slot);
+}
+
+/**
+ * @brief Connect a slot to Helper check if the option is available.
+ *
+ * This signal is used to check if the option (setting) is available from Helper ISE.
+ *
+ * The prototype of the slot is:
+ * void check_option_window (const HelperAgent *agent, uint32 &avail);
+ */
+Connection
+HelperAgent::signal_connect_check_option_window (HelperAgentSlotUintVoid *slot)
+{
+    return m_impl->signal_check_option_window.connect (slot);
 }
 
 } /* namespace scim */

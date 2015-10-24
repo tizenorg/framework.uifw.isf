@@ -12,7 +12,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2004-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -54,7 +54,7 @@ namespace scim {
  * The accessory classes to help develop and manage Client Helper objects.
  * @{
  */
-class EAPI HelperError: public Exception
+class EXAPI HelperError: public Exception
 {
 public:
     HelperError (const String& what_arg)
@@ -117,6 +117,10 @@ const uint32 ISM_HELPER_PROCESS_KEYBOARD_KEYEVENT = (1<<16);
  */
 const uint32 ISM_ISE_HIDE_IN_CONTROL_PANEL       = (1<<17);
 
+/**
+ * @brief ISE option for 3rd party; IMEngine is not available.
+ */
+const uint32 ISM_HELPER_WITHOUT_IMENGINE         = (1<<18);
 
 /**
  * @brief Structure to hold the information of a Helper object.
@@ -210,7 +214,7 @@ typedef Slot3<void, const HelperAgent *, KeyEvent &, uint32 &>
  * This class implements all Socket Transaction protocol between
  * Helper object and Panel.
  */
-class EAPI HelperAgent
+class EXAPI HelperAgent
 {
     class HelperAgentImpl;
     HelperAgentImpl *m_impl;
@@ -659,7 +663,7 @@ public:
      * @param mode          - candidate window mode.
      */
     void set_candidate_style      (ISF_CANDIDATE_PORTRAIT_LINE_T portrait_line = ONE_LINE_CANDIDATE,
-                                   ISF_CANDIDATE_MODE_T          mode = FIXED_CANDIDATE_WINDOW) const;
+                                   ISF_CANDIDATE_MODE_T          mode = SOFT_CANDIDATE_WINDOW) const;
 
     /**
      * @brief Request to reset keyboard ISE.
@@ -1239,6 +1243,26 @@ public:
      * void update_bidi_direction (const HelperAgent *agent, uint32 &bidi_direction);
      */
     Connection signal_connect_update_bidi_direction                 (HelperAgentSlotUintVoid            *slot);
+
+    /**
+     * @brief Connect a slot to Helper show option window.
+     *
+     * This signal is used to do request the ISE to show option window.
+     *
+     * The prototype of the slot is:
+     * void show_option_window (const HelperAgent *agent, int ic, const String &uuid);
+     */
+    Connection signal_connect_show_option_window                    (HelperAgentSlotVoid                *slot);
+
+    /**
+     * @brief Connect a slot to Helper check if the option is available.
+     *
+     * This signal is used to request ISE to reply if the option (setting) is available.
+     *
+     * The prototype of the slot is:
+     * void check_option_window (const HelperAgent *agent, uint32 &avail);
+     */
+    Connection signal_connect_check_option_window                   (HelperAgentSlotUintVoid            *slot);
 };
 
 /**  @} */

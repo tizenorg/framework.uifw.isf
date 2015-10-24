@@ -5,7 +5,7 @@
 
 /*
  * Smart Common Input Method
- * 
+ *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
  *
  *
@@ -46,22 +46,22 @@
 using namespace scim;
 
 extern "C" {
-    EAPI void scim_module_init (void)
+    EXAPI void scim_module_init (void)
     {
         SCIM_DEBUG_CONFIG(1) << "Initializing Socket Config module...\n";
     }
 
-    EAPI void scim_module_exit (void)
+    EXAPI void scim_module_exit (void)
     {
         SCIM_DEBUG_CONFIG(1) << "Exiting Socket Config module...\n";
     }
 
-    EAPI void scim_config_module_init ()
+    EXAPI void scim_config_module_init ()
     {
         SCIM_DEBUG_CONFIG(1) << "Initializing Socket Config module (more)...\n";
     }
 
-    EAPI ConfigPointer scim_config_module_create_config ()
+    EXAPI ConfigPointer scim_config_module_create_config ()
     {
         SCIM_DEBUG_CONFIG(1) << "Creating a Socket Config instance...\n";
         return new SocketConfig ();
@@ -146,7 +146,7 @@ SocketConfig::read (const String& key, int *pl) const
         init_transaction (trans);
         trans.put_command (SCIM_TRANS_CMD_GET_CONFIG_INT);
         trans.put_data (key);
- 
+
         if (trans.write_to_socket (m_socket_client) &&
             trans.read_from_socket (m_socket_client, m_socket_timeout)) {
             uint32 val;
@@ -182,7 +182,7 @@ SocketConfig::read (const String& key, double* val) const
         init_transaction (trans);
         trans.put_command (SCIM_TRANS_CMD_GET_CONFIG_DOUBLE);
         trans.put_data (key);
- 
+
         if (trans.write_to_socket (m_socket_client) &&
             trans.read_from_socket (m_socket_client, m_socket_timeout)) {
             String str;
@@ -210,7 +210,7 @@ SocketConfig::read (const String& key, bool* val) const
 {
     if (!valid () || !val || key.empty()) return false;
     if (!m_connected && !open_connection ()) return false;
-    
+
     Transaction trans;
     int cmd;
 
@@ -218,7 +218,7 @@ SocketConfig::read (const String& key, bool* val) const
         init_transaction (trans);
         trans.put_command (SCIM_TRANS_CMD_GET_CONFIG_BOOL);
         trans.put_data (key);
- 
+
         if (trans.write_to_socket (m_socket_client) &&
             trans.read_from_socket (m_socket_client, m_socket_timeout)) {
             uint32 tmp;
@@ -246,7 +246,7 @@ SocketConfig::read (const String& key, std::vector <String>* val) const
 {
     if (!valid () || !val || key.empty()) return false;
     if (!m_connected && !open_connection ()) return false;
-    
+
     val->clear ();
 
     Transaction trans;
@@ -256,7 +256,7 @@ SocketConfig::read (const String& key, std::vector <String>* val) const
         init_transaction (trans);
         trans.put_command (SCIM_TRANS_CMD_GET_CONFIG_VECTOR_STRING);
         trans.put_data (key);
- 
+
         if (trans.write_to_socket (m_socket_client) &&
             trans.read_from_socket (m_socket_client, m_socket_timeout)) {
             if (trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_REPLY &&
@@ -281,7 +281,7 @@ SocketConfig::read (const String& key, std::vector <int>* val) const
 {
     if (!valid () || !val || key.empty()) return false;
     if (!m_connected && !open_connection ()) return false;
-    
+
     val->clear();
 
     Transaction trans;
@@ -291,7 +291,7 @@ SocketConfig::read (const String& key, std::vector <int>* val) const
         init_transaction (trans);
         trans.put_command (SCIM_TRANS_CMD_GET_CONFIG_VECTOR_INT);
         trans.put_data (key);
- 
+
         if (trans.write_to_socket (m_socket_client) &&
             trans.read_from_socket (m_socket_client, m_socket_timeout)) {
             std::vector<uint32> vec;
@@ -328,7 +328,7 @@ SocketConfig::write (const String& key, const String& value)
         trans.put_command (SCIM_TRANS_CMD_SET_CONFIG_STRING);
         trans.put_data (key);
         trans.put_data (value);
- 
+
         if (trans.write_to_socket (m_socket_client) &&
             trans.read_from_socket (m_socket_client, m_socket_timeout)) {
             if (trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_REPLY &&
@@ -359,9 +359,9 @@ SocketConfig::write (const String& key, int value)
         trans.put_command (SCIM_TRANS_CMD_SET_CONFIG_INT);
         trans.put_data (key);
         trans.put_data ((uint32)value);
- 
+
         if (trans.write_to_socket (m_socket_client) &&
-            trans.read_from_socket (m_socket_client, m_socket_timeout)) { 
+            trans.read_from_socket (m_socket_client, m_socket_timeout)) {
             if (trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_REPLY &&
                 trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_OK)
                 return true;
@@ -381,7 +381,7 @@ SocketConfig::write (const String& key, double value)
 {
     if (!valid () || key.empty()) return false;
     if (!m_connected && !open_connection ()) return false;
-    
+
     char buf [256];
     snprintf (buf, 255, "%lE", value);
 
@@ -393,7 +393,7 @@ SocketConfig::write (const String& key, double value)
         trans.put_command (SCIM_TRANS_CMD_SET_CONFIG_DOUBLE);
         trans.put_data (key);
         trans.put_data (String (buf));
- 
+
         if (trans.write_to_socket (m_socket_client) &&
             trans.read_from_socket (m_socket_client, m_socket_timeout)) {
             if (trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_REPLY &&
@@ -424,7 +424,7 @@ SocketConfig::write (const String& key, bool value)
         trans.put_command (SCIM_TRANS_CMD_SET_CONFIG_BOOL);
         trans.put_data (key);
         trans.put_data ((uint32)value);
- 
+
         if (trans.write_to_socket (m_socket_client) &&
             trans.read_from_socket (m_socket_client, m_socket_timeout)) {
             if (trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_REPLY &&
@@ -455,7 +455,7 @@ SocketConfig::write (const String& key, const std::vector <String>& value)
         trans.put_command (SCIM_TRANS_CMD_SET_CONFIG_VECTOR_STRING);
         trans.put_data (key);
         trans.put_data (value);
- 
+
         if (trans.write_to_socket (m_socket_client) &&
             trans.read_from_socket (m_socket_client, m_socket_timeout)) {
             if (trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_REPLY &&
@@ -491,13 +491,13 @@ SocketConfig::write (const String& key, const std::vector <int>& value)
         trans.put_command (SCIM_TRANS_CMD_SET_CONFIG_VECTOR_INT);
         trans.put_data (key);
         trans.put_data (vec);
- 
+
         if (trans.write_to_socket (m_socket_client) &&
             trans.read_from_socket (m_socket_client, m_socket_timeout)) {
             if (trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_REPLY &&
                 trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_OK)
                 return true;
-            
+
             break;
         }
 
@@ -521,7 +521,7 @@ SocketConfig::flush()
     for (int retry = 0; retry < 3; ++retry) {
         init_transaction (trans);
         trans.put_command (SCIM_TRANS_CMD_FLUSH_CONFIG);
- 
+
         if (trans.write_to_socket (m_socket_client) &&
             trans.read_from_socket (m_socket_client, m_socket_timeout)) {
             if (trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_REPLY &&
@@ -553,7 +553,7 @@ SocketConfig::erase (const String& key)
         init_transaction (trans);
         trans.put_command (SCIM_TRANS_CMD_ERASE_CONFIG);
         trans.put_data (key);
- 
+
         if (trans.write_to_socket (m_socket_client) &&
             trans.read_from_socket (m_socket_client, m_socket_timeout)) {
             if (trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_REPLY &&
@@ -582,7 +582,7 @@ SocketConfig::reload ()
     for (int retry = 0; retry < 3; ++retry) {
         init_transaction (trans);
         trans.put_command (SCIM_TRANS_CMD_RELOAD_CONFIG);
- 
+
         // The reload process may take very long time, so wait a little longer time.
         if (trans.write_to_socket (m_socket_client) &&
             trans.read_from_socket (m_socket_client, m_socket_timeout * 10)) {
@@ -594,7 +594,7 @@ SocketConfig::reload ()
                     if (scim_split_string_list (strs, str, ':') == 2) {
                         time_t sec = (time_t) strtol (strs [0].c_str (), 0, 10);
                         suseconds_t usec = (suseconds_t) strtol (strs [1].c_str (), 0, 10);
- 
+
                         // The config file is newer, so load it.
                         if (m_update_timestamp.tv_sec < sec ||
                             (m_update_timestamp.tv_sec == sec && m_update_timestamp.tv_usec < usec)) {

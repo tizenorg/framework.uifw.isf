@@ -7,7 +7,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -68,9 +68,6 @@
 #include <unistd.h>
 #include <signal.h>
 #include <dlog.h>
-#if HAVE_PKGMGR_INFO
-#include <pkgmgr-info.h>
-#endif
 
 #ifdef LOG_TAG
 # undef LOG_TAG
@@ -96,18 +93,18 @@ static char   **_argv = NULL;
 
 //Module Interface
 extern "C" {
-    EAPI void scim_module_init (void)
+    EXAPI void scim_module_init (void)
     {
         SCIM_DEBUG_FRONTEND (1) << "Initializing Socket FrontEnd module...\n";
     }
 
-    EAPI void scim_module_exit (void)
+    EXAPI void scim_module_exit (void)
     {
         SCIM_DEBUG_FRONTEND (1) << "Exiting Socket FrontEnd module...\n";
         _scim_frontend.reset ();
     }
 
-    EAPI void scim_frontend_module_init (const BackEndPointer &backend,
+    EXAPI void scim_frontend_module_init (const BackEndPointer &backend,
                                     const ConfigPointer &config,
                                     int argc,
                                     char **argv)
@@ -120,7 +117,7 @@ extern "C" {
         }
     }
 
-    EAPI void scim_frontend_module_run (void)
+    EXAPI void scim_frontend_module_run (void)
     {
         struct tms tiks_buf;
         clock_t start = times (&tiks_buf);
@@ -170,70 +167,21 @@ void SocketFrontEnd::load_helper_modules (const std::vector<String> &load_engine
 
     if (mod_list.size ()) {
         HelperInfo           info;
-        std::vector<ISEINFO> info_list;
-        std::vector<String>  tmp_list;
-        bool ret = isf_read_ise_info_list (USER_ENGINE_FILE_NAME, info_list);
-        if (!ret) {
-            std::cerr << __func__ << " Failed to read(" << USER_ENGINE_FILE_NAME << ")\n";
-        }
-        for (i = 0; i < info_list.size (); ++i) {
-            if (info_list [i].mode != TOOLBAR_HELPER_MODE)
+        std::vector<ImeInfoDB> ime_info;
+
+        isf_db_select_all_ime_info(ime_info);
+
+        for (i = 0; i < ime_info.size (); ++i) {
+            if (ime_info[i].mode == TOOLBAR_KEYBOARD_MODE)
                 continue;
-            if (std::find (mod_list.begin (), mod_list.end (), info_list [i].module) != mod_list.end ()) {
-                info.uuid   = info_list [i].uuid;
-                info.name   = info_list [i].name;
-                info.icon   = info_list [i].icon;
-                info.option = info_list [i].option;
+            if (std::find (mod_list.begin (), mod_list.end (), ime_info[i].module_name) != mod_list.end ()) {
+                info.uuid   = ime_info[i].appid;
+                info.name   = ime_info[i].label;
+                info.icon   = ime_info[i].iconpath;
+                info.option = ime_info[i].options;
                 SCIM_DEBUG_MAIN (3) << "  " << info.uuid << ": " << info.name << "\n";
-                __helpers.push_back (std::make_pair (info, info_list [i].module));
-                tmp_list.push_back (info_list [i].module);
+                __helpers.push_back (std::make_pair (info, ime_info[i].module_name));
             }
-        }
-
-        HelperModule module;
-        String filename = String (USER_ENGINE_FILE_NAME);
-        FILE *engine_list_file = fopen (filename.c_str (), "a");
-        if (!engine_list_file) {
-            LOGW ("Failed to open %s!!!\n", filename.c_str ());
-        }
-
-        for (i = 0; i < mod_list.size (); ++i) {
-            if (std::find (tmp_list.begin (), tmp_list.end (), mod_list [i]) != tmp_list.end ())
-                continue;
-
-            SCIM_DEBUG_MAIN (2) << " Load module: " << mod_list [i] << "\n";
-
-            if (module.load (mod_list [i]) && module.valid ()) {
-                size_t num = module.number_of_helpers ();
-
-                SCIM_DEBUG_MAIN (2) << " Find " << num << " Helpers:\n";
-
-                for (size_t j = 0; j < num; ++j) {
-                    if (module.get_helper_info (j, info)) {
-                        SCIM_DEBUG_MAIN (3) << "  " << info.uuid << ": " << info.name << "\n";
-                        __helpers.push_back (std::make_pair (info, mod_list [i]));
-
-                        if (engine_list_file) {
-                            char mode[12];
-                            char option[12];
-                            snprintf (mode, sizeof (mode), "%d", (int)TOOLBAR_HELPER_MODE);
-                            snprintf (option, sizeof (option), "%d", info.option);
-
-                            String line = isf_combine_ise_info_string (info.name, info.uuid, mod_list [i], isf_get_normalized_language (module.get_helper_lang (j)),
-                                                                       info.icon, String (mode), String (option), String (""));
-                            if (fputs (line.c_str (), engine_list_file) < 0)
-                                LOGW ("Failed to write (%s)!!!\n", line.c_str ());
-                        }
-                    }
-                }
-            }
-
-            module.unload ();
-        }
-        if (engine_list_file) {
-            int iret = fclose (engine_list_file);
-            if (iret != 0)
-                LOGW ("Failed to fclose %s!!!\n", filename.c_str ());
         }
     }
 }
@@ -265,6 +213,8 @@ void SocketFrontEnd::run_helper (const Socket &client)
     String uuid;
     String config;
     String display;
+    size_t i;
+
     if (!(m_receive_trans.get_data (uuid) && uuid.length ()
              && m_receive_trans.get_data (config)
              && m_receive_trans.get_data (display)))
@@ -272,9 +222,9 @@ void SocketFrontEnd::run_helper (const Socket &client)
         m_send_trans.put_command (SCIM_TRANS_CMD_FAIL);
         return;
     }
-    ISF_SAVE_LOG ("uuid(%s)\n", uuid.c_str ());
+    ISF_SAVE_LOG ("uuid(%s), config(%s), display(%s)\n", uuid.c_str (), config.c_str (), display.c_str ());
 
-    for (size_t i = 0; i < __helpers.size (); ++i) {
+    for (i = 0; i < __helpers.size (); ++i) {
         if (__helpers [i].first.uuid == uuid && __helpers [i].second.length ()) {
 
             __active_helpers.push_back (__helpers [i].first.name);
@@ -296,8 +246,9 @@ void SocketFrontEnd::run_helper (const Socket &client)
                                    0};
 
                 SCIM_DEBUG_MAIN (2) << " Call scim-helper-launcher.\n";
-                ISF_SAVE_LOG ("Exec scim_helper_launcher(%s)\n", __helpers [i].second.c_str ());
+                ISF_SAVE_LOG ("Exec scim_helper_launcher(%s %s)\n", __helpers [i].second.c_str (), __helpers [i].first.uuid.c_str ());
 
+                setsid ();
                 execv (SCIM_HELPER_LAUNCHER_PROGRAM, const_cast<char **>(argv));
                 exit (-1);
             }
@@ -306,12 +257,16 @@ void SocketFrontEnd::run_helper (const Socket &client)
             //waitpid (pid, &status, 0);
 
             break;
-        } else {
-            ISF_SAVE_LOG ("Can't find and exec scim_helper_launcher uuid : %s\n", uuid.c_str ());
         }
     }
 
-    m_send_trans.put_command (SCIM_TRANS_CMD_OK);
+    if (i > 0 && i == __helpers.size ()) {
+        ISF_SAVE_LOG ("Can't find and exec scim_helper_launcher appid=\"%s\"\n", uuid.c_str ());
+        m_send_trans.put_command (SCIM_TRANS_CMD_FAIL);
+    }
+    else
+        m_send_trans.put_command (SCIM_TRANS_CMD_OK);
+
     SCIM_DEBUG_MAIN (2) << " exit run_helper ().\n";
 }
 
@@ -452,6 +407,20 @@ SocketFrontEnd::update_preedit_string (int id,
 }
 
 void
+SocketFrontEnd::update_preedit_utf8_string (int id,
+                                            const char * buf, int buflen,
+                                            const AttributeList & attrs,
+                                            int caret)
+{
+    if (m_current_instance == id) {
+        m_send_trans.put_command (SCIM_TRANS_CMD_UPDATE_PREEDIT_STRING);
+        m_send_trans.put_dataw (buf, buflen);
+        m_send_trans.put_data (attrs);
+        m_send_trans.put_data ((uint32) caret);
+    }
+}
+
+void
 SocketFrontEnd::update_aux_string (int id,
                                    const WideString & str,
                                    const AttributeList & attrs)
@@ -464,11 +433,32 @@ SocketFrontEnd::update_aux_string (int id,
 }
 
 void
+SocketFrontEnd::update_aux_utf8_string (int id,
+                                        const char * buf, int buflen,
+                                        const AttributeList & attrs)
+{
+    if (m_current_instance == id) {
+        m_send_trans.put_command (SCIM_TRANS_CMD_UPDATE_AUX_STRING);
+        m_send_trans.put_dataw (buf, buflen);
+        m_send_trans.put_data (attrs);
+    }
+}
+
+void
 SocketFrontEnd::commit_string (int id, const WideString & str)
 {
     if (m_current_instance == id) {
         m_send_trans.put_command (SCIM_TRANS_CMD_COMMIT_STRING);
         m_send_trans.put_data (str);
+    }
+}
+
+void
+SocketFrontEnd::commit_utf8_string (int id, const char * buf, int buflen)
+{
+    if (m_current_instance == id) {
+        m_send_trans.put_command (SCIM_TRANS_CMD_COMMIT_STRING);
+        m_send_trans.put_dataw (buf, buflen);
     }
 }
 
@@ -1135,7 +1125,7 @@ SocketFrontEnd::socket_receive_callback (SocketServer *server, const Socket &cli
 bool
 SocketFrontEnd::socket_open_connection (SocketServer *server, const Socket &client)
 {
-    SCIM_DEBUG_FRONTEND (2) << " Open socket connection for client " << client.get_id () 
+    SCIM_DEBUG_FRONTEND (2) << " Open socket connection for client " << client.get_id ()
         << "  number of clients=" << m_socket_client_repository.size () << ".\n";
 
     uint32 key;
@@ -2063,145 +2053,42 @@ SocketFrontEnd::socket_set_display_name (int /*client_id*/)
     m_send_trans.put_command (SCIM_TRANS_CMD_OK);
 }
 
-#if HAVE_PKGMGR_INFO
-int app_list_cb (pkgmgrinfo_appinfo_h handle, void *user_data)
-{
-    int ret;
-    char *app_id = NULL;
-    char *pkg_id = NULL, *pkg_label = NULL, *pkg_type = NULL, *pkg_icon_path = NULL;
-    pkgmgrinfo_appinfo_h appinfo_handle;
-    pkgmgrinfo_pkginfo_h pkginfo_handle;
-    HelperInfo helper_info;
-    size_t i;
-
-    /* Get appid */
-    ret = pkgmgrinfo_appinfo_get_appid (handle, &app_id);
-    if (ret != PMINFO_R_OK)
-        return 0;
-
-    ret = pkgmgrinfo_appinfo_get_appinfo (app_id, &appinfo_handle);
-    if (ret != PMINFO_R_OK)
-        return 0;
-
-    /* Get package id */
-    ret = pkgmgrinfo_appinfo_get_pkgname (appinfo_handle, &pkg_id);
-    if (ret != PMINFO_R_OK) {
-        pkgmgrinfo_appinfo_destroy_appinfo (appinfo_handle);
-        return 0;
-    }
-
-    /* Get package info handle */
-    ret = pkgmgrinfo_pkginfo_get_pkginfo (pkg_id, &pkginfo_handle);
-    if (ret != PMINFO_R_OK) {
-        pkgmgrinfo_appinfo_destroy_appinfo (appinfo_handle);
-        return 0;
-    }
-
-    /* Get the type of package */
-    ret = pkgmgrinfo_pkginfo_get_type (pkginfo_handle, &pkg_type);
-    if (ret == PMINFO_R_OK && pkg_type && !strncmp (pkg_type, "wgt", 3)) {
-        /* Get the label of package */
-        if (pkgmgrinfo_pkginfo_get_label (pkginfo_handle, &pkg_label) == PMINFO_R_OK)
-            helper_info.name = (pkg_label ? scim::String (pkg_label) : scim::String (""));
-
-        /* Get the icon path of package */
-        if (pkgmgrinfo_pkginfo_get_icon (pkginfo_handle, &pkg_icon_path) == PMINFO_R_OK)
-            helper_info.icon = (pkg_icon_path ? scim::String (pkg_icon_path) : scim::String (""));
-
-        // FIXME : need to get UUID
-        helper_info.uuid = (app_id ? scim::String (app_id) : scim::String (""));
-
-        helper_info.option = scim::SCIM_HELPER_STAND_ALONE | scim::SCIM_HELPER_NEED_SCREEN_INFO |
-            scim::SCIM_HELPER_NEED_SPOT_LOCATION_INFO | scim::SCIM_HELPER_AUTO_RESTART;
-
-        for (i = 0; i < __helpers.size (); ++i) {
-            if (__helpers [i].first.uuid == helper_info.uuid)
-                break;
-        }
-
-        if (i == __helpers.size ())
-            __helpers.push_back (std::make_pair (helper_info, String ("ise-web-helper-agent")));
-    }
-
-    pkgmgrinfo_pkginfo_destroy_pkginfo (pkginfo_handle);
-    pkgmgrinfo_appinfo_destroy_appinfo (appinfo_handle);
-
-    return 0;
-}
-#endif
-
 void
 SocketFrontEnd::socket_update_ise_list (int /*client_id*/)
 {
     String strName;
-    std::vector<String> install_modules;
-    std::vector<String> imengine_list;
-    std::vector<String> helper_list;
-    size_t i = 0, j = 0;
+    size_t i = 0;
 
     if (m_receive_trans.get_data (strName) && strName.length () > 0) {
         //std::cout << "ISE name list:" << strName << "\n";
         //scim_split_string_list (name_list, strName);
-
-        scim_get_imengine_module_list (imengine_list);
-        scim_get_helper_module_list (helper_list);
-
-        for (i = 0; i < imengine_list.size (); ++i) {
-            install_modules.push_back (imengine_list [i]);
-            if (std::find (__load_engine_list.begin (), __load_engine_list.end (), imengine_list [i]) == __load_engine_list.end ()) {
-                SCIM_DEBUG_FRONTEND (3) << "add_module " << imengine_list [i]  << " in " << __FUNCTION__ << "\n";
-                //add_module (m_config, imengine_list [i], true);
-                add_module_info (m_config, imengine_list [i]);
-                __load_engine_list.push_back (imengine_list [i]);
-            }
-        }
-
-        HelperModule module;
+        LOGD ("%s\n", strName.c_str ());
+        /* The strName has all appids but here module name is necessary. */
         HelperInfo   info;
-        for (i = 0; i < helper_list.size (); ++i) {
-            install_modules.push_back (helper_list [i]);
-            if (std::find (__load_engine_list.begin (), __load_engine_list.end (), helper_list [i]) == __load_engine_list.end ()) {
-                if (module.load (helper_list [i]) && module.valid ()) {
-                    size_t num = module.number_of_helpers ();
-                    for (j = 0; j < num; ++j) {
-                        if (module.get_helper_info (j, info))
-                            __helpers.push_back (std::make_pair (info, helper_list [i]));
-                    }
-                    __load_engine_list.push_back (helper_list [i]);
+        std::vector<ImeInfoDB> ime_info;
+        isf_db_select_all_ime_info(ime_info);
+        if (ime_info.size () > 0) {
+            __load_engine_list.clear ();
+            __helpers.clear ();
+
+            for (i = 0; i < ime_info.size (); ++i) {
+                if (ime_info [i].mode == TOOLBAR_KEYBOARD_MODE) {
+                    /* add_module_info (m_config, ime_info [i].module_name); This seems unnecessary because IMEngine will not be added or deleted. */
+                    __load_engine_list.push_back (ime_info [i].module_name);
                 }
-                module.unload ();
+            }
+            for (i = 0; i < ime_info.size (); ++i) {
+                if (ime_info [i].mode == TOOLBAR_HELPER_MODE) {
+                    info.uuid = ime_info [i].appid;
+                    info.name = ime_info [i].label;
+                    info.icon = ime_info [i].iconpath;
+                    info.description = "";
+                    info.option = ime_info [i].options;
+                    __helpers.push_back (std::make_pair (info, ime_info [i].module_name));
+                    __load_engine_list.push_back (ime_info [i].module_name);
+                }
             }
         }
-
-        /* Try to find uninstall ISEs */
-        for (i = 0; i < __load_engine_list.size (); ++i) {
-            if (std::find (install_modules.begin (), install_modules.end (), __load_engine_list [i]) == install_modules.end ()) {
-                HelperRepository tmp_helpers = __helpers;
-                __helpers.clear ();
-                for (j = 0; j < tmp_helpers.size (); ++j) {
-                    if (std::find (install_modules.begin (), install_modules.end (), tmp_helpers [j].second) != install_modules.end ())
-                        __helpers.push_back (tmp_helpers [j]);
-                }
-                __load_engine_list = install_modules;
-                break;
-            }
-        }
-
-        /* Get the information of Web IMEs */
-#if HAVE_PKGMGR_INFO
-        int ret;
-        pkgmgrinfo_appinfo_filter_h handle;
-        ret = pkgmgrinfo_appinfo_filter_create (&handle);
-        if (ret != PMINFO_R_OK)
-            return;
-
-        ret = pkgmgrinfo_appinfo_filter_add_string (handle, PMINFO_APPINFO_PROP_APP_CATEGORY, "http://tizen.org/category/ime");
-        if (ret == PMINFO_R_OK) {
-            pkgmgrinfo_appinfo_filter_foreach_appinfo (handle, app_list_cb, NULL);
-        }
-
-        pkgmgrinfo_appinfo_filter_destroy (handle);
-#endif
     }
 
     m_send_trans.put_command (SCIM_TRANS_CMD_OK);

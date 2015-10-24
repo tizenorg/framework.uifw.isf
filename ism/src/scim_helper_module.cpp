@@ -8,7 +8,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2004-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -46,11 +46,14 @@
 
 #include "scim_private.h"
 #include "scim.h"
+#include <scim_panel_common.h>
+#include "isf_query_utility.h"
 
 namespace scim {
 
 HelperModule::HelperModule (const String &name)
-    : m_number_of_helpers (0),
+    : module_name (""),
+      m_number_of_helpers (0),
       m_get_helper_info (0),
       m_get_helper_lang (0),
       m_run_helper (0),
@@ -67,42 +70,31 @@ HelperModule::load (const String &name)
         if (!m_module.load (name, "Helper"))
             return false;
 
-        m_number_of_helpers =
-            (HelperModuleNumberOfHelpersFunc) m_module.symbol ("scim_helper_module_number_of_helpers");
-
-        m_get_helper_info =
-            (HelperModuleGetHelperInfoFunc) m_module.symbol ("scim_helper_module_get_helper_info");
-
-        m_get_helper_lang =
-            (HelperModuleGetHelperLangFunc) m_module.symbol ("scim_helper_module_get_helper_language");
+        module_name = name; // PkgID for Inhouse IME, "ise-web-helper-agent" for Web IME and "lib"{Exec name} for Native IME.
 
         m_run_helper =
             (HelperModuleRunHelperFunc) m_module.symbol ("scim_helper_module_run_helper");
 
-        m_set_arg_info =
-            (HelperModuleSetArgInfoFunc) m_module.symbol ("scim_helper_module_set_arg_info");
-
-        m_set_path_info =
-            (HelperModuleSetPathInfoFunc) m_module.symbol ("scim_helper_module_set_path_info");
-
-        if (!m_number_of_helpers || !m_get_helper_info || !m_run_helper) {
+        if (!m_run_helper) {
             m_module.unload ();
+            module_name = "";
             m_number_of_helpers = 0;
             m_get_helper_info = 0;
             m_get_helper_lang = 0;
             m_run_helper = 0;
+            m_set_arg_info = 0;
+            m_set_path_info = 0;
             return false;
-        }
-
-        if (m_set_path_info) {
-            m_set_path_info (m_module.get_path ().c_str ());
         }
     } catch (...) {
         m_module.unload ();
+        module_name = "";
         m_number_of_helpers = 0;
         m_get_helper_info = 0;
         m_get_helper_lang = 0;
         m_run_helper = 0;
+        m_set_arg_info = 0;
+        m_set_path_info = 0;
         return false;
     }
 
@@ -119,36 +111,45 @@ bool
 HelperModule::valid () const
 {
     return (m_module.valid () &&
-            m_number_of_helpers &&
-            m_get_helper_info &&
-            m_run_helper &&
-            m_number_of_helpers () > 0);
+            module_name.length () > 0 &&
+            m_run_helper);
 }
 
 unsigned int
 HelperModule::number_of_helpers () const
 {
-    if (m_module.valid () && m_number_of_helpers && m_get_helper_info && m_run_helper)
-        return m_number_of_helpers ();
+    const char *web_ime_module_name = "ise-web-helper-agent";   // Only Web IME can have multiple helpers.
+    if (module_name.compare (web_ime_module_name) == 0) {
+        return static_cast<unsigned int>(isf_db_select_count_by_module_name (web_ime_module_name));
+    }
 
-    return (unsigned int) 0;
+    return 1u;
 }
 
 bool
 HelperModule::get_helper_info (unsigned int idx, HelperInfo &info) const
 {
-    if (m_module.valid () && m_number_of_helpers && m_get_helper_info && m_run_helper)
-        return m_get_helper_info (idx, info);
+    if (m_module.valid () && m_run_helper && module_name.length () > 0) {
 
+        std::vector<ImeInfoDB> ime_info_db;
+        isf_db_select_all_ime_info (ime_info_db);
+        for (std::vector<ImeInfoDB>::iterator iter = ime_info_db.begin (); iter != ime_info_db.end (); iter++) {
+            if (iter->module_name.compare (module_name) == 0) {
+                info.uuid = iter->appid;
+                info.name = iter->label;
+                info.icon = iter->iconpath;
+                info.description = "";
+                info.option = iter->options;
+                return true;
+            }
+        }
+    }
     return false;
 }
 
 String
 HelperModule::get_helper_lang (unsigned int idx) const
 {
-    if (m_module.valid () && m_get_helper_lang)
-        return m_get_helper_lang (idx);
-
     return String("other");
 }
 
@@ -161,11 +162,10 @@ HelperModule::run_helper (const String &uuid, const ConfigPointer &config, const
 void
 HelperModule::set_arg_info (int argc, char *argv []) const
 {
-    if (m_module.valid () && m_set_arg_info)
-        m_set_arg_info (argc, argv);
+    return;
 }
 
-EAPI int scim_get_helper_module_list (std::vector <String> &mod_list)
+EXAPI int scim_get_helper_module_list (std::vector <String> &mod_list)
 {
     return scim_get_module_list (mod_list, "Helper");
 }

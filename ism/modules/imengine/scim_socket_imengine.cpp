@@ -8,7 +8,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -107,7 +107,6 @@ public:
     bool            send_transaction (Transaction &trans);
     bool            receive_transaction (Transaction &trans);
 
-    void            get_ise_info_map (const char *filename);
     String          load_icon (const String &icon);
 
     Connection      connect_reconnect_signal (Slot0<void> *slot_reconnect);
@@ -123,13 +122,13 @@ static SocketIMEngineGlobal *global = 0;
 static std::map<String, ISEINFO> ise_info_repository;
 
 extern "C" {
-    EAPI void scim_module_init (void)
+    EXAPI void scim_module_init (void)
     {
         if (!global)
             global = new SocketIMEngineGlobal;
     }
 
-    EAPI void scim_module_exit (void)
+    EXAPI void scim_module_exit (void)
     {
         if (global) {
             delete global;
@@ -137,14 +136,14 @@ extern "C" {
         }
     }
 
-    EAPI unsigned int scim_imengine_module_init (const ConfigPointer &config)
+    EXAPI unsigned int scim_imengine_module_init (const ConfigPointer &config)
     {
         if (global)
             return global->number_of_factories ();
         return 0;
     }
 
-    EAPI IMEngineFactoryPointer scim_imengine_module_create_factory (unsigned int index)
+    EXAPI IMEngineFactoryPointer scim_imengine_module_create_factory (unsigned int index)
     {
         if (!global)
             return 0;
@@ -196,12 +195,30 @@ SocketIMEngineGlobal::init ()
     SCIM_DEBUG_IMENGINE(2) << " Connected to SocketFrontEnd (" << address
                          << ") MagicKey (" << m_socket_magic_key << ").\n";
 
-    // Get IMEngineFactory list.
-    String user_file_name = String (USER_ENGINE_FILE_NAME);
-
     ise_info_repository.clear ();
     m_peer_factories.clear ();
-    get_ise_info_map (user_file_name.c_str ());
+
+    ISEINFO info;
+    std::vector<ImeInfoDB> ime_info;
+    std::vector<ImeInfoDB>::iterator it;
+
+    isf_db_select_all_ime_info(ime_info);
+
+    for (it = ime_info.begin(); it != ime_info.end(); it++) {
+        if (it->mode == TOOLBAR_KEYBOARD_MODE) {
+            info.name = it->label;
+            info.uuid = it->appid;
+            info.module = it->module_name;
+            info.language = it->languages;
+            info.icon = it->iconpath;
+            info.mode = it->mode;
+            info.option = it->options;
+            info.locales = "";
+
+            m_peer_factories.push_back (it->appid);
+            ise_info_repository[it->appid] = info;
+        }
+    }
 }
 
 bool
@@ -270,30 +287,6 @@ bool
 SocketIMEngineGlobal::receive_transaction (Transaction &trans)
 {
     return trans.read_from_socket (m_socket_client, m_socket_timeout);
-}
-
-void
-SocketIMEngineGlobal::get_ise_info_map (const char *filename)
-{
-    FILE *engine_list_file = fopen (filename, "r");
-    if (engine_list_file == NULL) {
-        std::cerr << __func__ << " Failed to open(" << filename << ")\n";
-        return;
-    }
-
-    char buf[MAXLINE];
-
-    while (fgets (buf, MAXLINE, engine_list_file) != NULL && strlen (buf) > 0) {
-        ISEINFO info;
-        isf_get_ise_info_from_string (buf, info);
-
-        if (info.mode == TOOLBAR_KEYBOARD_MODE) {
-            m_peer_factories.push_back (info.uuid);
-            ise_info_repository[info.uuid] = info;
-        }
-    }
-
-    fclose (engine_list_file);
 }
 
 String
@@ -422,10 +415,6 @@ SocketFactory::SocketFactory (const String &peer_uuid)
       m_ok (false),
       m_option (0)
 {
-    String locales;
-    String iconfile;
-    Transaction trans;
-
     SCIM_DEBUG_IMENGINE(1) << "Create SocketFactory " << peer_uuid << ".\n";
 
     // Get factory name, locales, language and icon file.
@@ -1034,7 +1023,7 @@ SocketInstance::commit_transaction (Transaction &trans)
         }
     }
 
-    if (global->create_connection ())
+    if (global->create_connection () && m_peer_id >= 0)
         reset ();
 
     return ret;

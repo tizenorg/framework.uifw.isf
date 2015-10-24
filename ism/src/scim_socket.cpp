@@ -8,7 +8,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -55,9 +55,18 @@
 #include <sys/time.h>
 #include <fcntl.h>
 #include <sys/prctl.h>
+#include <dlog.h>
 
 #include "scim_private.h"
 #include "scim.h"
+#if defined(HAVE_SYSTEMD)
+#include <systemd/sd-daemon.h>
+#endif
+
+#ifdef LOG_TAG
+# undef LOG_TAG
+#endif
+#define LOG_TAG "ISF_SOCKET"
 
 /* Experimental modification for avoiding multiple scim process problem */
 #define DISABLE_MULTIPLE_SOCKETS
@@ -147,7 +156,7 @@ public:
         if (m_data) delete m_data;
     }
 
-    const SocketAddressImpl & operator = (const SocketAddressImpl &other) {
+    SocketAddressImpl & operator = (const SocketAddressImpl &other) {
         m_family = other.m_family;
         m_address = other.m_address;
         if (m_data)
@@ -498,12 +507,12 @@ public:
             if (fcntl (m_id, F_SETFL, flags | O_NONBLOCK) == -1) {
                 char buf_err[256];
                 m_err = errno;
-                ISF_SAVE_LOG ("ppid : %d fcntl() failed, %d %s\n", getppid (), m_err, strerror_r (m_err, buf_err, sizeof (buf_err)));
+                LOGW ("ppid : %d fcntl() failed, %d %s\n", getppid (), m_err, strerror_r (m_err, buf_err, sizeof (buf_err)));
             }
 
             char proc_name[17] = {0}; /* the buffer provided shall at least be 16+1 bytes long */
             if (-1 != prctl (PR_GET_NAME, proc_name, 0, 0, 0)) {
-                ISF_SAVE_LOG ("ppid:%d  trying connect() to %s, %s\n", getppid (), addr.get_address ().c_str (), proc_name);
+                LOGD ("ppid:%d  trying connect() to %s, %s\n", getppid (), addr.get_address ().c_str (), proc_name);
             }
 
             if ((m_err = ::connect (m_id, data, len)) == 0) {
@@ -512,7 +521,7 @@ public:
                 }
                 m_address = addr;
 
-                ISF_SAVE_LOG ("connect() succeeded\n");
+                LOGD ("connect() succeeded\n");
 
                 return true;
             }
@@ -529,15 +538,15 @@ public:
                 tval.tv_sec = nsec;
                 tval.tv_usec = 0;
 
-                ISF_SAVE_LOG ("EINPROGRESS, select() with timeout %d\n", nsec);
+                LOGW ("EINPROGRESS, select() with timeout %d\n", nsec);
 
                 if (select (m_id + 1, &rset, &wset, NULL, nsec ? &tval : NULL) == 0) {
                     m_err = ETIMEDOUT;
 
-                    ISF_SAVE_LOG ("timeout in select()\n");
+                    LOGW ("timeout in select()\n");
                 } else {
                     // We've got something, connection succeeded
-                    ISF_SAVE_LOG ("finally connected\n");
+                    LOGD ("finally connected\n");
 
                     if (fcntl (m_id, F_SETFL, flags) == -1) {
                         m_err = errno;
@@ -548,7 +557,7 @@ public:
             } else {
                 char buf_err[256];
                 m_err = errno;
-                ISF_SAVE_LOG ("connect() failed with %d (%s)\n", m_err, strerror_r (m_err, buf_err, sizeof (buf_err)));
+                LOGW ("connect() failed with %d (%s)\n", m_err, strerror_r (m_err, buf_err, sizeof (buf_err)));
             }
             if (fcntl (m_id, F_SETFL, flags) == -1) {
                 m_err = errno;
@@ -673,7 +682,7 @@ public:
             return false;
         }
 
-        if (ret > 0) {
+        if (ret >= 0) {
             if (m_id >= 0) close ();
             m_no_close = false;
             m_binded = false;
@@ -690,6 +699,38 @@ public:
                              << family << " ret: " << ret << "\n";
 
         return ret >= 0;
+    }
+
+    bool sd_socket (SocketFamily family, const SocketAddress &addr) {
+#if defined(HAVE_SYSTEMD)
+        int ret, n;
+        char pid[10];
+
+        snprintf(pid, sizeof(pid), "%d", getpid());
+        setenv("LISTEN_PID", pid, 1);
+
+        n = sd_listen_fds (0);
+        if (n > 1) {
+            SCIM_DEBUG_SOCKET (1) << "Socket: Too many file descriptors received.\n";
+            return false;
+        } else if (n == 1) {
+            m_no_close = false;
+            m_binded = true;
+            m_err = 0;
+            m_family = family;
+            m_address = addr;
+            ret = SD_LISTEN_FDS_START + 0;
+            int flag = fcntl (ret, F_GETFD, 0);
+            fcntl (ret, F_SETFD, flag|FD_CLOEXEC);
+            m_id = ret;
+        } else {
+            SCIM_DEBUG_SOCKET (1) << "%d returned.\n" << n;
+            return false;
+        }
+        return true;
+#else
+        return false;
+#endif
     }
 
     void close () {
@@ -874,6 +915,12 @@ Socket::create (SocketFamily family)
     return m_impl->create (family);
 }
 
+bool
+Socket::sd_socket (SocketFamily family, const SocketAddress &addr)
+{
+    return m_impl->sd_socket (family, addr);
+}
+
 void
 Socket::close ()
 {
@@ -939,6 +986,13 @@ SocketServer::create (const SocketAddress &address)
             if (Socket::create (family) &&
                 Socket::bind (address) &&
                 Socket::listen ()) {
+                m_impl->created = true;
+                m_impl->max_fd = Socket::get_id ();
+                FD_ZERO (&(m_impl->active_fds));
+                FD_SET (m_impl->max_fd, &(m_impl->active_fds));
+                m_impl->err = 0;
+                return true;
+            } else if (Socket::sd_socket (family, address)) {
                 m_impl->created = true;
                 m_impl->max_fd = Socket::get_id ();
                 FD_ZERO (&(m_impl->active_fds));
@@ -1523,16 +1577,15 @@ scim_socket_open_connection   (uint32       &key,
             if (trans.write_to_socket (socket))
                 return true;
         } else {
-            {
-                ISF_SAVE_LOG ("read_from_socket() failed %d\n", timeout);
-            }
+            LOGW ("read_from_socket() failed %d\n", timeout);
+
             trans.clear ();
             trans.put_command (SCIM_TRANS_CMD_REPLY);
             trans.put_command (SCIM_TRANS_CMD_FAIL);
             trans.write_to_socket (socket);
         }
     } else {
-        ISF_SAVE_LOG ("write_to_socket() failed\n");
+        LOGW ("write_to_socket() failed\n");
     }
 
     return false;

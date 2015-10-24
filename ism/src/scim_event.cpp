@@ -49,7 +49,7 @@ struct __KeyCodeMap
 
 struct __KeyName
 {
-    uint16      value;
+    uint32      value;
     const char *name;
 };
 
@@ -76,11 +76,11 @@ public:
         return lhs.value < rhs.value;
     }
 
-    bool operator ()(const __KeyName &lhs, const uint16 &rhs) const {
+    bool operator ()(const __KeyName &lhs, const uint32 &rhs) const {
         return lhs.value < rhs;
     }
 
-    bool operator ()(const uint16 &lhs, const __KeyName &rhs) const {
+    bool operator ()(const uint32 &lhs, const __KeyName &rhs) const {
         return lhs < rhs.value;
     }
 };
@@ -185,10 +185,10 @@ KeyEvent::get_key_string () const
 
     if (code == 0xFFFFFF) {
         codestr = String ("VoidSymbol");
-    } else if (code <= 0xFFFF){
+    } else if (code <= 0xFFFFFFFF){
         __KeyName *it = std::lower_bound (__scim_keys_by_code,
                                           __scim_keys_by_code + SCIM_NUM_KEY_NAMES,
-                                          (uint16) code,
+                                          code,
                                           __KeyNameLessByCode ());
 
         if (it != __scim_keys_by_code + SCIM_NUM_KEY_NAMES && it->value == code)
@@ -197,7 +197,7 @@ KeyEvent::get_key_string () const
 
     if (!codestr.length () && code) {
         char buf [20];
-        snprintf (buf, 20, ((code <= 0xFFFF) ? "0x%04x" : "0x%06x"), code);
+        snprintf (buf, 20, ((code <= 0xFFFF) ? "0x%04x" : "0x%08x"), code);
         codestr = String (buf);
     }
 
@@ -260,14 +260,14 @@ KeyEvent::map_to_layout (KeyboardLayout new_layout) const
     return evt;
 }
 
-EAPI bool
+EXAPI bool
 scim_key_to_string (String &str, const KeyEvent & key)
 {
     str = key.get_key_string ();
     return str.length () != 0;
 }
 
-EAPI bool
+EXAPI bool
 scim_string_to_key (KeyEvent &key, const String & str)
 {
     std::vector <String> list;
@@ -308,7 +308,7 @@ scim_string_to_key (KeyEvent &key, const String & str)
     return key.code != 0;
 }
 
-EAPI bool
+EXAPI bool
 scim_key_list_to_string (String &str, const std::vector<KeyEvent> & keylist)
 {
     std::vector<String> strlist;
@@ -323,7 +323,7 @@ scim_key_list_to_string (String &str, const std::vector<KeyEvent> & keylist)
     return str.length () != 0;
 }
 
-EAPI bool
+EXAPI bool
 scim_string_to_key_list (std::vector<KeyEvent> &keylist, const String &str)
 {
     std::vector <String> strlist;
@@ -340,7 +340,7 @@ scim_string_to_key_list (std::vector<KeyEvent> &keylist, const String &str)
 }
 
 
-EAPI String
+EXAPI String
 scim_keyboard_layout_to_string (KeyboardLayout layout)
 {
     if (layout >= 0 && layout < SCIM_KEYBOARD_NUM_LAYOUTS)
@@ -349,7 +349,7 @@ scim_keyboard_layout_to_string (KeyboardLayout layout)
     return String (__scim_keyboard_layout_ids_by_code [0].name);
 }
 
-EAPI KeyboardLayout
+EXAPI KeyboardLayout
 scim_string_to_keyboard_layout (const String &str)
 {
     if (str == __scim_keyboard_layout_ids_by_code [0].name) return SCIM_KEYBOARD_Unknown;
@@ -367,7 +367,7 @@ scim_string_to_keyboard_layout (const String &str)
     return SCIM_KEYBOARD_Unknown;
 }
 
-EAPI String
+EXAPI String
 scim_keyboard_layout_get_display_name (KeyboardLayout layout)
 {
     if (layout >= 0 && layout < SCIM_KEYBOARD_NUM_LAYOUTS)
@@ -376,7 +376,7 @@ scim_keyboard_layout_get_display_name (KeyboardLayout layout)
     return String (_(__scim_keyboard_layout_names [0]));
 }
 
-EAPI KeyboardLayout
+EXAPI KeyboardLayout
 scim_get_default_keyboard_layout ()
 {
     String layout_name (__scim_keyboard_layout_ids_by_code [0].name);
@@ -385,13 +385,20 @@ scim_get_default_keyboard_layout ()
     return scim_string_to_keyboard_layout (layout_name);
 }
 
-EAPI void
+EXAPI void
 scim_set_default_keyboard_layout (KeyboardLayout layout)
 {
     String layout_name = scim_keyboard_layout_to_string (layout);
     scim_global_config_write (SCIM_GLOBAL_CONFIG_DEFAULT_KEYBOARD_LAYOUT, layout_name);
 }
 
+EXAPI void
+scim_set_device_info (KeyEvent &key, String str, uint16 dev_class, uint16 dev_subclass)
+{
+    key.dev_class = dev_class;
+    key.dev_subclass = dev_subclass;
+    key.dev_name = str;
+}
 } // namespace scim
 
 /*

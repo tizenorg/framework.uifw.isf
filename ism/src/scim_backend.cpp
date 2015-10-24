@@ -4,7 +4,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -537,7 +537,7 @@ CommonBackEnd::initialize (const ConfigPointer       &config,
     if (is_load_info) {
         /*for (size_t i = 0; i < new_modules.size (); ++i)
             add_module_info (config, new_modules [i]);*/
-        add_module_info_from_cache_file (config, new_modules);
+        add_module_info_from_db(config, new_modules);
         return;
     }
 
@@ -746,151 +746,26 @@ CommonBackEnd::release_module (const std::vector<String> &use_uuids, const Strin
 }
 
 void
-CommonBackEnd::add_module_info_from_cache_file (const ConfigPointer &config, std::vector<String> &modules)
+CommonBackEnd::add_module_info_from_db (const ConfigPointer &config, std::vector<String> &modules)
 {
     SCIM_DEBUG_BACKEND (1) << __FUNCTION__ << "...\n";
 
-    FILE *engine_list_file = NULL;
-    FILE *user_engine_file = NULL;
-    char buf[MAXLINE];
-    bool isFirst = false;
-    std::vector<String> current_modules;
+    std::vector<ImeInfoDB> ime_info;
+    std::vector<ImeInfoDB>::iterator iter;
+    std::vector<String>::iterator it;
 
-    current_modules.clear ();
+    isf_db_select_all_ime_info(ime_info);
 
-    String user_file_name = String (USER_ENGINE_FILE_NAME);
-    String sys_file_name  = String (SYS_ENGINE_FILE_NAME);
-
-    engine_list_file = fopen (user_file_name.c_str (), "r");
-    if (engine_list_file == NULL) {
-        std::cerr <<  user_file_name << " doesn't exist.\n";
-        isFirst = true;
-
-        engine_list_file = fopen (sys_file_name.c_str (), "r");
-        if (engine_list_file == NULL) {
-            std::cerr <<  sys_file_name << " doesn't exist.\n";
-            goto failed_open;
-        }
-    }
-
-    /*
-     * If we start the system firstly, the engine list file in user directory
-     * doesn't exit, we should create it.
-     */
-    if (isFirst) {
-        user_engine_file = fopen (user_file_name.c_str (), "a");
-        if (user_engine_file == NULL) {
-            std::cerr << __func__ << " Failed to open(" << user_file_name << ")\n";
-        }
-    }
-
-    while (fgets (buf, MAXLINE, engine_list_file) != NULL) {
-        if (isFirst && user_engine_file != NULL) {
-            if (fputs (buf, user_engine_file) == EOF)
-                std::cerr << "failed to write " << user_file_name << "\n";
-        }
-
-        ISEINFO info;
-        isf_get_ise_info_from_string (buf, info);
-        std::vector<String>::iterator iter = std::find (modules.begin (), modules.end (), info.module);
-        if (info.mode == TOOLBAR_KEYBOARD_MODE && iter != modules.end ()) {
-            if (m_impl->m_factory_module_repository.find (info.uuid) == m_impl->m_factory_module_repository.end ()) {
-                add_specific_factory (info.uuid, IMEngineFactoryPointer (0));
-                m_impl->m_factory_module_repository[info.uuid] = info.module;
-            }
-
-            std::vector<String>::iterator iter2 = std::find (current_modules.begin (), current_modules.end (), info.module);
-            if (iter2 == current_modules.end ())
-                current_modules.push_back (info.module);
-        }
-    }
-
-    if (isFirst && user_engine_file != NULL)
-        fclose (user_engine_file);
-    fclose (engine_list_file);
-
-failed_open:
-    update_module_info (config, current_modules, modules);
-}
-
-void
-CommonBackEnd::update_module_info (const ConfigPointer &config,
-                                   std::vector<String> &current_modules,
-                                   std::vector<String> &modules)
-{
-    SCIM_DEBUG_BACKEND (1) << __FUNCTION__ << "...\n";
-
-    std::vector<String> imengine_list;
-    scim_get_imengine_module_list (imengine_list);
-    for (size_t i = 0; i < imengine_list.size (); ++i) {
-        if (std::find (modules.begin (), modules.end (), imengine_list [i]) != modules.end ()
-                && std::find (current_modules.begin (), current_modules.end (), imengine_list [i]) == current_modules.end ())
-                add_imengine_module_info (imengine_list [i], config);
-    }
-}
-
-void
-CommonBackEnd::add_imengine_module_info (const String module_name, const ConfigPointer &config)
-{
-    SCIM_DEBUG_BACKEND (1) << __FUNCTION__ << " : " << module_name << "\n";
-
-    if (module_name.length () <= 0 || module_name == "socket")
-        return;
-
-    IMEngineFactoryPointer factory;
-    IMEngineModule         ime_module;
-
-    String filename = String (USER_ENGINE_FILE_NAME);
-    FILE *engine_list_file = fopen (filename.c_str (), "a");
-    if (engine_list_file == NULL) {
-        LOGW ("Failed to open %s!!!\n", filename.c_str ());
-        return;
-    }
-
-    ime_module.load (module_name, config);
-
-    if (ime_module.valid ()) {
-        for (size_t j = 0; j < ime_module.number_of_factories (); ++j) {
-            try {
-                factory = ime_module.create_factory (j);
-            } catch (...) {
-                factory.reset ();
-            }
-
-            if (!factory.null ()) {
-                String uuid = factory->get_uuid ();
-                String name = utf8_wcstombs (factory->get_name ());
-                String language = isf_get_normalized_language (factory->get_language ());
-                String icon = factory->get_icon_file ();
-                char mode[12];
-                char option[12];
-
-                snprintf (mode, sizeof (mode), "%d", (int)TOOLBAR_KEYBOARD_MODE);
-                snprintf (option, sizeof (option), "%d", factory->get_option ());
-
-                String line = isf_combine_ise_info_string (name, uuid, module_name, language,
-                                                           icon, String (mode), String (option), factory->get_locales ());
-                if (fputs (line.c_str (), engine_list_file) < 0) {
-                    LOGW ("Failed to write (%s)!!!\n", line.c_str ());
-                    break;
-                }
-
-                add_specific_factory (uuid, IMEngineFactoryPointer (0));
-                m_impl->m_factory_module_repository[uuid] = module_name;
-
-                factory.reset ();
+    for (iter = ime_info.begin(); iter != ime_info.end(); iter++) {
+        it = std::find (modules.begin(), modules.end(), iter->module_name);
+        if (iter->mode == TOOLBAR_KEYBOARD_MODE && it != modules.end()) {
+            if (m_impl->m_factory_module_repository.find (iter->appid) == m_impl->m_factory_module_repository.end ()) {
+                add_specific_factory (iter->appid, IMEngineFactoryPointer (0));
+                m_impl->m_factory_module_repository[iter->appid] = iter->module_name;
             }
         }
-    } else {
-        std::cerr << __func__ << ": Failed to load " << module_name << " IMEngine module!!!\n";
     }
-
-    ime_module.unload ();
-    int ret = fclose (engine_list_file);
-    if (ret != 0)
-        LOGW ("Failed to fclose %s!!!\n", filename.c_str ());
 }
-
 
 } /* namespace scim */
 

@@ -8,7 +8,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -45,7 +45,7 @@ namespace scim {
 
 class SocketFactory;
 
-class EAPI SocketFactory : public IMEngineFactoryBase
+class EXAPI SocketFactory : public IMEngineFactoryBase
 {
     WideString m_name;
 
@@ -83,7 +83,7 @@ private:
     int  create_peer_instance (const String &encoding);
 };
 
-class EAPI SocketInstance : public IMEngineInstanceBase
+class EXAPI SocketInstance : public IMEngineInstanceBase
 {
     SocketFactory *m_factory;
     int            m_peer_id;

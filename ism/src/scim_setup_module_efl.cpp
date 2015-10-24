@@ -30,7 +30,6 @@
 
 
 #include "scim_private.h"
-#include "scim.h"
 #include "scim_setup_module_efl.h"
 
 SetupModule::SetupModule ()

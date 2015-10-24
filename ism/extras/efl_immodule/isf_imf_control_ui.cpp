@@ -2,7 +2,7 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
  *
  * Contact: Jihoon Kim <jihoon48.kim@samsung.com>, Haifeng Deng <haifeng.deng@samsung.com>
  *
@@ -63,6 +63,8 @@ static Eina_Bool          received_will_hide_event = EINA_FALSE;
 static Eina_Bool          received_candidate_will_hide_event = EINA_FALSE;
 static Eina_Bool          will_hide = EINA_FALSE;
 static bool               _support_hw_keyboard_mode = false;
+
+extern void scim_initialize (void);
 
 static void _send_input_panel_hide_request ();
 
@@ -544,6 +546,8 @@ void isf_imf_context_input_panel_show (Ecore_IMF_Context* ctx)
     bool input_panel_show = false;
     input_panel_ctx = ctx;
 
+    scim_initialize ();
+
     if (IfInitContext == false) {
         _isf_imf_context_init ();
     }
@@ -581,11 +585,6 @@ void isf_imf_context_input_panel_show (Ecore_IMF_Context* ctx)
 
     /* Set the current XID of the active window into the root window property */
     save_current_xid (ctx);
-
-    if (get_desktop_mode ()) {
-        LOGD ("IME will not appear in case of desktop mode.\n");
-        return;
-    }
 
     if (kbd_mode == TOOLBAR_KEYBOARD_MODE) {
         LOGD ("H/W keyboard is existed.\n");
@@ -681,17 +680,11 @@ void isf_imf_context_input_panel_hide (Ecore_IMF_Context *ctx)
 {
     SECURE_LOGD ("ctx : %p\n", ctx);
 
-    if (get_desktop_mode ())
-        return;
-
     _input_panel_hide (ctx, EINA_FALSE);
 }
 
 void isf_imf_context_input_panel_instant_hide (Ecore_IMF_Context *ctx)
 {
-    if (get_desktop_mode ())
-        return;
-
     _input_panel_hide (ctx, EINA_TRUE);
 }
 
@@ -922,6 +915,8 @@ Ecore_IMF_Input_Panel_State isf_imf_context_input_panel_state_get (Ecore_IMF_Con
     Ecore_IMF_Input_Panel_State state;
     if (!IfInitContext)
         _isf_imf_context_init ();
+
+    scim_initialize ();
 
     _isf_imf_context_input_panel_state_get (_get_context_id (ctx), state);
     LOGD ("    state:%d\n", state);

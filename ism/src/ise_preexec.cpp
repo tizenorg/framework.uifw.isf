@@ -2,9 +2,9 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2000 - 2014 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd. All rights reserved.
  *
- * Contact: Haifeng Deng <haifeng.deng@samsung.com>, Hengliang Luo <hl.luo@samsung.com>
+ * Contact: Ji-hoon Lee <dalton.lee@samsung.com>, Jihoon Kim <jihoon48.kim@samsung.com>, Sungmin Kwak <sungmin.kwak@samsung.com>
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the
@@ -33,8 +33,9 @@
 #include <sys/prctl.h>
 #include <unistd.h>
 #include <dlog.h>
-#include <pkgmgr-info.h>
 #include <privilege-control.h>
+#include <scim_panel_common.h>
+#include "isf_query_utility.h"
 
 #define Uses_SCIM_HELPER
 #include "scim.h"
@@ -50,10 +51,8 @@
 #define DEFAULT_PACKAGE_NAME "libisf-bin"
 #define DEFAULT_APPLICATION_PATH "/usr/lib/scim-1.0/scim-helper-launcher"
 
-#define NATIVE_APPLICATION_TYPE "c++app"
 #define NATIVE_PACKAGE_TYPE "tpk"
 
-#define WEB_APPLICATION_TYPE "webapp"
 #define WEB_PACKAGE_TYPE "wgt"
 
 #ifdef LOG_TAG
@@ -286,7 +285,7 @@ static void __set_oom ()
 
     /* we should reset oomadj value as default because child
     inherits from parent oom_adj*/
-    snprintf (buf, MAX_LOCAL_BUFSZ, "/proc/%d/oom_adj", getpid ());
+    snprintf (buf, MAX_LOCAL_BUFSZ, "/proc/%d/oom_score_adj", getpid ());
     fp = fopen (buf, "w");
     if (fp == NULL)
         return;
@@ -294,47 +293,22 @@ static void __set_oom ()
     fclose (fp);
 }
 
-static inline int __set_dac ()
+static inline int __set_dac (const char *pkg_type, const char *app_path)
 {
     //Copied from control_privilege () in the libprivilege-control package
+
+    if (!pkg_type || !app_path)
+        return PC_ERR_INVALID_PARAM;
 
     if (getuid () == APP_UID) // current user is 'app'
         return PC_OPERATION_SUCCESS;
 
-    if (perm_app_set_privilege ("com.samsung.", NULL, NULL) == PC_OPERATION_SUCCESS) {
+    if (perm_app_set_privilege ("com.samsung.", pkg_type, app_path) == PC_OPERATION_SUCCESS) {
         return PC_OPERATION_SUCCESS;
     } else {
         LOGW ("perm_app_set_privilege failed (not permitted).");
         return PC_ERR_NOT_PERMITTED;
     }
-}
-
-static inline int __set_smack (char* path)
-{
-    /*
-     * This is additional option.
-     * Though such a application fails in this function, that error is ignored.
-     */
-    char label[LABEL_LEN + 1] = {0, };
-    int fd = 0;
-    int result = -1;
-
-    result = lgetxattr (path, "security.SMACK64EXEC", label, LABEL_LEN);
-    if (result < 0)  // fail to get extended attribute
-        return 0;   // ignore error
-
-    fd = open ("/proc/self/attr/current", O_RDWR);
-    if (fd < 0)      // fail to open file
-        return 0;   // ignore error
-
-    result = write (fd, label, strlen (label));
-    if (result < 0) {    // fail to write label
-        close (fd);
-        return 0;   // ignore error
-    }
-
-    close (fd);
-    return 0;
 }
 
 typedef struct {
@@ -343,70 +317,47 @@ typedef struct {
     std::string app_path;
 } PKGINFO;
 
-static void get_pkginfo (const char *helper, const char *uuid, PKGINFO *info)
+static void get_pkginfo (const char *appid, PKGINFO *info)
 {
-    if (helper && uuid && info) {
-        pkgmgrinfo_appinfo_h handle;
-        int r;
-        char *value;
-        const char *app_id;
+	if (appid && info) {
+		int ret = 0;
+		ImeInfoDB imeInfo;
 
-        if (!strcmp (helper, "ise-web-helper-agent")) {
-            // Web IME
-            app_id = uuid;
-        }
-        else {
-            app_id = helper;
-        }
+		ret = isf_db_select_ime_info_by_appid(appid, &imeInfo);
+		if (ret < 1) {
+			LOGW("ime_info row is not available for %s", appid);
+			return;
+		}
 
-        // get ail handle
-        r = pkgmgrinfo_appinfo_get_appinfo (app_id, &handle);
-        if (r != PMINFO_R_OK) {
-            LOGW ("pkgmgrinfo_appinfo_get_appinfo failed %s %d \n", app_id, r);
-            return;
-        }
-
-        // get package name
-        if (!strcmp (helper, "ise-web-helper-agent")) {
-            // Web IME
-            r = pkgmgrinfo_appinfo_get_pkgid (handle, &value);
-            if (r != PMINFO_R_OK) {
-                LOGW ("pkgmgrinfo_appinfo_get_pkgid () failed : %s %d\n", app_id, r);
-            } else {
-                info->package_name = value;
-                LOGD ("[web] app id : %s, package name : %s\n", app_id, info->package_name.c_str ());
-            }
-        }
-        else {
-            // OSP IME
-            info->package_name = helper;
-            LOGD ("[osp] app id : %s, package name : %s\n", app_id, info->package_name.c_str ());
-        }
-
-        r = pkgmgrinfo_appinfo_get_apptype (handle, &value);
-        if (r != PMINFO_R_OK) {
-            LOGW ("pkgmgrinfo_appinfo_get_apptype () failed : %s %d\n", helper, r);
-        } else {
-            if (strncmp (value, NATIVE_APPLICATION_TYPE, strlen (NATIVE_APPLICATION_TYPE)) == 0) {
-                info->package_type = NATIVE_PACKAGE_TYPE;
-            } else if (strncmp (value, WEB_APPLICATION_TYPE, strlen (WEB_APPLICATION_TYPE)) == 0) {
-                info->package_type = WEB_PACKAGE_TYPE;
-            }
-            LOGD ("package type : %s\n", info->package_type.c_str ());
-        }
-
-        r = pkgmgrinfo_appinfo_get_exec (handle, &value);
-        if (r != PMINFO_R_OK) {
-            LOGW ("pkgmgrinfo_appinfo_get_exec () failed : %s %d\n", helper, r);
-        } else {
-            info->app_path = value;
-            LOGD ("app path : %s\n", info->app_path.c_str ());
-        }
-
-        pkgmgrinfo_appinfo_destroy_appinfo (handle);
-    }
+		if (imeInfo.pkgtype.compare(DEFAULT_PACKAGE_TYPE) == 0) {
+			info->package_type = DEFAULT_PACKAGE_TYPE;
+			info->app_path = std::string(imeInfo.exec.c_str());	//DEFAULT_APPLICATION_PATH;
+			info->package_name = DEFAULT_PACKAGE_NAME;
+		}
+		else if (imeInfo.pkgtype.compare(WEB_PACKAGE_TYPE) == 0) {
+			info->package_type = WEB_PACKAGE_TYPE;
+			info->app_path = std::string(imeInfo.exec.c_str());
+			info->package_name = std::string(imeInfo.pkgid.c_str());
+		}
+		else if (imeInfo.pkgtype.compare(NATIVE_PACKAGE_TYPE) == 0) {
+			info->package_type = NATIVE_PACKAGE_TYPE;
+			info->app_path = std::string(imeInfo.module_path.c_str()) + std::string(SCIM_PATH_DELIM_STRING) +
+				std::string(imeInfo.module_name.c_str()) + std::string(".so");
+			info->package_name = std::string(imeInfo.pkgid.c_str());
+		}
+		else {
+			LOGW("Unknown pkg type: %s", imeInfo.pkgtype.c_str());
+		}
+	}
 }
 
+/**
+ * @brief
+ *
+ * @param helper	implies module_name(so name)
+ * @param uuid	implies appid
+ *
+ */
 int ise_preexec (const char *helper, const char *uuid)
 {
     const char *file_name;
@@ -419,7 +370,7 @@ int ise_preexec (const char *helper, const char *uuid)
 
     LOGD ("starting\n");
 
-    get_pkginfo (helper, uuid, &info);
+    get_pkginfo (uuid, &info);
 
     /* In case of OSP or Web IME, request scim process to re-launch this ISE if we are not ROOT! */
     struct passwd *lpwd = NULL;
@@ -472,11 +423,8 @@ int ise_preexec (const char *helper, const char *uuid)
     /* SET OOM*/
     __set_oom ();
 
-    /* SET SMACK LABEL */
-    __set_smack (const_cast<char*>(info.app_path.c_str ()));
-
     /* SET DAC*/
-    if (__set_dac () < 0) {
+    if (__set_dac (info.package_type.c_str (), info.app_path.c_str ()) < 0) {
         LOGW ("fail to set DAC - check your package's credential\n");
         return -2;
     }

@@ -4,7 +4,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2004-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -177,7 +177,7 @@ __initialize_config ()
     }
 }
 
-EAPI String
+EXAPI String
 scim_global_config_read (const String &key, const String &defVal)
 {
     if (!__config_repository.initialized) __initialize_config ();
@@ -197,7 +197,7 @@ scim_global_config_read (const String &key, const String &defVal)
     return defVal;
 }
 
-EAPI int
+EXAPI int
 scim_global_config_read (const String &key, int defVal)
 {
     if (!__config_repository.initialized) __initialize_config ();
@@ -218,7 +218,7 @@ scim_global_config_read (const String &key, int defVal)
     return defVal;
 }
 
-EAPI bool
+EXAPI bool
 scim_global_config_read (const String &key, bool defVal)
 {
     if (!__config_repository.initialized) __initialize_config ();
@@ -243,7 +243,7 @@ scim_global_config_read (const String &key, bool defVal)
     return defVal;
 }
 
-EAPI double
+EXAPI double
 scim_global_config_read (const String &key, double defVal)
 {
     if (!__config_repository.initialized) __initialize_config ();
@@ -264,7 +264,7 @@ scim_global_config_read (const String &key, double defVal)
     return defVal;
 }
 
-EAPI std::vector <String>
+EXAPI std::vector <String>
 scim_global_config_read (const String &key, const std::vector <String> &defVal)
 {
     if (!__config_repository.initialized) __initialize_config ();
@@ -288,7 +288,7 @@ scim_global_config_read (const String &key, const std::vector <String> &defVal)
     return defVal;
 }
 
-EAPI std::vector <int>
+EXAPI std::vector <int>
 scim_global_config_read (const String &key, const std::vector <int> &defVal)
 {
     if (!__config_repository.initialized) __initialize_config ();
@@ -318,7 +318,7 @@ scim_global_config_read (const String &key, const std::vector <int> &defVal)
     return defVal;
 }
 
-EAPI void
+EXAPI void
 scim_global_config_write (const String &key, const String &val)
 {
     if (!__config_repository.initialized) __initialize_config ();
@@ -329,7 +329,7 @@ scim_global_config_write (const String &key, const String &val)
     }
 }
 
-EAPI void
+EXAPI void
 scim_global_config_write (const String &key, int val)
 {
     if (!__config_repository.initialized) __initialize_config ();
@@ -342,7 +342,7 @@ scim_global_config_write (const String &key, int val)
     }
 }
 
-EAPI void
+EXAPI void
 scim_global_config_write (const String &key, bool val)
 {
     if (!__config_repository.initialized) __initialize_config ();
@@ -353,7 +353,7 @@ scim_global_config_write (const String &key, bool val)
     }
 }
 
-EAPI void
+EXAPI void
 scim_global_config_write (const String &key, double val)
 {
     if (!__config_repository.initialized) __initialize_config ();
@@ -366,7 +366,7 @@ scim_global_config_write (const String &key, double val)
     }
 }
 
-EAPI void
+EXAPI void
 scim_global_config_write (const String &key, const std::vector <String> &val)
 {
     if (!__config_repository.initialized) __initialize_config ();
@@ -377,7 +377,7 @@ scim_global_config_write (const String &key, const std::vector <String> &val)
     }
 }
 
-EAPI void
+EXAPI void
 scim_global_config_write (const String &key, const std::vector <int> &val)
 {
     if (!__config_repository.initialized) __initialize_config ();
@@ -394,7 +394,7 @@ scim_global_config_write (const String &key, const std::vector <int> &val)
     }
 }
 
-EAPI void
+EXAPI void
 scim_global_config_reset (const String &key)
 {
     if (!__config_repository.initialized) __initialize_config ();
@@ -405,7 +405,7 @@ scim_global_config_reset (const String &key)
     }
 }
 
-EAPI bool
+EXAPI bool
 scim_global_config_flush ()
 {
     if (!__config_repository.initialized)

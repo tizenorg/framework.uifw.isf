@@ -19,34 +19,32 @@ INCLUDES       = -I$(top_builddir) \
                  @ISF_BUILDING_DLL@
 
 if ISF_BUILD_EFL_IMMODULE
-CONFIG_EFL_IMMODULE = libisf-imf-module.la
+CONFIG_EFL_IMMODULE = module.la
 endif
 
-noinst_HEADERS             = isf_imf_context.h  \
-                             isf_imf_control_ui.h \
-                             isf_imf_control.h
+noinst_HEADERS     = isf_imf_context.h  \
+                     isf_imf_control_ui.h \
+                     isf_imf_control.h
 
-moduledir                  = @EFL_IM_MODULEDIR@
-module_LTLIBRARIES         = $(CONFIG_EFL_IMMODULE)
+moduledir          = @EFL_IM_MODULEDIR@
+module_LTLIBRARIES = $(CONFIG_EFL_IMMODULE)
 
-libisf_imf_module_la_SOURCES  = isf_imf_module.cpp \
-                                isf_imf_context.cpp \
-                                isf_imf_control_ui.cpp \
-                                isf_imf_control.cpp
+module_la_SOURCES  = isf_imf_module.cpp \
+                     isf_imf_context.cpp \
+                     isf_imf_control_ui.cpp \
+                     isf_imf_control.cpp
 
-libisf_imf_module_la_CXXFLAGS = @EFL_CFLAGS@ \
-                                @UTILX_CFLAGS@ \
-                                @VCONF_CFLAGS@ \
-                                @DLOG_CFLAGS@
+module_la_CXXFLAGS = @EFL_CFLAGS@ \
+                     @VCONF_CFLAGS@ \
+                     @DLOG_CFLAGS@
 
-libisf_imf_module_la_LDFLAGS  = -rpath $(moduledir) \
-                                -avoid-version \
-                                -module
+module_la_LDFLAGS  = -rpath $(moduledir) \
+                     -avoid-version \
+                     -module
 
-libisf_imf_module_la_LIBADD  =  -lstdc++ \
-                                $(LD_VERSION_SCRIPT_OPTION) \
-                                @EFL_LIBS@ \
-                                @UTILX_LIBS@ \
-                                @VCONF_LIBS@ \
-                                @DLOG_LIBS@ \
-                                $(top_builddir)/ism/src/libscim@SCIM_EPOCH@.la
+module_la_LIBADD   = -lstdc++ \
+                     $(LD_VERSION_SCRIPT_OPTION) \
+                     @EFL_LIBS@ \
+                     @VCONF_LIBS@ \
+                     @DLOG_LIBS@ \
+                     $(top_builddir)/ism/src/libscim@SCIM_EPOCH@.la

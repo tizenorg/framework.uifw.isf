@@ -47,7 +47,7 @@ typedef enum
     TOOLBAR_HELPER_MODE         /* Software keyboard ISE */
 } TOOLBAR_MODE_T;
 
-class EAPI PanelError: public Exception
+class EXAPI PanelError: public Exception
 {
 public:
     PanelError (const String& what_arg)

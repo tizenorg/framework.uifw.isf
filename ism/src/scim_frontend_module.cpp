@@ -91,7 +91,7 @@ FrontEndModule::run () const
         m_frontend_run ();
 }
 
-EAPI int scim_get_frontend_module_list (std::vector <String>& mod_list)
+EXAPI int scim_get_frontend_module_list (std::vector <String>& mod_list)
 {
     return scim_get_module_list (mod_list, "FrontEnd");
 }

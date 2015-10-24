@@ -14,7 +14,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -89,7 +89,7 @@ enum IMEngineOption
  * scim::IMEngineBase and its derived classes must throw
  * scim::IMEngineError object when error.
  */
-class EAPI IMEngineError: public Exception
+class EXAPI IMEngineError: public Exception
 {
 public:
     IMEngineError (const String& what_arg)
@@ -128,6 +128,9 @@ typedef Slot2<void, IMEngineInstanceBase*,const String&>
 typedef Slot2<void, IMEngineInstanceBase*,const WideString&>
         IMEngineSlotWideString;
 
+typedef Slot3<void, IMEngineInstanceBase*,const char*, int>
+        IMEngineSlotUTF8String;
+
 typedef Slot2<void, IMEngineInstanceBase*,const KeyEvent&>
         IMEngineSlotKeyEvent;
 
@@ -146,8 +149,14 @@ typedef Slot3<void, IMEngineInstanceBase*,const String&,const Transaction&>
 typedef Slot4<void, IMEngineInstanceBase*,const WideString&,const AttributeList&,int>
         IMEngineSlotWideStringAttributeListInt;
 
+typedef Slot5<void, IMEngineInstanceBase*,const char*, int,const AttributeList&,int>
+        IMEngineSlotUTF8StringAttributeListInt;
+
 typedef Slot3<void, IMEngineInstanceBase*,const WideString&,const AttributeList&>
         IMEngineSlotWideStringAttributeList;
+
+typedef Slot4<void, IMEngineInstanceBase*,const char*, int,const AttributeList&>
+        IMEngineSlotUTF8StringAttributeList;
 
 typedef Slot5<bool, IMEngineInstanceBase*,WideString&,int&,int,int>
         IMEngineSlotGetSurroundingText;
@@ -170,7 +179,7 @@ typedef Slot3<void, IMEngineInstanceBase*,ISF_CANDIDATE_PORTRAIT_LINE_T,ISF_CAND
  * Each input method should implement a class derived from scim::IMEngineFactoryBase,
  * which takes charge of holding shared data, creating IMEngineInstances etc.
  */
-class EAPI IMEngineFactoryBase : public ReferencedObject
+class EXAPI IMEngineFactoryBase : public ReferencedObject
 {
     class IMEngineFactoryBaseImpl;
 
@@ -406,7 +415,7 @@ protected:
  * Each input method should implement a class derived from scim::IMEngineInstanceBase,
  * which takes charge of recording Input Context status and processing user input events.
  */
-class EAPI IMEngineInstanceBase : public ReferencedObject
+class EXAPI IMEngineInstanceBase : public ReferencedObject
 {
     class IMEngineInstanceBaseImpl;
 
@@ -500,9 +509,12 @@ public:
     Connection signal_connect_hide_lookup_table       (IMEngineSlotVoid *slot);
     Connection signal_connect_update_preedit_caret    (IMEngineSlotInt *slot);
     Connection signal_connect_update_preedit_string   (IMEngineSlotWideStringAttributeListInt *slot);
+    Connection signal_connect_update_preedit_utf8_string   (IMEngineSlotUTF8StringAttributeListInt *slot);
     Connection signal_connect_update_aux_string       (IMEngineSlotWideStringAttributeList *slot);
+    Connection signal_connect_update_aux_utf8_string  (IMEngineSlotUTF8StringAttributeList *slot);
     Connection signal_connect_update_lookup_table     (IMEngineSlotLookupTable *slot);
     Connection signal_connect_commit_string           (IMEngineSlotWideString *slot);
+    Connection signal_connect_commit_utf8_string      (IMEngineSlotUTF8String *slot);
     Connection signal_connect_forward_key_event       (IMEngineSlotKeyEvent *slot);
     Connection signal_connect_register_properties     (IMEngineSlotPropertyList *slot);
     Connection signal_connect_update_property         (IMEngineSlotProperty *slot);
@@ -825,11 +837,35 @@ protected:
     /**
      * @brief Update the content of the preedit string,
      *
+     * @param buf The byte array of UTF-8 string to be updated.
+     * @param buflen The buffer size in bytes.
+     * @param attrs - the string attributes
+     */
+    void update_preedit_string (const char          *buf,
+                                int                  buflen,
+                                const AttributeList &attrs = AttributeList ());
+
+    /**
+     * @brief Update the content of the preedit string,
+     *
      * @param str - the string content
      * @param attrs - the string attributes
      * @param caret - the caret position
      */
     void update_preedit_string (const WideString    &str,
+                                const AttributeList &attrs,
+                                int                  caret);
+
+    /**
+     * @brief Update the content of the preedit string,
+     *
+     * @param buf The byte array of UTF-8 string to be updated.
+     * @param buflen The buffer size in bytes.
+     * @param attrs - the string attributes
+     * @param caret - the caret position
+     */
+    void update_preedit_string (const char          *buf,
+                                int                  buflen,
                                 const AttributeList &attrs,
                                 int                  caret);
 
@@ -841,6 +877,18 @@ protected:
      */
     void update_aux_string (const WideString    &str,
                             const AttributeList &attrs = AttributeList ());
+
+    /**
+     * @brief Update the content of the aux string,
+     *
+     * @param buf The byte array of UTF-8 string to be updated.
+     * @param buflen The buffer size in bytes.
+     * @param attrs - the string attribute
+     */
+    void update_aux_string (const char          *buf,
+                            int                  buflen,
+                            const AttributeList &attrs = AttributeList ());
+
 
     /**
      * @brief Update the content of the lookup table,
@@ -864,6 +912,15 @@ protected:
      * @param str - the string to be committed.
      */
     void commit_string (const WideString &str);
+
+    /**
+     * @brief Commit a UTF-8 String to client application.
+     *
+     * @param buf The byte array of UTF-8 string to be committed.
+     * @param buflen The buffer size in bytes.
+     */
+    void commit_string (const char       *buf,
+                        int               buflen);
 
     /**
      * @brief Forward a key event to the client application.
@@ -995,7 +1052,7 @@ protected:
      * @param mode          candidate window mode.
      */
     void set_candidate_style (ISF_CANDIDATE_PORTRAIT_LINE_T portrait_line = ONE_LINE_CANDIDATE,
-                              ISF_CANDIDATE_MODE_T          mode = FIXED_CANDIDATE_WINDOW);
+                              ISF_CANDIDATE_MODE_T          mode = SOFT_CANDIDATE_WINDOW);
 
    void send_private_command (const String &command);
 
@@ -1005,7 +1062,7 @@ protected:
 /**
  * @brief A trivial IMEngine that do nothing.
  */
-class EAPI DummyIMEngineFactory : public IMEngineFactoryBase
+class EXAPI DummyIMEngineFactory : public IMEngineFactoryBase
 {
 public:
     DummyIMEngineFactory ();
@@ -1024,7 +1081,7 @@ public:
     virtual IMEngineInstancePointer create_instance (const String& encoding, int id = -1);
 };
 
-class EAPI DummyIMEngineInstance : public IMEngineInstanceBase
+class EXAPI DummyIMEngineInstance : public IMEngineInstanceBase
 {
 public:
     DummyIMEngineInstance (DummyIMEngineFactory *factory,

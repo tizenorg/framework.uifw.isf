@@ -2,9 +2,9 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
  *
- * Contact: Jihoon Kim <jihoon48.kim@samsung.com>
+ * Contact: Sungmin Kwak <sungmin.kwak@samsung.com>
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the
@@ -22,15 +22,12 @@
  *
  */
 
-#ifndef __ISE_SELECTOR_H__
-#define __ISE_SELECTOR_H__
+#ifndef __ISF_PKG_H__
+#define __ISF_PKG_H__
 
-#include <Elementary.h>
+int isf_pkg_ime_app_list_cb (const pkgmgrinfo_appinfo_h handle, void *user_data);
+void isf_pkg_reload_ime_info_db(void);
+int isf_pkg_select_all_ime_info_db(std::vector<ImeInfoDB> &ime_info);
 
-typedef void (*Ise_Selector_Selected_Cb)(unsigned int index);
-typedef void (*Ise_Selector_Deleted_Cb)();
+#endif /* __ISF_PKG_H__ */
 
-EAPI void ise_selector_create (unsigned ise_idx, Ecore_X_Window win, Ise_Selector_Selected_Cb sel_cb, Ise_Selector_Deleted_Cb del_cb);
-EAPI void ise_selector_destroy ();
-
-#endif /* __ISE_SELECTOR_H__ */

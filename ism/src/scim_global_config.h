@@ -12,7 +12,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2004-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -54,7 +54,7 @@ namespace scim {
  *
  * @return the value string of the key.
  */
-EAPI String scim_global_config_read (const String &key, const String &defVal = String ());
+EXAPI String scim_global_config_read (const String &key, const String &defVal = String ());
 
 /**
  * @brief Read an int value from the global configuration file.
@@ -64,7 +64,7 @@ EAPI String scim_global_config_read (const String &key, const String &defVal = S
  *
  * @return the value of the key.
  */
-EAPI int    scim_global_config_read (const String &key, int defVal);
+EXAPI int    scim_global_config_read (const String &key, int defVal);
 
 /**
  * @brief Read a bool value from the global configuration file.
@@ -74,7 +74,7 @@ EAPI int    scim_global_config_read (const String &key, int defVal);
  *
  * @return the value of the key.
  */
-EAPI bool   scim_global_config_read (const String &key, bool defVal);
+EXAPI bool   scim_global_config_read (const String &key, bool defVal);
 
 /**
  * @brief Read a double value from the global configuration file.
@@ -84,7 +84,7 @@ EAPI bool   scim_global_config_read (const String &key, bool defVal);
  *
  * @return the value of the key.
  */
-EAPI double scim_global_config_read (const String &key, double defVal);
+EXAPI double scim_global_config_read (const String &key, double defVal);
 
 /**
  * @brief Read a string list from the global configuration file.
@@ -94,7 +94,7 @@ EAPI double scim_global_config_read (const String &key, double defVal);
  *
  * @return the value of the key.
  */
-EAPI std::vector <String> scim_global_config_read (const String &key, const std::vector <String> &defVal);
+EXAPI std::vector <String> scim_global_config_read (const String &key, const std::vector <String> &defVal);
 
 /**
  * @brief Read an int list from the global configuration file.
@@ -104,7 +104,7 @@ EAPI std::vector <String> scim_global_config_read (const String &key, const std:
  *
  * @return the value of the key.
  */
-EAPI std::vector <int>    scim_global_config_read (const String &key, const std::vector <int> &defVal);
+EXAPI std::vector <int>    scim_global_config_read (const String &key, const std::vector <int> &defVal);
 
 /**
  * @brief Write a string value into the user global config.
@@ -112,7 +112,7 @@ EAPI std::vector <int>    scim_global_config_read (const String &key, const std:
  * @param key The key to be associated.
  * @param val The string value to be written.
  */
-EAPI void scim_global_config_write (const String &key, const String &val);
+EXAPI void scim_global_config_write (const String &key, const String &val);
 
 /**
  * @brief Write an int value into the user global config.
@@ -120,7 +120,7 @@ EAPI void scim_global_config_write (const String &key, const String &val);
  * @param key The key to be associated.
  * @param val The int value to be written.
  */
-EAPI void scim_global_config_write (const String &key, int val);
+EXAPI void scim_global_config_write (const String &key, int val);
 
 /**
  * @brief Write a bool value into the user global config.
@@ -128,7 +128,7 @@ EAPI void scim_global_config_write (const String &key, int val);
  * @param key The key to be associated.
  * @param val The bool value to be written.
  */
-EAPI void scim_global_config_write (const String &key, bool val);
+EXAPI void scim_global_config_write (const String &key, bool val);
 
 /**
  * @brief Write a double value into the user global config.
@@ -136,7 +136,7 @@ EAPI void scim_global_config_write (const String &key, bool val);
  * @param key The key to be associated.
  * @param val The double value to be written.
  */
-EAPI void scim_global_config_write (const String &key, double val);
+EXAPI void scim_global_config_write (const String &key, double val);
 
 /**
  * @brief Write a string list into the user global config.
@@ -144,7 +144,7 @@ EAPI void scim_global_config_write (const String &key, double val);
  * @param key The key to be associated.
  * @param val The string list to be written.
  */
-EAPI void scim_global_config_write (const String &key, const std::vector <String> &val);
+EXAPI void scim_global_config_write (const String &key, const std::vector <String> &val);
 
 /**
  * @brief Write an int list into the user global config.
@@ -152,20 +152,20 @@ EAPI void scim_global_config_write (const String &key, const std::vector <String
  * @param key The key to be associated.
  * @param val The int list to be written.
  */
-EAPI void scim_global_config_write (const String &key, const std::vector <int> &val);
+EXAPI void scim_global_config_write (const String &key, const std::vector <int> &val);
 
 /**
  * @brief Reset the value associated to the specified key to its default value.
  *
  * @param key The key to be reset.
  */
-EAPI void scim_global_config_reset (const String &key);
+EXAPI void scim_global_config_reset (const String &key);
 
 /**
  * @brief Flush the updated global config into user global config file.
  * @return true if success.
  */
-EAPI bool scim_global_config_flush ();
+EXAPI bool scim_global_config_flush ();
 
 /** @} */
 } // namespace scim

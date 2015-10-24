@@ -2,7 +2,7 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
  *
  * Contact: Haifeng Deng <haifeng.deng@samsung.com>, Li Zhang <li2012.zhang@samsung.com>
  *
@@ -21,12 +21,12 @@
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
- 
+
 #ifndef __SCIM_VISIBILITY_H
 #define __SCIM_VISIBILITY_H
 
-#ifdef EAPI
-# undef EAPI
+#ifdef EXAPI
+# undef EXAPI
 #endif
 
 #ifdef IAPI
@@ -36,24 +36,24 @@
 #if defined _WIN32 || defined __CYGWIN__
 #  ifdef ISF_BUILDING_DLL
 #    ifdef __GNUC__
-#      define EAPI __attribute__ ((dllexport))
+#      define EXAPI __attribute__ ((dllexport))
 #    else
-#      define EAPI __declspec(dllexport) // Note: actually gcc seems to also supports this syntax.
+#      define EXAPI __declspec(dllexport) // Note: actually gcc seems to also supports this syntax.
 #    endif
 #  else
 #    ifdef __GNUC__
-#      define EAPI __attribute__ ((dllimport))
+#      define EXAPI __attribute__ ((dllimport))
 #    else
-#      define EAPI __declspec(dllimport) // Note: actually gcc seems to also supports this syntax.
+#      define EXAPI __declspec(dllimport) // Note: actually gcc seems to also supports this syntax.
 #    endif
 #  endif
 #  define IAPI
 #else
 #  if __GNUC__ >= 4
-#    define EAPI __attribute__ ((visibility ("default")))
+#    define EXAPI __attribute__ ((visibility ("default")))
 #    define IAPI  __attribute__ ((visibility ("hidden")))
 #  else
-#    define EAPI
+#    define EXAPI
 #    define IAPI
 #  endif
 #endif

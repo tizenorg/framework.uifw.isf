@@ -9,7 +9,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -72,7 +72,7 @@ enum TransactionDataType
  * scim::Transaction and its related classes must throw
  * scim::TransactionError object when error.
  */
-class EAPI TransactionError: public Exception
+class EXAPI TransactionError: public Exception
 {
 public:
     TransactionError (const String& what_arg)
@@ -86,7 +86,7 @@ class TransactionReader;
  * @brief This class is used to pack up many data and commands into one package
  *        and send them via socket.
  */
-class EAPI Transaction
+class EXAPI Transaction
 {
     friend class TransactionReader;
 
@@ -343,7 +343,7 @@ public:
 /**
  * @brief This class is used to read data from a transaction without changing it.
  */
-class EAPI TransactionReader
+class EXAPI TransactionReader
 {
     class TransactionReaderImpl;
 

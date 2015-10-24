@@ -87,7 +87,10 @@ namespace scim {
 #define SCIM_GLOBAL_CONFIG_PRELOAD_KEYBOARD_ISE                     "/PreloadKeyboardIse"
 #define SCIM_GLOBAL_CONFIG_LAUNCH_ISE_ON_REQUEST                    "/LaunchIseOnRequest"
 #define SCIM_GLOBAL_CONFIG_CHANGE_KEYBOARD_MODE_BY_TOUCH            "/ChangeKeyboardModeByTouch"
+#define SCIM_GLOBAL_CONFIG_CHANGE_KEYBOARD_MODE_BY_FOCUS_MOVE       "/ChangeKeyboardModeByFocusMove"
+#define SCIM_GLOBAL_CONFIG_HIDE_ISE_BASED_ON_FOCUS                  "/HideIseBasedOnFocus"
 #define SCIM_GLOBAL_CONFIG_SUPPORT_HW_KEYBOARD_MODE                 "/SupportHWKeyboardMode"
+#define SCIM_GLOBAL_CONFIG_DEFAULT_KBD_MODE_CHANGER_PROGRAM         "/DefaultKbdModeChangerProgram"
 
 #define ISF_CONFIG_HARDWARE_KEYBOARD_DETECT                         "/isf/hw_keyboard_detect"
 

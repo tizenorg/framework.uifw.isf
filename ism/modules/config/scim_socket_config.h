@@ -4,7 +4,7 @@
 
 /*
  * Smart Common Input Method
- * 
+ *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
  *
  *
@@ -33,7 +33,7 @@
 
 namespace scim {
 
-class EAPI SocketConfig : public ConfigBase
+class EXAPI SocketConfig : public ConfigBase
 {
     String               m_socket_address;
     int                  m_socket_timeout;
@@ -51,7 +51,7 @@ public:
     virtual bool valid () const;
 
     virtual String get_name () const;
-    
+
     // String
     virtual bool read (const String& key, String *pStr) const;
 

@@ -26,9 +26,9 @@ get_time (void)
     int tint;
     struct timeval tv;
     struct timezone tz;           /* is not used since ages */
-    gettimeofday (&tv, &tz); 
+    gettimeofday (&tv, &tz);
     tint = (int) tv.tv_sec * 1000;
-    tint = tint / 1000 * 1000; 
+    tint = tint / 1000 * 1000;
     tint = tint + tv.tv_usec / 1000;
     return ((Time) tint);
 }
@@ -101,7 +101,7 @@ initialize_modifier_bits (Display *display)
         char buf [32];
         XKeyEvent xkey;
         KeySym keysym_l, keysym_r;
- 
+
         xkey.type = KeyPress;
         xkey.display = display;
         xkey.serial = 0L;
@@ -128,7 +128,7 @@ initialize_modifier_bits (Display *display)
     XFreeModifiermap (mods);
 }
 
-EAPI KeyEvent
+EXAPI KeyEvent
 scim_x11_keyevent_x11_to_scim (Display *display, const XKeyEvent &xkey)
 {
     KeyEvent  scimkey;
@@ -137,7 +137,7 @@ scim_x11_keyevent_x11_to_scim (Display *display, const XKeyEvent &xkey)
     char      buf [32];
 
     initialize_modifier_bits (display);
- 
+
     XLookupString (&key, buf, 32, &keysym, 0);
 
     scimkey.code = keysym;
@@ -160,7 +160,7 @@ scim_x11_keyevent_x11_to_scim (Display *display, const XKeyEvent &xkey)
     return scimkey;
 }
 
-EAPI XKeyEvent
+EXAPI XKeyEvent
 scim_x11_keyevent_scim_to_x11 (Display *display, const KeyEvent &scimkey)
 {
     XKeyEvent xkey;
@@ -190,7 +190,7 @@ scim_x11_keyevent_scim_to_x11 (Display *display, const KeyEvent &scimkey)
     return xkey;
 }
 
-EAPI uint16
+EXAPI uint16
 scim_x11_keymask_x11_to_scim (Display *display, unsigned int xkeystate)
 {
     uint16 mask = 0;
@@ -240,7 +240,7 @@ scim_x11_keymask_x11_to_scim (Display *display, unsigned int xkeystate)
     return mask;
 }
 
-EAPI unsigned int scim_x11_keymask_scim_to_x11 (Display *display, uint16 scimkeymask)
+EXAPI unsigned int scim_x11_keymask_scim_to_x11 (Display *display, uint16 scimkeymask)
 {
     unsigned int state = 0;
 

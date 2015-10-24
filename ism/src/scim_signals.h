@@ -56,7 +56,7 @@ class Signal;
 //! @class SlotNode
 //! @brief A node class for managing slots connected to scim::Signal's.
 
-class EAPI SlotNode : public Node
+class EXAPI SlotNode : public Node
 {
     friend class Signal;
 
@@ -131,7 +131,7 @@ public:
 //! @class Signal
 //! @brief Base class for the C++ signal interface.
 
-class EAPI Signal
+class EXAPI Signal
 {
     Signal(const Signal&);
     Signal& operator=(const Signal&);

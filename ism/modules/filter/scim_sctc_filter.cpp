@@ -3,7 +3,7 @@
 
 /*
  * Smart Common Input Method
- * 
+ *
  * Copyright (c) 2005 James Su <suzhe@tsinghua.org.cn>
  *
  *
@@ -100,7 +100,7 @@ static WideString __tc_to_sc (const WideString &tc);
 
 //Module Interface
 extern "C" {
-    EAPI void scim_module_init (void)
+    EXAPI void scim_module_init (void)
     {
         //Initialize encoding information.
         __sc_encodings.push_back ("GB2312");
@@ -112,16 +112,16 @@ extern "C" {
         __tc_encodings.push_back ("EUC-TW");
     }
 
-    EAPI void scim_module_exit (void)
+    EXAPI void scim_module_exit (void)
     {
     }
 
-    EAPI unsigned int scim_filter_module_init (const ConfigPointer &config)
+    EXAPI unsigned int scim_filter_module_init (const ConfigPointer &config)
     {
         return 1;
     }
 
-    EAPI FilterFactoryPointer scim_filter_module_create_filter (unsigned int index)
+    EXAPI FilterFactoryPointer scim_filter_module_create_filter (unsigned int index)
     {
         if (index == 0)
             return new SCTCFilterFactory ();
@@ -129,7 +129,7 @@ extern "C" {
         return FilterFactoryPointer (0);
     }
 
-    EAPI bool scim_filter_module_get_filter_info (unsigned int index, FilterInfo &info)
+    EXAPI bool scim_filter_module_get_filter_info (unsigned int index, FilterInfo &info)
     {
         if (index == 0) {
             info = __filter_info;
@@ -329,7 +329,7 @@ SCTCFilterFactory::create_instance (const String& encoding, int id)
         SCTCWorkMode mode = SCTC_MODE_OFF;
 
         String orig_encoding = encoding;
- 
+
         // If the original IMEngineFactory doesn't support this encoding,
         // then we must use another encoding to create the original IMEngineInstance.
         // It means we must use a conversion mode.
@@ -397,7 +397,7 @@ SCTCFilterInstance::focus_in ()
 
     if (!m_props_registered) {
         PropertyList props;
-        filter_register_properties (props); 
+        filter_register_properties (props);
     }
 }
 

@@ -8,7 +8,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -55,6 +55,9 @@
 
 #include <unistd.h>
 #include <string.h>
+#if defined(HAVE_SYSTEMD)
+#include <Ecore_Ipc.h>
+#endif
 
 namespace scim {
 
@@ -156,12 +159,21 @@ public:
         while (1) {
             ret = m_socket.connect (addr);
             if (ret == false) {
+#if defined(HAVE_SYSTEMD)
+                Ecore_Ipc_Server *server = ecore_ipc_server_connect (ECORE_IPC_LOCAL_SYSTEM, (char *)"scim-helper-broker", 0, NULL);
+                if (server) {
+                    const char *message = "request_to_launch_panel";
+                    ISF_SAVE_LOG("Request to launch panel...\n");
+                    ecore_ipc_server_send (server, 2, 4, 0, 0, 0, message, strlen (message));
+                }
+#else
                 scim_usleep (100000);
                 launch_panel (config, display);
                 std::cerr << " Re-connecting to PanelAgent server.";
                 ISF_LOG (" Re-connecting to PanelAgent server.\n");
+#endif
                 /* Make sure we are not retrying for more than 5 seconds, in total */
-                for (i = 0; i < 3; ++i) {
+                for (i = 0; i < 10; ++i) {
                     if (m_socket.connect (addr)) {
                         ret = true;
                         break;
@@ -1108,10 +1120,10 @@ public:
     }
 
     void set_keyboard_mode (int mode) {
-        if (m_send_refcount > 0)
+        if (m_send_refcount > 0) {
             m_send_trans.put_command (ISM_TRANS_CMD_SET_HARDWARE_KEYBOARD_MODE);
             m_send_trans.put_data (mode);
-
+        }
     }
 
     void send_candidate_will_hide_ack (void) {

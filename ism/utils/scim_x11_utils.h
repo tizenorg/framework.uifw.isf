@@ -1,6 +1,6 @@
-/* 
+/*
  * Smart Common Input Method
- * 
+ *
  * Copyright (c) 2005 James Su <suzhe@tsinghua.org.cn>
  *
  *
@@ -32,21 +32,21 @@
 /**
  * @brief Translate a X11 KeyEvent to a scim KeyEvent according to the given Display
  */
-EAPI scim::KeyEvent scim_x11_keyevent_x11_to_scim (Display *display, const XKeyEvent &xkey);
+EXAPI scim::KeyEvent scim_x11_keyevent_x11_to_scim (Display *display, const XKeyEvent &xkey);
 
 /**
  * @brief Translate a scim KeyEvent to a X11 KeyEvent according to the given Display
  */
-EAPI XKeyEvent scim_x11_keyevent_scim_to_x11 (Display *display, const scim::KeyEvent &scimkey);
+EXAPI XKeyEvent scim_x11_keyevent_scim_to_x11 (Display *display, const scim::KeyEvent &scimkey);
 
 /**
  * @brief Translate X11 key state to scim key mask.
  */
-EAPI scim::uint16 scim_x11_keymask_x11_to_scim (Display *display, unsigned int xkeystate);
+EXAPI scim::uint16 scim_x11_keymask_x11_to_scim (Display *display, unsigned int xkeystate);
 
 /**
  * @brief Translate scim key mask to X11 key state.
  */
-EAPI unsigned int scim_x11_keymask_scim_to_x11 (Display *display, scim::uint16 scimkeymask);
+EXAPI unsigned int scim_x11_keymask_scim_to_x11 (Display *display, scim::uint16 scimkeymask);
 
 #endif

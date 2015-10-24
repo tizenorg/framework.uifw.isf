@@ -33,6 +33,7 @@
 #define Uses_C_LOCALE
 #define Uses_SCIM_UTILITY
 #define Uses_SCIM_PANEL_AGENT
+#define Uses_SCIM_HELPER_MODULE
 
 #include "scim_private.h"
 #include "scim.h"
@@ -42,13 +43,23 @@
 #include <signal.h>
 #include <privilege-control.h>
 #include <vconf.h>
+#include <pkgmgr-info.h>
 #include "isf_query_utility.h"
+#include "isf_pkg.h"
+#include <dlog.h>
+
+#ifdef LOG_TAG
+# undef LOG_TAG
+#endif
+#define LOG_TAG             "SCIM_LAUNCHER"
 
 using namespace scim;
 
 static FrontEndModule *frontend_module = 0;
 static ConfigModule   *config_module = 0;
 static ConfigPointer   config;
+
+#define USER_ENGINE_LIST_PATH           "/home/app/.scim"
 
 void signalhandler (int sig)
 {
@@ -70,6 +81,7 @@ void signalhandler (int sig)
         config_module = 0;
     }
 
+    ISF_SAVE_LOG ("sig:%d\n", sig);
     std::cerr << "Successfully exited.\n";
 
     exit (0);
@@ -86,6 +98,7 @@ int main (int argc, char *argv [])
 
     String config_name   ("simple");
     String frontend_name ("socket");
+    String list;
 
     int   new_argc = 0;
     char *new_argv [40];
@@ -134,19 +147,66 @@ int main (int argc, char *argv [])
                 std::cerr << "No argument for option " << argv [i-1] << "\n";
                 return -1;
             }
+
+            new_argv [new_argc ++] = const_cast <char *> ("-e");
+
             if (String (argv [i]) == "all") {
                 scim_get_imengine_module_list (engine_list);
+                if (engine_list.size () <= 1) {  // If there is no IME, only "socket" is given by scim_get_imengine_module_list().
+                    isf_pkg_reload_ime_info_db();
+                    scim_get_imengine_module_list (engine_list);  // Assuming ime_info DB is initialized, try again.
+                }
+
                 for (size_t j = 0; j < engine_list.size (); ++j) {
                     if (engine_list [j] == "socket") {
                         engine_list.erase (engine_list.begin () + j);
                         break;
                     }
                 }
-            } else if (String (argv [i]) != "none") {
-                scim_split_string_list (engine_list, String (argv [i]), ',');
+
+                list = scim_combine_string_list(engine_list, ',');
+                if (list.length () < 1)
+                    new_argv [new_argc ++] = argv [i];
+                else
+                    new_argv [new_argc ++] = const_cast<char *>(list.c_str ());
             }
-            new_argv [new_argc ++] = const_cast <char *> ("-e");
-            new_argv [new_argc ++] = argv [i];
+            else if (String (argv [i]) == "none") { // If ime_info DB is empty, scim_launch() function gives "none" argument as engine list because of pkgmgr-info dependency change
+                std::vector<String>     imengine_list;
+                std::vector<String>     helper_list;
+                std::vector<String>::iterator it;
+
+                //get modules list
+                scim_get_imengine_module_list (imengine_list);
+                if (imengine_list.size () <= 1) {  // If there is no IME, only "socket" is given by scim_get_imengine_module_list().
+                    isf_pkg_reload_ime_info_db();
+                    scim_get_imengine_module_list (imengine_list);  // Assuming ime_info DB is initialized, try again.
+                }
+                scim_get_helper_module_list (helper_list);
+
+                for (it = imengine_list.begin (); it != imengine_list.end (); it++) {
+                    if (*it != "socket")
+                        engine_list.push_back (*it);
+                }
+                for (it = helper_list.begin (); it != helper_list.end (); it++)
+                    engine_list.push_back (*it);
+
+                /* Unless the target is no-keyboard model, we have a problem. */
+                if (engine_list.size () < 1) {
+                    LOGW ("There is no helper/imeengine!");
+                }
+
+                list = scim_combine_string_list(engine_list, ',');
+                if (list.length () < 1)
+                    new_argv [new_argc ++] = argv [i];
+                else
+                    new_argv [new_argc ++] = const_cast<char *>(list.c_str ());
+            }
+            else {
+                scim_split_string_list (engine_list, String (argv [i]), ',');
+
+                new_argv [new_argc ++] = argv [i];
+            }
+
             continue;
         }
 
@@ -203,87 +263,80 @@ int main (int argc, char *argv [])
 
     new_argv [new_argc] = 0;
 
-    try {
-        /* Try to load config module */
-        if (config_name != "dummy") {
-            /* load config module */
-            config_module = new ConfigModule (config_name);
+    /* Try to load config module */
+    if (config_name != "dummy") {
+        /* load config module */
+        config_module = new ConfigModule (config_name);
 
-            if (!config_module->valid ()) {
-                std::cerr << "Can not load " << config_name << " Config module. Using dummy module instead.\n";
-                delete config_module;
-                config_module = 0;
-            }
+        if (!config_module->valid ()) {
+            std::cerr << "Can not load " << config_name << " Config module. Using dummy module instead.\n";
+            delete config_module;
+            config_module = 0;
         }
+    }
 
-        if (config_module) {
-            config = config_module->create_config ();
-        } else {
-            config = new DummyConfig ();
-        }
+    if (config_module) {
+        config = config_module->create_config ();
+    } else {
+        config = new DummyConfig ();
+    }
 
-        if (config.null ()) {
-            std::cerr << "Can not create Config Object!\n";
-            return 1;
-        }
-        gettime (clock_start, "Create Config");
-
-        // Create folder for saving engine list
-        scim_make_dir (USER_ENGINE_LIST_PATH);
-
-        char *lang_str = vconf_get_str (VCONFKEY_LANGSET);
-        if (lang_str) {
-            setenv ("LANG", lang_str, 1);
-            setlocale (LC_MESSAGES, lang_str);
-            free (lang_str);
-        } else {
-            setenv ("LANG", "en_US.utf8", 1);
-            setlocale (LC_MESSAGES, "en_US.utf8");
-        }
-
-        /* create backend */
-        backend = new CommonBackEnd (config, engine_list);
-        gettime (clock_start, "Create backend");
-
-        /* load FrontEnd module */
-        frontend_module = new FrontEndModule (frontend_name, backend, config, new_argc, new_argv);
-        gettime (clock_start, "Create frontend");
-
-        if (!frontend_module || !frontend_module->valid ()) {
-            std::cerr << "Failed to load " << frontend_name << " FrontEnd module.\n";
-            return 1;
-        }
-
-        signal (SIGQUIT, signalhandler);
-        signal (SIGTERM, signalhandler);
-        signal (SIGINT,  signalhandler);
-        signal (SIGHUP,  signalhandler);
-
-        if (daemon) {
-            gettime (clock_start, "Starting as daemon ...");
-            scim_daemon ();
-        } else {
-            std::cerr << "Starting ...\n";
-        }
-
-        bool is_load_info = true;
-        if (engine_list.size () == 1 && engine_list[0] == "socket")
-            is_load_info = false;
-        backend->initialize (config, engine_list, true, is_load_info);
-        gettime (clock_start, "backend->initialize");
-
-        /* reset backend pointer, in order to destroy backend automatically. */
-        backend.reset ();
-
-        ISF_SAVE_LOG ("now running frontend...\n");
-
-        frontend_module->run ();
-    } catch (const std::exception & err) {
-        ISF_SAVE_LOG ("caught an exception! : %s\n", err.what());
-
-        std::cerr << err.what () << "\n";
+    if (config.null ()) {
+        std::cerr << "Can not create Config Object!\n";
         return 1;
     }
+    gettime (clock_start, "Create Config");
+
+    // Create folder for saving engine list
+    scim_make_dir (USER_ENGINE_LIST_PATH);
+
+    char *lang_str = vconf_get_str (VCONFKEY_LANGSET);
+    if (lang_str) {
+        setenv ("LANG", lang_str, 1);
+        setlocale (LC_MESSAGES, lang_str);
+        free (lang_str);
+    } else {
+        setenv ("LANG", "en_US.utf8", 1);
+        setlocale (LC_MESSAGES, "en_US.utf8");
+    }
+
+    /* create backend */
+    backend = new CommonBackEnd (config, engine_list);
+    gettime (clock_start, "Create backend");
+
+    /* load FrontEnd module */
+    frontend_module = new FrontEndModule (frontend_name, backend, config, new_argc, new_argv);
+    gettime (clock_start, "Create frontend");
+
+    if (!frontend_module || !frontend_module->valid ()) {
+        std::cerr << "Failed to load " << frontend_name << " FrontEnd module.\n";
+        return 1;
+    }
+
+    signal (SIGQUIT, signalhandler);
+    signal (SIGTERM, signalhandler);
+    signal (SIGINT,  signalhandler);
+    signal (SIGHUP,  signalhandler);
+
+    if (daemon) {
+        gettime (clock_start, "Starting as daemon ...");
+        scim_daemon ();
+    } else {
+        std::cerr << "Starting ...\n";
+    }
+
+    bool is_load_info = true;
+    if (engine_list.size () == 1 && engine_list[0] == "socket")
+        is_load_info = false;
+    backend->initialize (config, engine_list, true, is_load_info);
+    gettime (clock_start, "backend->initialize");
+
+    /* reset backend pointer, in order to destroy backend automatically. */
+    backend.reset ();
+
+    ISF_SAVE_LOG ("now running frontend...\n");
+
+    frontend_module->run ();
 
     return 0;
 }

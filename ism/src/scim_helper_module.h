@@ -12,7 +12,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2004-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -52,6 +52,8 @@ namespace scim {
 /**
  * @brief Get the number of Helpers in this module.
  *
+ * @deprecated Deprecated since_tizen 2.4
+ *
  * A helper module can have multiple Helpers in it.
  * But each helper will run in its own process space.
  *
@@ -65,6 +67,8 @@ typedef unsigned int  (*HelperModuleNumberOfHelpersFunc) (void);
 /**
  * @brief Get the information of a Helper.
  *
+ * @deprecated Deprecated since_tizen 2.4
+ *
  * There must be a function called "scim_helper_module_get_helper_info"
  * in each helper module which complies with this prototype.
  * This function name can have a prefix like kbd_LTX_,
@@ -77,6 +81,8 @@ typedef unsigned int  (*HelperModuleNumberOfHelpersFunc) (void);
 typedef bool (*HelperModuleGetHelperInfoFunc)   (unsigned int idx, HelperInfo &info);
 
 /**
+ * @deprecated Deprecated since_tizen 2.4
+ *
  * @brief Get the language of a Helper.
  *
  * There must be a function called "scim_helper_module_get_helper_language"
@@ -106,6 +112,8 @@ typedef String (*HelperModuleGetHelperLangFunc)   (unsigned int idx);
 typedef void (*HelperModuleRunHelperFunc)       (const String &uuid, const ConfigPointer &config, const String &display);
 
 /**
+ * @deprecated Deprecated since_tizen 2.4
+ *
  * @brief Deliver argc, argv arguments of scim-helper-launcher executable.
  *
  * In Tizen platform, there are cases that helper module requires pointer to
@@ -120,6 +128,8 @@ typedef void (*HelperModuleRunHelperFunc)       (const String &uuid, const Confi
 typedef void (*HelperModuleSetArgInfoFunc)       (int argc, char *argv []);
 
 /**
+ * @deprecated Deprecated since_tizen 2.4
+ *
  * @brief Deliver the .so filepath to ISE currently being loaded.
  *
  * In Tizen platform, there are cases that helper module requires the filepath of .so file
@@ -137,9 +147,10 @@ typedef void (*HelperModuleSetPathInfoFunc)       (const char *path);
  *
  * This class should not be used directly. HelperManager should be used instead.
  */
-class EAPI HelperModule
+class EXAPI HelperModule
 {
     Module                          m_module;
+    String                          module_name;
 
     HelperModuleNumberOfHelpersFunc m_number_of_helpers;
     HelperModuleGetHelperInfoFunc   m_get_helper_info;
@@ -233,7 +244,7 @@ public:
  * @param mod_list - the result list will be stored here.
  * @return the number of the modules, equal to mod_list.size ().
  */
-EAPI int scim_get_helper_module_list (std::vector <String> &mod_list);
+EXAPI int scim_get_helper_module_list (std::vector <String> &mod_list);
 /**  @} */
 
 } // namespace scim

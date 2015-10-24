@@ -45,6 +45,18 @@
 #include <privilege-control.h>
 #include <sys/resource.h>
 #include <sched.h>
+#include <pkgmgr-info.h>
+#include <Ecore_File.h>
+#include <sys/smack.h>
+#include <scim_panel_common.h>
+#include "isf_query_utility.h"
+#include "isf_pkg.h"
+#include <dlog.h>
+
+#ifdef LOG_TAG
+# undef LOG_TAG
+#endif
+#define LOG_TAG             "SCIM"
 
 #define WAIT_WM
 #define ISF_SYSTEM_WM_READY_FILE                        "/tmp/.wm_ready"
@@ -120,6 +132,16 @@ static bool check_file (const char* strFile)
         return true;
 }
 
+static bool check_lfile (const char* strFile)
+{
+    struct stat st;
+
+    if (lstat (strFile, &st) < 0)
+        return false;
+    else
+        return true;
+}
+
 /**
  * @brief : Checks whether the window manager is launched or not
  * @return true if window manager launched, else false
@@ -139,104 +161,51 @@ static bool check_wm_ready (void)
     return true;
 }
 
-/* The broker for launching OSP based IMEs */
+
+/* The broker for launching 3rd party IMEs */
 // {
 
 #include <Ecore.h>
 #include <Ecore_Ipc.h>
-#include <vconf.h>
 
 #ifndef SCIM_HELPER_LAUNCHER_PROGRAM
 #define SCIM_HELPER_LAUNCHER_PROGRAM  (SCIM_LIBEXECDIR "/scim-helper-launcher")
 #endif
 
-#define ISF_SYSTEM_APPSERVICE_READY_VCONF               "memory/appservice/status"
-#define ISF_SYSTEM_APPSERVICE_READY_STATE               2
-
 static Ecore_Ipc_Server *server = NULL;
-
 static Ecore_Event_Handler *exit_handler = NULL;
 static Ecore_Event_Handler *data_handler = NULL;
 
-static bool _appsvc_callback_regist = false;
-
-static char _ise_name[_POSIX_PATH_MAX + 1] = {0};
-static char _ise_uuid[_POSIX_PATH_MAX + 1] = {0};
-
-static void launch_helper (const char *name, const char *uuid);
-
-static void vconf_appservice_ready_changed (keynode_t *node, void *user_data)
+static void launch_helper (const char *exe, const char *name, const char *appid)
 {
-    if (node && node->value.i >= ISF_SYSTEM_APPSERVICE_READY_STATE) {
-        if (_appsvc_callback_regist) {
-            vconf_ignore_key_changed (ISF_SYSTEM_APPSERVICE_READY_VCONF, vconf_appservice_ready_changed);
-            _appsvc_callback_regist = false;
+    if (exe && name && appid) {
+        int pid = fork ();
+
+        if (pid < 0) return;
+
+        if (pid == 0) {
+            if (exit_handler) ecore_event_handler_del (exit_handler);
+            if (data_handler) ecore_event_handler_del (data_handler);
+            if (server) ecore_ipc_server_del (server);
+            ecore_ipc_shutdown ();
+
+            const char *argv [] = { exe,
+                "--daemon",
+                "--config", "socket",
+                "--display", ":0",
+                name,
+                appid,
+                0};
+
+            ISF_SAVE_LOG ("Exec scim_helper_launcher(%s %s)\n", name, appid);
+
+            setsid ();
+            execv (SCIM_HELPER_LAUNCHER_PROGRAM, const_cast<char **>(argv));
+            exit (-1);
         }
-
-        ISF_SAVE_LOG ("vconf_appservice_ready_changed val : %d)\n", node->value.i);
-
-        launch_helper (_ise_name, _ise_uuid);
     }
-}
-
-static bool check_appservice_ready ()
-{
-    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
-
-    int ret = 0;
-    int val = 0;
-    ret = vconf_get_int (ISF_SYSTEM_APPSERVICE_READY_VCONF, &val);
-
-    ISF_SAVE_LOG ("vconf returned : %d, val : %d)\n", ret, val);
-
-    if (ret == 0) {
-        if (val >= ISF_SYSTEM_APPSERVICE_READY_STATE)
-            return true;
-        else {
-            /* Register a call back function for checking system ready */
-            if (!_appsvc_callback_regist) {
-                if (vconf_notify_key_changed (ISF_SYSTEM_APPSERVICE_READY_VCONF, vconf_appservice_ready_changed, NULL)) {
-                    _appsvc_callback_regist = true;
-                }
-            }
-
-            return false;
-        }
-    } else {
-        /* No OSP support environment */
-        return true;
-    }
-}
-
-static void launch_helper (const char *name, const char *uuid)
-{
-    int pid;
-
-    /* If appservice is not ready yet, let's return here */
-    if (!check_appservice_ready ()) return;
-
-    pid = fork ();
-
-    if (pid < 0) return;
-
-    if (pid == 0) {
-        if (exit_handler) ecore_event_handler_del (exit_handler);
-        if (data_handler) ecore_event_handler_del (data_handler);
-        if (server) ecore_ipc_server_del (server);
-        ecore_ipc_shutdown ();
-
-        const char *argv [] = { SCIM_HELPER_LAUNCHER_PROGRAM,
-            "--daemon",
-            "--config", "socket",
-            "--display", ":0",
-            _ise_name,
-            _ise_uuid,
-            0};
-
-        ISF_SAVE_LOG ("Exec scim_helper_launcher(%s %s)\n", _ise_name, _ise_uuid);
-
-        execv (SCIM_HELPER_LAUNCHER_PROGRAM, const_cast<char **>(argv));
-        exit (-1);
+    else {
+        ISF_SAVE_LOG ("Invalid parameter\n");
     }
 }
 
@@ -249,17 +218,45 @@ static Eina_Bool sig_exit_cb (void *data, int ev_type, void *ev)
 static Eina_Bool handler_client_data (void *data, int ev_type, void *ev)
 {
     Ecore_Ipc_Event_Client_Data *e = (Ecore_Ipc_Event_Client_Data *)ev;
-    if (!e) return ECORE_CALLBACK_RENEW;
+    if (!e) return ECORE_CALLBACK_PASS_ON;
 
-    ISF_SAVE_LOG ("client %p sent [%i] [%i] [%i]\n", e->client, e->major, e->minor, e->size);
-
-    const char *message = "Done";
-    if (ecore_ipc_client_send (e->client, 0, 0, 0, 0, 0, message, strlen (message)) == 0) {
-        ISF_SAVE_LOG ("ecore_ipc_client_send FAILED!!\n");
-    }
+    LOGD ("client %p sent [%i] [%i] [%i]", e->client, e->major, e->minor, e->size);
 
     char buffer[_POSIX_PATH_MAX + 1] = {0};
     strncpy (buffer, (char*)(e->data), (e->size > _POSIX_PATH_MAX) ? _POSIX_PATH_MAX : e->size);
+
+#if defined(HAVE_SYSTEMD)
+    if (e->major == 2 && e->minor == 4) {
+        if (strcmp (buffer, "request_to_terminate_scim") == 0) {
+            ISF_SAVE_LOG ("Panel requested to terminate scim.\n");
+
+            /* This will terminate all scim-launcher, isf-panel-eflm and scim-helper-laucnher processes.
+               And scim process will be started again by scim.service systemd.*/
+            ecore_main_loop_quit ();
+            return ECORE_CALLBACK_DONE;
+        }
+        else if (strcmp (buffer, "request_to_launch_panel") == 0) {
+            LOGD ("App requested to launch panel.");
+            try {
+                if (!check_panel ("")) {
+                    cerr << "Launching Panel...\n";
+                    LOGD ("ppid:%d Launching panel process....", getppid ());
+
+                    scim_launch_panel (true, "socket", "", NULL);
+                }
+            } catch (scim::Exception & e) {
+                cerr << e.what () << "\n";
+                ISF_SAVE_LOG ("Fail to launch panel. error: %s\n", e.what ());
+            }
+            return ECORE_CALLBACK_PASS_ON;
+        }
+    }
+#endif
+
+    const char *message = "Done";
+    if (ecore_ipc_client_send (e->client, 0, 0, 0, 0, 0, message, strlen (message)) == 0) {
+        LOGW ("ecore_ipc_client_send FAILED!!");
+    }
 
     int blank_index = 0;
     for (int loop = 0; loop < (int)strlen (buffer); loop++) {
@@ -269,24 +266,53 @@ static Eina_Bool handler_client_data (void *data, int ev_type, void *ev)
     }
     buffer[blank_index] = '\0';
 
-    /* Save the name and uuid for future use, just in case appservice was not ready yet */
-    strncpy (_ise_name, buffer, _POSIX_PATH_MAX);
-    strncpy (_ise_uuid, (char*)(buffer) + blank_index + 1, _POSIX_PATH_MAX);
+    char ise_name[_POSIX_PATH_MAX + 1] = {0};
+    char ise_appid[_POSIX_PATH_MAX + 1] = {0};
+    strncpy (ise_name, buffer, _POSIX_PATH_MAX);
+    strncpy (ise_appid, (char*)(buffer) + blank_index + 1, _POSIX_PATH_MAX);
 
-    launch_helper (_ise_name, _ise_uuid);
+    ImeInfoDB imeInfo;
+    if (isf_db_select_ime_info_by_appid (ise_appid, &imeInfo)) {
+        /* Only for Native IME, execute applicaiton's exec */
+        if (imeInfo.pkgtype.compare("tpk") == 0) {
+            if (!check_lfile (imeInfo.exec.c_str ())) {
+                // Make bin directory and set smack label
+                String path = imeInfo.exec.substr (0, imeInfo.exec.find_last_of (SCIM_PATH_DELIM)).c_str ();
+                if (path.length () > 0) {
+                    ecore_file_mkpath (path.c_str ());  // If path exists, this function returns EINA_TRUE.
+                    if (smack_setlabel (path.c_str (), imeInfo.pkgid.c_str (), SMACK_LABEL_ACCESS) < 0) {
+                        ISF_SAVE_LOG ("Fail to set smack label (%s) for %s\n", imeInfo.pkgid.c_str (), path.c_str ());
+                    }
+                }
 
-    return ECORE_CALLBACK_RENEW;
+                // Make symbolic link file
+                if (EINA_FALSE == ecore_file_symlink (SCIM_HELPER_LAUNCHER_PROGRAM, imeInfo.exec.c_str ())) {
+                    ISF_SAVE_LOG ("Fail to make symlink file: %s\n", imeInfo.exec.c_str ());
+                }
+                // Set smack label
+                if (smack_lsetlabel (imeInfo.exec.c_str (), imeInfo.pkgid.c_str (), SMACK_LABEL_ACCESS) < 0) {
+                    ISF_SAVE_LOG ("Fail to set smack label (%s) for %s\n", imeInfo.pkgid.c_str (), imeInfo.exec.c_str ());
+                }
+            }
+            launch_helper (imeInfo.exec.c_str (), ise_name, ise_appid);
+            return ECORE_CALLBACK_PASS_ON;
+        }
+    }
+
+    launch_helper (SCIM_HELPER_LAUNCHER_PROGRAM, ise_name, ise_appid);
+
+    return ECORE_CALLBACK_PASS_ON;
 }
 
 static void run_broker (int argc, char *argv [])
 {
     if (!ecore_init ()) {
-        ISF_SAVE_LOG ("Failed to init ecore!!\n");
+        LOGE ("Failed to init ecore!!");
         return;
     }
 
     if (!ecore_ipc_init ()) {
-        ISF_SAVE_LOG ("Failed to init ecore_ipc!!\n");
+        LOGE ("Failed to init ecore_ipc!!");
         ecore_shutdown ();
         return;
     }
@@ -297,7 +323,7 @@ static void run_broker (int argc, char *argv [])
     server = ecore_ipc_server_add (ECORE_IPC_LOCAL_SYSTEM, "scim-helper-broker", 0, NULL);
 
     if (server == NULL) {
-        ISF_SAVE_LOG ("ecore_ipc_server_add returned NULL!!\n");
+        LOGW ("ecore_ipc_server_add returned NULL!!");
     }
 
     ecore_main_loop_begin ();
@@ -325,12 +351,6 @@ int main (int argc, char *argv [])
 
     std::vector<String>::iterator it;
 
-    struct sched_param param;
-    param.sched_priority = 0;
-
-    sched_setscheduler(0, SCHED_OTHER, &param);
-    setpriority (PRIO_PROCESS, getpid (), -11);
-
     String def_frontend ("socket");
     String def_config ("simple");
 
@@ -342,7 +362,7 @@ int main (int argc, char *argv [])
     int   new_argc = 0;
     char *new_argv [80];
 
-    ISF_SAVE_LOG ("ppid : %d Waiting for wm_ready\n", getppid ());
+    LOGD ("ppid : %d Waiting for wm_ready", getppid ());
 
     if (!check_wm_ready ()) {
         std::cerr << "[ISF-PANEL-EFL] WM ready timeout\n";
@@ -357,8 +377,13 @@ int main (int argc, char *argv [])
     config_list.push_back ("simple");
     config_list.push_back ("socket");
 
+    scim_get_helper_module_list (helper_list);
+    if (helper_list.size () < 1) {  // If there is no IME, that is, if ime_info DB is empty...
+        isf_pkg_reload_ime_info_db();
+        scim_get_helper_module_list (helper_list);  // Assuming ime_info DB is initialized, try again.
+    }
+
     scim_get_imengine_module_list (engine_list);
-    scim_get_helper_module_list   (helper_list);
 
     for (it = engine_list.begin (); it != engine_list.end (); it++) {
         all_engine_list.push_back (*it);
@@ -368,6 +393,11 @@ int main (int argc, char *argv [])
     for (it = helper_list.begin (); it != helper_list.end (); it++) {
         all_engine_list.push_back (*it);
         load_engine_list.push_back (*it);
+    }
+
+    /* Unless the target is no-keyboard model, we have a problem. */
+    if (load_engine_list.size () < 1) {
+        LOGW ("There is no helper/imeengine!");
     }
 
     /* Use x11 FrontEnd as default if available. */
@@ -542,7 +572,7 @@ int main (int argc, char *argv [])
 
     /* Try to start a SocketFrontEnd daemon first. */
     if (socket) {
-        ISF_SAVE_LOG ("ppid:%d Now socket frontend......\n", getppid ());
+        LOGD ("ppid:%d Now socket frontend....", getppid ());
 
         /* If no Socket FrontEnd is running, then launch one.
            And set manual to false. */
@@ -558,6 +588,8 @@ int main (int argc, char *argv [])
                 manual = false;
             }
         } catch (scim::Exception &e) {
+            cerr << e.what () << "\n";
+            ISF_SAVE_LOG ("catch: %s\n", e.what ());
         }
 
         /* If there is one Socket FrontEnd running and it's not manual mode,
@@ -574,12 +606,15 @@ int main (int argc, char *argv [])
                     scim_usleep (100000);
                 }
             }
-        } catch (scim::Exception &e) {}
+        } catch (scim::Exception &e) {
+            cerr << e.what () << "\n";
+            ISF_SAVE_LOG ("catch: %s\n", e.what ());
+        }
     }
 
     cerr << "Launching a process with " << def_frontend << " FrontEnd...\n";
 
-    ISF_SAVE_LOG ("ppid:%d Now default frontend......\n", getppid ());
+    LOGD ("ppid:%d Now default frontend....", getppid ());
 
     /* Launch the scim process. */
     if (scim_launch (daemon,
@@ -594,13 +629,13 @@ int main (int argc, char *argv [])
 
         gettime (clock_start, "ISM launch time");
 
-        ISF_SAVE_LOG ("ppid:%d Now checking panel process......\n", getppid ());
+        LOGD ("ppid:%d Now checking panel process....", getppid ());
 
         /* When finished launching scim-launcher, let's create panel process also, for the default display :0 */
         try {
             if (!check_panel ("")) {
                cerr << "Launching Panel...\n";
-               ISF_SAVE_LOG ("ppid:%d Launching panel process......%s\n", getppid (), def_config.c_str ());
+               LOGD ("ppid:%d Launching panel process....%s", getppid (), def_config.c_str ());
 
                scim_launch_panel (true, "socket", "", NULL);
             }

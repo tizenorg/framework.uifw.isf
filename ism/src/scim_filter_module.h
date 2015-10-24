@@ -104,7 +104,7 @@ typedef bool (*FilterModuleGetFilterInfoFunc) (unsigned int index, FilterInfo &i
  * This is a wrapper of scim::Module class, which is specially
  * for manipulating the Filter modules.
  */
-class EAPI FilterModule
+class EXAPI FilterModule
 {
     Module m_module;
 
@@ -191,7 +191,7 @@ public:
  * @param mod_list - the result list will be stored here.
  * @return the number of the modules, equal to mod_list.size ().
  */
-EAPI int scim_get_filter_module_list (std::vector <String> &mod_list);
+EXAPI int scim_get_filter_module_list (std::vector <String> &mod_list);
 
 /** @} */
 

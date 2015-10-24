@@ -44,7 +44,7 @@ namespace scim {
 /**
  * @brief A simple IMEngine to deal with the Compose keys.
  */
-class EAPI ComposeKeyFactory : public IMEngineFactoryBase
+class EXAPI ComposeKeyFactory : public IMEngineFactoryBase
 {
 public:
     ComposeKeyFactory ();
@@ -63,7 +63,7 @@ public:
     virtual IMEngineInstancePointer create_instance (const String& encoding, int id = -1);
 };
 
-class EAPI ComposeKeyInstance : public IMEngineInstanceBase
+class EXAPI ComposeKeyInstance : public IMEngineInstanceBase
 {
     uint32 m_compose_buffer [8];
 

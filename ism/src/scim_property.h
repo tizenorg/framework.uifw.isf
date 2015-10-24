@@ -69,7 +69,7 @@ namespace scim {
  *
  * All strings should be encoded into UTF-8.
  */
-class EAPI Property
+class EXAPI Property
 {
     String m_key;
     String m_label;
