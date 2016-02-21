@@ -26,6 +26,7 @@
 		<filesystem path="/usr/lib/ecore" label="_"/>
 		<filesystem path="/usr/lib/ecore/immodules" label="_"/>
 		<filesystem path="/usr/lib/scim-1.0" label="_"/>
+		<filesystem path="/etc/profile.d/isf.sh" label="_" exec_label="none" />
 		<filesystem path="/opt/etc/dump.d/module.d/isf_log_dump.sh" label="_" exec_label="none" />
 	</assign>
 	<request>

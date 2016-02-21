@@ -706,7 +706,7 @@ static Evas_Object* get_candidate (const String& str, Evas_Object *parent, int *
                     if (candidate_is_long)
                         break;
                     tokenize_result = tokenize_tag (sub_splited_string [j], &image_data);
-                    if (tokenize_result && _candidate_image_count < SCIM_LOOKUP_TABLE_MAX_PAGESIZE) {
+                    if (tokenize_result && _candidate_image_count < SCIM_LOOKUP_TABLE_MAX_PAGESIZE && _candidate_text_count < SCIM_LOOKUP_TABLE_MAX_PAGESIZE) {
                         _candidate_image [_candidate_image_count] = elm_image_add (parent);
                         snprintf (image_key, sizeof (image_key), "%d",_candidate_image_count);
                         elm_image_file_set (_candidate_image [_candidate_image_count], image_data.path.c_str (), image_key);
@@ -1646,7 +1646,7 @@ static bool set_helper_ise (const String &uuid, const String &module_name, bool 
     TOOLBAR_MODE_T mode = _panel_agent->get_current_toolbar_mode ();
     String pre_uuid = _panel_agent->get_current_helper_uuid ();
     if (pre_uuid == uuid && _soft_keyboard_launched)
-        return false;
+        return true;
 
     if (TOOLBAR_HELPER_MODE == mode && pre_uuid.length () > 0 && _soft_keyboard_launched) {
         _panel_agent->hide_helper (pre_uuid);
@@ -2411,7 +2411,9 @@ static void ui_candidate_hide (bool bForce, bool bSetVirtualKbd, bool will_hide)
         if (!will_hide) {
             /* If we are not in will_hide state, hide the candidate window immediately */
             candidate_window_hide ();
-            evas_object_hide (_preedit_window);
+
+            if (_preedit_window)
+                evas_object_hide (_preedit_window);
         }
     }
 }
@@ -3813,12 +3815,6 @@ static bool update_ise_list (std::vector<String> &list)
 
     add_ise_directory_em ();
 
-    char *lang_str = vconf_get_str (VCONFKEY_LANGSET);
-    if (lang_str) {
-        _locale_string = String (lang_str);
-        free (lang_str);
-    }
-
     return ret;
 }
 
@@ -4077,15 +4073,19 @@ static void slot_show_preedit_string (void)
             } else {
                 y -= _preedit_height;
             }
-            evas_object_move (_preedit_window, x, y);
+
+            if (_preedit_window)
+                evas_object_move (_preedit_window, x, y);
         }
     }
 
-    if (evas_object_visible_get (_preedit_window))
+    if (_preedit_window && evas_object_visible_get (_preedit_window))
         return;
 
     slot_show_candidate_table ();
-    evas_object_show (_preedit_window);
+
+    if (_preedit_window)
+        evas_object_show (_preedit_window);
 }
 
 /**

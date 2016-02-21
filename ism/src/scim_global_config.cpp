@@ -105,8 +105,7 @@ __parse_config (std::ifstream &is, KeyValueRepository &repository)
 {
     char *conf_line = new char [10000];
 
-    while (!is.eof ()) {
-        is.getline (conf_line, 10000);
+    while (is.getline (conf_line, 10000)) {
         String normalized_line = __trim_blank(conf_line);
         if ((normalized_line.find_first_of("#") > 0) && (normalized_line.length() != 0)) {
             if (normalized_line.find_first_of("=") == String::npos) {

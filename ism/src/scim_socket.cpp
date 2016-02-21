@@ -652,7 +652,8 @@ public:
 
         if (ret < 0 && addrlen > 0)
             m_err = errno;
-        else {
+
+        if (ret >= 0) {
             int flag = fcntl (ret, F_GETFD, 0);
             fcntl (ret, F_SETFD, flag|FD_CLOEXEC);
         }
@@ -673,7 +674,7 @@ public:
             return false;
         }
 
-        if (ret > 0) {
+        if (ret >= 0) {
             if (m_id >= 0) close ();
             m_no_close = false;
             m_binded = false;

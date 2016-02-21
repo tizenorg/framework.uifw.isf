@@ -170,6 +170,16 @@ Transaction::Transaction (size_t bufsize)
     m_reader->attach (*this);
 }
 
+const Transaction &
+Transaction::operator = (const Transaction & _tran)
+{
+    m_holder->request_buffer_size (_tran.get_size());
+    _tran.write_to_buffer (m_holder->m_buffer,_tran.get_size());
+    m_holder->m_write_pos = _tran.get_size ();
+    m_reader->set_position (_tran.m_reader->get_position ());
+    return *this;
+}
+
 Transaction::~Transaction ()
 {
     delete m_reader;
@@ -305,7 +315,7 @@ Transaction::read_from_buffer (const void *buf, size_t bufsize)
 
         memcpy (m_holder->m_buffer, buf, size);
 
-        m_holder->m_write_pos = SCIM_TRANS_HEADER_SIZE;
+        m_holder->m_write_pos = SCIM_TRANS_HEADER_SIZE + size;
 #ifdef ENABLE_CHECKMSG
         if (checksum == m_holder->calc_checksum ())
             return true;
@@ -1475,6 +1485,21 @@ void
 TransactionReader::dump ()
 {
     m_impl->dump ();
+}
+
+size_t
+TransactionReader::get_position()
+{
+    return m_impl->m_read_pos;
+}
+
+void
+TransactionReader::set_position(size_t pos)
+{
+    if (pos > m_impl->m_holder->m_write_pos)
+        m_impl->m_read_pos = m_impl->m_holder->m_write_pos;
+    else
+        m_impl->m_read_pos = pos;
 }
 
 } // namespace scim
