@@ -838,23 +838,23 @@ msgstr ""
 #: ism/extras/efl_panel/isf_panel_efl.cpp:3927
 #, c-format
 msgid "%s selected"
-msgstr "%s selected"
+msgstr "%s selected."
 
 #: ism/extras/efl_panel/isf_panel_efl.cpp:3930
 #, fuzzy, c-format
 msgid "Only %s available"
-msgstr "Only %s available"
+msgstr "Only %s available."
 
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5530
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5614
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5620
 msgid "Input detected from hardware keyboard"
-msgstr "Input detected from hardware keyboard"
+msgstr "Input detected from hardware keyboard."
 
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5530
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5614
 msgid "Tap to use virtual keyboard"
-msgstr "Tap to use virtual keyboard"
+msgstr "Tap to use virtual keyboard."
 
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5537
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5751

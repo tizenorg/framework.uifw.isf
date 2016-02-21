@@ -37,3 +37,7 @@ isf tizen::vconf::camcorder rl
 isf dbus w
 dbus isf rxl
 isf privilege::tizen::packagemanager.info rw
+isf privilege::tizen::package.info rw
+isf system::ext_storage rxl
+isf app-svc::db rwxa
+isf privilege::tizen::appmanager.launch rw

@@ -53,8 +53,8 @@ struct _EcoreIMFContextISF {
     _EcoreIMFContextISF () : ctx(NULL), impl(NULL), id(0), next(NULL) {}
 };
 
-int register_key_handler ();
-int unregister_key_handler ();
+void register_key_handler ();
+void unregister_key_handler ();
 
 int get_panel_client_id ();
 Eina_Bool caps_mode_check (Ecore_IMF_Context *ctx, Eina_Bool force, Eina_Bool noti);

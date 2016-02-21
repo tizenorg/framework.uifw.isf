@@ -4,7 +4,7 @@ PACKAGE=scim
 SRCROOT=../..
 POTFILES=POTFILES.in
 
-ALL_LINGUAS="hy az eu bg ca zh_CN zh_HK zh_TW hr cs da nl_NL en en_US et fi fr_FR gl ka de_DE el_GR hu is ga it_IT ja_JP kk ko_KR lv lt mk nb pl pt_PT pt_BR ro ru_RU sr sk sl es_ES es_US es_MX sv tr_TR uk uz ar zh_SG hi en_PH fr_CA fa th ur vi mn_MN as bn gu kn ml mr ne or pa si ta te tl id km lo ms my"
+ALL_LINGUAS="ar as az be_BY bg bn bn_BD ca cs da de el_GR en en_PH en_US es_ES es_MX es_US et eu fa fi fr fr_CA ga gl gu he hi hr hu hy id is it_IT ja_JP ka kk km kn ko_KR ky_KG lo lt lv mg mk ml mn_MN mr ms my_MM my_ZG nb ne nl or pa pl pl_SP pt_BR pt_PT ro ru_RU si sk sl sq sr sv sw ta te tg_TJ th tk_TM tl tr_TR uk ur uz vi xh zh_CN zh_HK zh_TW zh_TW zu"
 
 XGETTEXT=/usr/bin/xgettext
 MSGMERGE=/usr/bin/msgmerge

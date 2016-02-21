@@ -838,7 +838,7 @@ msgstr ""
 #: ism/extras/efl_panel/isf_panel_efl.cpp:3927
 #, c-format
 msgid "%s selected"
-msgstr "%s c chn"
+msgstr "%s được chọn"
 
 #: ism/extras/efl_panel/isf_panel_efl.cpp:3930
 #, c-format
@@ -854,17 +854,17 @@ msgstr "Phát hiện đầu vào từ bàn phím thật."
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5530
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5614
 msgid "Tap to use virtual keyboard"
-msgstr "Chm  dng bn phm o."
+msgstr "Chạm để dùng bàn phím ảo."
 
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5537
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5751
 #: ism/extras/efl_panel/iseselector.cpp:217
 msgid "Select input method"
-msgstr "Chn cch nhp"
+msgstr "Chọn cách nhập"
 
 #: ism/extras/efl_panel/iseselector.cpp:224
 msgid "Set up input methods"
-msgstr "Thit lp phng php nhp"
+msgstr "Cài đặt cách nhập"
 
 #: ism/utils/scimstringview.c:201
 msgid "Cursor Position"

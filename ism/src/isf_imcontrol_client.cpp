@@ -524,12 +524,13 @@ public:
         }
     }
 
-    bool get_recent_ime_geometry (int *x, int *y, int *w, int *h)
+    bool get_recent_ime_geometry (int *x, int *y, int *w, int *h, int angle)
     {
         int    cmd;
         uint32 tmp_x, tmp_y, tmp_w, tmp_h;
 
         m_trans.put_command (ISM_TRANS_CMD_GET_RECENT_ISE_GEOMETRY);
+        m_trans.put_data (angle);
         m_trans.write_to_socket (m_socket_imclient2panel);
         if (!m_trans.read_from_socket (m_socket_imclient2panel, m_socket_timeout)) {
             std::cerr << __func__ << " read_from_socket() may be timeout \n";
@@ -677,9 +678,9 @@ bool IMControlClient::is_helper_ise_enabled (const char* appid, int &enabled)
     return m_impl->is_helper_ise_enabled (appid, enabled);
 }
 
-bool IMControlClient::get_recent_ime_geometry (int *x, int *y, int *w, int *h)
+bool IMControlClient::get_recent_ime_geometry (int *x, int *y, int *w, int *h, int angle)
 {
-    return m_impl->get_recent_ime_geometry (x, y, w, h);
+    return m_impl->get_recent_ime_geometry (x, y, w, h, angle);
 }
 };
 

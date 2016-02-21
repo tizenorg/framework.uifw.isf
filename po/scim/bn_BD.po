@@ -567,7 +567,7 @@ msgstr ""
 
 #: ism/src/scim_utility.cpp:944 ism/src/scim_utility.cpp:973
 msgid "Afrikaans"
-msgstr "Afrikaans"
+msgstr ""
 
 #: ism/src/scim_utility.cpp:945
 msgid "Malay (Brunei Darussalam)"
@@ -838,33 +838,33 @@ msgstr ""
 #: ism/extras/efl_panel/isf_panel_efl.cpp:3927
 #, c-format
 msgid "%s selected"
-msgstr "%s er valgt."
+msgstr "%s নির্বাচিত।"
 
 #: ism/extras/efl_panel/isf_panel_efl.cpp:3930
 #, fuzzy, c-format
 msgid "Only %s available"
-msgstr "Bare %s er tilgjengelig."
+msgstr "শুধুমাত্র %s ব্যবহারযোগ্য।"
 
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5530
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5614
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5620
 msgid "Input detected from hardware keyboard"
-msgstr "Signaler oppdaget fra det fysiske tastaturet."
+msgstr "হার্ডওয়্যার কিবোর্ড থেকে ইনপুট সনাক্ত হয়েছে।"
 
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5530
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5614
 msgid "Tap to use virtual keyboard"
-msgstr "Trykk for å bruke virtuelt tastatur."
+msgstr "ভার্চুয়াল কিবোর্ড ব্যবহার করতে ট্যাপ করুন।"
 
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5537
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5751
 #: ism/extras/efl_panel/iseselector.cpp:217
 msgid "Select input method"
-msgstr "Velg inndatametode"
+msgstr "ইনপুটের ধরন নির্বাচন"
 
 #: ism/extras/efl_panel/iseselector.cpp:224
 msgid "Set up input methods"
-msgstr "Sett opp inndatametoder"
+msgstr "ইনপুট পদ্ধতিগুলো সেট আপ করুন"
 
 #: ism/utils/scimstringview.c:201
 msgid "Cursor Position"
@@ -1198,4 +1198,4 @@ msgid "IM Control"
 msgstr ""
 
 #~ msgid "Virtual keyboard is on"
-#~ msgstr "Virtuelt tastatur aktivert"
+#~ msgstr "Виртуалната клавиатура е активирана"

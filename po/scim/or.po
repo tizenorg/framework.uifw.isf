@@ -860,11 +860,11 @@ msgstr "ଭର୍ଚୁଆଲ୍ କୀବୋର୍ଡ୍ ବ୍ୟବହାର 
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5751
 #: ism/extras/efl_panel/iseselector.cpp:217
 msgid "Select input method"
-msgstr "ଇନ୍‌ପୁଟ୍ ପଦ୍ଧତି ଚୟନ କରନ୍ତୁ"
+msgstr "ଇନପୁଟ୍ ପଦ୍ଧତି ଚୟନ କରନ୍ତୁ"
 
 #: ism/extras/efl_panel/iseselector.cpp:224
 msgid "Set up input methods"
-msgstr "ସେଟ୍ ଅପ୍ ଇନ୍‌ପୁଟ୍ ପଦ୍ଧତିଗୁଡିକ"
+msgstr "ଇନପୁଟ୍ ପଦ୍ଧତିଗୁଡିକ ସେଟ୍ ଅପ୍"
 
 #: ism/utils/scimstringview.c:201
 msgid "Cursor Position"

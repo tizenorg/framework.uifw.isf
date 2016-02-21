@@ -838,33 +838,33 @@ msgstr ""
 #: ism/extras/efl_panel/isf_panel_efl.cpp:3927
 #, c-format
 msgid "%s selected"
-msgstr ""
+msgstr "‎%s انتخاب شد"
 
 #: ism/extras/efl_panel/isf_panel_efl.cpp:3930
 #, c-format
 msgid "Only %s available"
-msgstr ""
+msgstr "فقط ‎%s در دسترس است"
 
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5530
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5614
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5620
 msgid "Input detected from hardware keyboard"
-msgstr ""
+msgstr "ورودی از صفحه کلید سخت افزار شناسایی شده است."
 
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5530
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5614
 msgid "Tap to use virtual keyboard"
-msgstr ""
+msgstr "ضربه برای استفاده از صفحه کلید مجازی"
 
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5537
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5751
 #: ism/extras/efl_panel/iseselector.cpp:217
 msgid "Select input method"
-msgstr ""
+msgstr "انتخاب روش ورودی"
 
 #: ism/extras/efl_panel/iseselector.cpp:224
 msgid "Set up input methods"
-msgstr ""
+msgstr "تنظیم روش های ورودی"
 
 #: ism/utils/scimstringview.c:201
 msgid "Cursor Position"

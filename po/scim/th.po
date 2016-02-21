@@ -838,7 +838,7 @@ msgstr ""
 #: ism/extras/efl_panel/isf_panel_efl.cpp:3927
 #, c-format
 msgid "%s selected"
-msgstr "เลือก %s"
+msgstr "เลือก %s แล้ว"
 
 #: ism/extras/efl_panel/isf_panel_efl.cpp:3930
 #, fuzzy, c-format
@@ -849,12 +849,12 @@ msgstr "พร้อมใช้งานเฉพาะ %s"
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5614
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5620
 msgid "Input detected from hardware keyboard"
-msgstr ""
+msgstr "อินพุตถูกตรวจพบจากแป้นพิมพ์ฮาร์ดแวร์"
 
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5530
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5614
 msgid "Tap to use virtual keyboard"
-msgstr ""
+msgstr "สัมผัสเพื่อใช้แป้นพิมพ์เสมือน"
 
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5537
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5751
