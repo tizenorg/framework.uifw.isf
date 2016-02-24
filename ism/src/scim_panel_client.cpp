@@ -1108,10 +1108,10 @@ public:
     }
 
     void set_keyboard_mode (int mode) {
-        if (m_send_refcount > 0) {
+        if (m_send_refcount > 0)
             m_send_trans.put_command (ISM_TRANS_CMD_SET_HARDWARE_KEYBOARD_MODE);
             m_send_trans.put_data (mode);
-        }
+
     }
 
     void send_candidate_will_hide_ack (void) {

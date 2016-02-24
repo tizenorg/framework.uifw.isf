@@ -534,29 +534,32 @@ SimpleConfig::parse_config (std::istream &is, KeyValueRepository &config)
 {
     char *conf_line = new char [SCIM_MAX_CONFIG_LINE_LENGTH];
 
-    while (is.getline(conf_line, SCIM_MAX_CONFIG_LINE_LENGTH)) {
-        String normalized_line = trim_blank(conf_line);
+    while (!is.eof()) {
+        is.getline(conf_line, SCIM_MAX_CONFIG_LINE_LENGTH);
+        if (!is.eof()) {
+            String normalized_line = trim_blank(conf_line);
 
-        if ((normalized_line.find_first_of("#") > 0) && (normalized_line.length() != 0)) {
-            if (normalized_line.find_first_of("=") == String::npos) {
-                SCIM_DEBUG_CONFIG(2) << " Invalid config line : " << normalized_line << "\n";
-                continue;
-            }
+            if ((normalized_line.find_first_of("#") > 0) && (normalized_line.length() != 0)) {
+                if (normalized_line.find_first_of("=") == String::npos) {
+                    SCIM_DEBUG_CONFIG(2) << " Invalid config line : " << normalized_line << "\n";
+                    continue;
+                }
 
-            if (normalized_line[0] == '=') {
-                SCIM_DEBUG_CONFIG(2) << " Invalid config line : " << normalized_line << "\n";
-                continue;
-            }
+                if (normalized_line[0] == '=') {
+                    SCIM_DEBUG_CONFIG(2) << " Invalid config line : " << normalized_line << "\n";
+                    continue;
+                }
 
-            String param = get_param_portion(normalized_line);
-            KeyValueRepository::iterator i = config.find(param);
+                String param = get_param_portion(normalized_line);
+                KeyValueRepository::iterator i = config.find(param);
 
-            if (i != config.end()) {
-                SCIM_DEBUG_CONFIG(2) << " Config entry " << normalized_line << " has been read.\n";
-            } else {
-                String value = get_value_portion (normalized_line);
-                config [param] = value;
-                SCIM_DEBUG_CONFIG(2) << " Config entry " << param << "=" << value << " is successfully read.\n";
+                if (i != config.end()) {
+                    SCIM_DEBUG_CONFIG(2) << " Config entry " << normalized_line << " has been read.\n";
+                } else {
+                    String value = get_value_portion (normalized_line);
+                    config [param] = value;
+                    SCIM_DEBUG_CONFIG(2) << " Config entry " << param << "=" << value << " is successfully read.\n";
+                }
             }
         }
     }

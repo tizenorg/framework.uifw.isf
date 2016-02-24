@@ -19,8 +19,6 @@ isf sys-assert::core arwxt
 isf _ rw
 isf mobileprint x
 isf security-server::api-privilege-by-pid w
-isf security-server::api-permissions w
-isf security-server::label w
 isf system::media rwxat
 isf system::media::root rwxat
 isf data-provider-master::notification rw
@@ -33,7 +31,6 @@ isf bt-service rw
 isf aul rx
 isf aul::launch x
 isf app-svc rx
-isf wrt-installer rx
+isf wrt-installer r
 isf ecore::lock rwxat
 isf pulseaudio rwx
-isf system::ext_storage rxl

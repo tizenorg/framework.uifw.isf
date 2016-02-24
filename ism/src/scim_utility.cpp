@@ -1170,7 +1170,7 @@ EAPI int  scim_launch (bool          daemon,
     if (!config.length () || !imengines.length () || !frontend.length ())
         return -1;
 
-    int   i, new_argc = 0;
+    int   new_argc = 0;
     char *new_argv [40];
 
     new_argv [new_argc ++] = strdup (SCIM_LAUNCHER);
@@ -1186,7 +1186,7 @@ EAPI int  scim_launch (bool          daemon,
     new_argv [new_argc ++] = strdup (frontend.c_str ());
 
     if (argv) {
-        for (i = 0; argv [i] && new_argc < 39 ; ++i, ++new_argc)
+        for (int i = 0; argv [i] && new_argc < 39 ; ++i, ++new_argc)
             new_argv [new_argc] = strdup (argv [i]);
     }
 
@@ -1199,36 +1199,17 @@ EAPI int  scim_launch (bool          daemon,
     ISF_SAVE_LOG ("ppid: %d, fork result : %d, user %s\n", getppid (), child_pid, scim_get_user_name ().c_str ());
 
     // Error fork.
-    if (child_pid < 0) {
-        for (i = 0; i < new_argc; ++i) {
-            if (new_argv [i]) {
-                free (new_argv [i]);
-                new_argv [i] = NULL;
-            }
-        }
-        return -1;
-    }
+    if (child_pid < 0) return -1;
 
     // In child process, start scim-launcher.
     if (child_pid == 0) {
-        int ret = execv (SCIM_LAUNCHER, new_argv);
-        for (i = 0; i < new_argc; ++i) {
-            if (new_argv [i]) {
-                free (new_argv [i]);
-                new_argv [i] = NULL;
-            }
-        }
-        return ret;
+        return execv (SCIM_LAUNCHER, new_argv);
     }
 
     // In parent process, wait the child exit.
 
-    for (i = 0; i < new_argc; ++i) {
-        if (new_argv [i]) {
-            free (new_argv [i]);
-            new_argv [i] = NULL;
-        }
-    }
+    for (int i = 0; i < new_argc; ++i)
+        if (new_argv [i]) free (new_argv [i]);
 
     int status;
     pid_t ret_pid;
@@ -1268,7 +1249,7 @@ EAPI int scim_launch_panel (bool          daemon,
     if (access (panel_program.c_str (), X_OK) != 0)
             panel_program = String (SCIM_PANEL_PROGRAM);
 
-    int   i, new_argc = 0;
+    int   new_argc = 0;
     char *new_argv [80];
 
     new_argv [new_argc ++] = strdup (panel_program.c_str ());
@@ -1285,7 +1266,7 @@ EAPI int scim_launch_panel (bool          daemon,
         new_argv [new_argc ++] = strdup ("-d");
 
     if (argv) {
-        for (i = 0; argv [i] && new_argc < 79; ++i, ++new_argc)
+        for (int i = 0; argv [i] && new_argc < 40; ++i, ++new_argc)
             new_argv [new_argc] = strdup (argv [i]);
     }
 
@@ -1298,36 +1279,17 @@ EAPI int scim_launch_panel (bool          daemon,
     ISF_SAVE_LOG ("ppid : %d fork result : %d\n", getppid (), child_pid);
 
     // Error fork.
-    if (child_pid < 0) {
-        for (i = 0; i < new_argc; ++i) {
-            if (new_argv [i]) {
-                free (new_argv [i]);
-                new_argv [i] = NULL;
-            }
-        }
-        return -1;
-    }
+    if (child_pid < 0) return -1;
 
     // In child process, start scim-launcher.
     if (child_pid == 0) {
-        int ret = execv (panel_program.c_str (), new_argv);
-        for (i = 0; i < new_argc; ++i) {
-            if (new_argv [i]) {
-                free (new_argv [i]);
-                new_argv [i] = NULL;
-            }
-        }
-        return ret;
+        return execv (panel_program.c_str (), new_argv);
     }
 
     // In parent process, wait the child exit.
 
-    for (i = 0; i < new_argc; ++i) {
-        if (new_argv [i]) {
-            free (new_argv [i]);
-            new_argv [i] = NULL;
-        }
-    }
+    for (int i = 0; i < new_argc; ++i)
+        if (new_argv [i]) free (new_argv [i]);
 
     int status;
     pid_t ret_pid;

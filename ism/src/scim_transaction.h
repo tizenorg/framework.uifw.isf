@@ -94,6 +94,7 @@ class EAPI Transaction
     TransactionReader * m_reader;
 
     Transaction (const Transaction &);
+    const Transaction & operator = (const Transaction &);
 public:
     /**
      * @brief Constructor.
@@ -106,8 +107,6 @@ public:
      * @brief Destructor.
      */
     ~Transaction ();
-
-    const Transaction & operator = (const Transaction &);
 
     /**
      * @brief Check if the transaction is valid.
@@ -500,18 +499,6 @@ public:
      * @brief Print the read pos.
      */
     void dump ();
-
-    /**
-     * @brief Get current read position.
-     *
-     * @return The current read position.
-     */
-    size_t get_position();
-
-    /**
-     * @brief Set a position to read.
-     */
-    void set_position(size_t pos);
 };
 
 /** @} */

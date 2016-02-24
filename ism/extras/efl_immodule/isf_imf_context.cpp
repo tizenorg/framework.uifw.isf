@@ -57,6 +57,7 @@
 # define CODESET "INVALID"
 #endif
 
+#define ENABLE_BACKKEY 1
 #define SHIFT_MODE_OFF  0xffe1
 #define SHIFT_MODE_ON   0xffe2
 #define SHIFT_MODE_LOCK 0xffe6
@@ -251,8 +252,7 @@ static Eina_Bool panel_iochannel_handler                (void                   
 static bool     filter_hotkeys                          (EcoreIMFContextISF     *ic,
                                                          const KeyEvent         &key);
 static bool     filter_keys                             (const char             *keyname,
-                                                         std::vector <String>   &keys);
-
+                                                         const char             *config_path);
 static void     turn_on_ic                              (EcoreIMFContextISF     *ic);
 static void     turn_off_ic                             (EcoreIMFContextISF     *ic);
 static void     set_ic_capabilities                     (EcoreIMFContextISF     *ic);
@@ -381,7 +381,8 @@ static Ecore_Fd_Handler                                *_panel_iochannel_err_han
 
 static Ecore_X_Window                                   _input_win                  = 0;
 static Ecore_X_Window                                   _client_window              = 0;
-static Ecore_Event_Filter                              *_ecore_event_filter_handler = NULL;
+static Ecore_Event_Handler                             *_key_down_handler           = 0;
+static Ecore_Event_Handler                             *_key_up_handler             = 0;
 
 static bool                                             _on_the_spot                = true;
 static bool                                             _shared_input_method        = false;
@@ -392,6 +393,7 @@ static double                                           space_key_time          
 
 static Eina_Bool                                        autoperiod_allow            = EINA_FALSE;
 static Eina_Bool                                        autocap_allow               = EINA_FALSE;
+static Eina_Bool                                        desktop_mode                = EINA_FALSE;
 
 static bool                                             _x_key_event_is_valid       = false;
 
@@ -405,9 +407,6 @@ static int                                              __current_meta_mask    =
 static int                                              __current_super_mask   = 0;
 static int                                              __current_hyper_mask   = 0;
 static int                                              __current_numlock_mask = Mod2Mask;
-
-static std::vector <String>                             hide_ise_keys;
-static std::vector <String>                             ignore_keys;
 
 extern Ecore_IMF_Input_Panel_State                      input_panel_state;
 extern Ecore_IMF_Input_Panel_State                      notified_state;
@@ -438,6 +437,12 @@ EAPI int
 get_panel_client_id (void)
 {
     return _panel_client_id;
+}
+
+EAPI Eina_Bool
+get_desktop_mode ()
+{
+    return desktop_mode;
 }
 
 /* Function Implementations */
@@ -564,15 +569,15 @@ _key_down_cb (void *data, int type, void *event)
 
     Ecore_Event_Key *ev = (Ecore_Event_Key *)event;
     Ecore_IMF_Context *active_ctx = get_using_ic (ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_SHOW);
-    if (!ev || !ev->keyname || !active_ctx) return EINA_TRUE;
+    if (!ev || !ev->keyname || !active_ctx) return ECORE_CALLBACK_PASS_ON;
 
     if (ecore_imf_context_input_panel_state_get (active_ctx) != ECORE_IMF_INPUT_PANEL_STATE_HIDE) {
-        if (filter_keys (ev->keyname, hide_ise_keys)) {
+        if (filter_keys (ev->keyname, SCIM_CONFIG_HOTKEYS_FRONTEND_HIDE_ISE)) {
             LOGD ("%s key is pressed.\n", ev->keyname);
-            return EINA_FALSE;
+            return ECORE_CALLBACK_DONE;
         }
     }
-    return EINA_TRUE;
+    return ECORE_CALLBACK_PASS_ON;
 }
 
 static Eina_Bool
@@ -584,18 +589,18 @@ _key_up_cb (void *data, int type, void *event)
     Ecore_IMF_Context *active_ctx = get_using_ic (ECORE_IMF_INPUT_PANEL_STATE_EVENT, ECORE_IMF_INPUT_PANEL_STATE_SHOW);
 
     Ecore_Event_Key *ev = (Ecore_Event_Key *)event;
-    if (!ev || !ev->keyname || !active_ctx) return EINA_TRUE;
+    if (!ev || !ev->keyname || !active_ctx) return ECORE_CALLBACK_PASS_ON;
 
     Ecore_X_Window client_win = client_window_id_get (active_ctx);
     Ecore_X_Window focus_win = ecore_x_window_focus_get ();
 
     if (client_win == focus_win) {
         if (ecore_imf_context_input_panel_state_get (active_ctx) != ECORE_IMF_INPUT_PANEL_STATE_HIDE) {
-            if (filter_keys (ev->keyname, hide_ise_keys)) {
+            if (filter_keys (ev->keyname, SCIM_CONFIG_HOTKEYS_FRONTEND_HIDE_ISE)) {
                 LOGD ("%s key is released.\n", ev->keyname);
                 isf_imf_context_reset (active_ctx);
                 isf_imf_context_input_panel_instant_hide (active_ctx);
-                return EINA_FALSE;
+                return ECORE_CALLBACK_DONE;
             }
         }
     }
@@ -620,40 +625,70 @@ _key_up_cb (void *data, int type, void *event)
         }
     }
 
-    return EINA_TRUE;
+    return ECORE_CALLBACK_PASS_ON;
+}
+
+static void
+_check_desktop_mode (Ecore_X_Window win)
+{
+    char *profile = ecore_x_e_window_profile_get (win);
+    if (profile && (strcmp (profile, "desktop") == 0)) {
+        desktop_mode = EINA_TRUE;
+    } else {
+        desktop_mode = EINA_FALSE;
+    }
+
+    if (profile)
+        free (profile);
 }
 
 static Eina_Bool
-_ecore_event_filter_cb (void *data, void *loop_data, int type, void *event)
+_x_prop_change (void *data, int type, void *event)
 {
-    if (type == ECORE_EVENT_KEY_DOWN) {
-        return _key_down_cb (data, type, event);
-    }
-    else if (type == ECORE_EVENT_KEY_UP) {
-        return _key_up_cb (data, type, event);
+    Ecore_X_Event_Window_Property *e = (Ecore_X_Event_Window_Property *)event;
+    Ecore_X_Window xwin = (Ecore_X_Window)data;
+
+    if (e->win != xwin) return ECORE_CALLBACK_PASS_ON;
+
+    if (e->atom == ECORE_X_ATOM_E_PROFILE) {
+        _check_desktop_mode (e->win);
     }
 
-    return EINA_TRUE;
+    return ECORE_CALLBACK_PASS_ON;
 }
 
-void
+EAPI int
 register_key_handler ()
 {
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
 
-    if (!_ecore_event_filter_handler)
-        _ecore_event_filter_handler = ecore_event_filter_add (NULL, _ecore_event_filter_cb, NULL, NULL);
+#ifdef ENABLE_BACKKEY
+    if (!_key_down_handler)
+        _key_down_handler = ecore_event_handler_add (ECORE_EVENT_KEY_DOWN, _key_down_cb, NULL);
+
+    if (!_key_up_handler)
+        _key_up_handler = ecore_event_handler_add (ECORE_EVENT_KEY_UP, _key_up_cb, NULL);
+#endif
+
+    return EXIT_SUCCESS;
 }
 
-void
+EAPI int
 unregister_key_handler ()
 {
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
 
-    if (_ecore_event_filter_handler) {
-        ecore_event_filter_del (_ecore_event_filter_handler);
-        _ecore_event_filter_handler = NULL;
+    if (_key_down_handler) {
+        ecore_event_handler_del (_key_down_handler);
+        _key_down_handler = NULL;
     }
+
+    if (_key_up_handler) {
+        ecore_event_handler_del (_key_up_handler);
+        _key_up_handler = NULL;
+    }
+
+    return EXIT_SUCCESS;
 }
 
 static void
@@ -1105,10 +1140,6 @@ isf_imf_context_new (void)
         get_input_language ();
 
         vconf_notify_key_changed (VCONFKEY_ISF_INPUT_LANGUAGE, input_language_changed_cb, NULL);
-
-        scim_split_string_list (hide_ise_keys, _config->read (String (SCIM_CONFIG_HOTKEYS_FRONTEND_HIDE_ISE), String ("")), ',');
-
-        scim_split_string_list (ignore_keys, _config->read (String (SCIM_CONFIG_HOTKEYS_FRONTEND_IGNORE_KEY), String ("")), ',');
     }
 
     return context_scim;
@@ -1229,6 +1260,7 @@ isf_imf_context_del (Ecore_IMF_Context *ctx)
     if (!_ic_list) return;
 
     EcoreIMFContextISF *context_scim = (EcoreIMFContextISF*)ecore_imf_context_data_get (ctx);
+    Ecore_IMF_Input_Panel_State l_input_panel_state = ecore_imf_context_input_panel_state_get (ctx);
 
     if (context_scim) {
         if (context_scim->id != _ic_list->id) {
@@ -1255,7 +1287,6 @@ isf_imf_context_del (Ecore_IMF_Context *ctx)
 
         if (input_panel_ctx == ctx && _scim_initialized) {
             LOGD ("ctx : %p\n", ctx);
-            Ecore_IMF_Input_Panel_State l_input_panel_state = ecore_imf_context_input_panel_state_get (ctx);
             if (l_input_panel_state == ECORE_IMF_INPUT_PANEL_STATE_WILL_SHOW ||
                 l_input_panel_state == ECORE_IMF_INPUT_PANEL_STATE_SHOW) {
                 ecore_imf_context_input_panel_hide (ctx);
@@ -1359,6 +1390,10 @@ isf_imf_context_client_window_set (Ecore_IMF_Context *ctx, void *window)
         if ((context_scim->impl->client_window != 0) &&
                 (context_scim->impl->client_window != _client_window)) {
             _client_window = context_scim->impl->client_window;
+
+            _check_desktop_mode (_client_window);
+
+            ecore_event_handler_add (ECORE_X_EVENT_WINDOW_PROPERTY, _x_prop_change, window);
         }
     }
 }
@@ -2017,9 +2052,6 @@ isf_imf_context_filter_event (Ecore_IMF_Context *ctx, Ecore_IMF_Event_Type type,
         Ecore_IMF_Event_Key_Down *ev = (Ecore_IMF_Event_Key_Down *)event;
         timestamp = ev->timestamp;
 
-        if (filter_keys (ev->keyname, ignore_keys))
-            return EINA_TRUE;
-
         /* Hardware input detect code */
         if (ev->timestamp > 1 && get_keyboard_mode () == TOOLBAR_HELPER_MODE && _support_hw_keyboard_mode &&
             scim_string_to_key (key, ev->key) &&
@@ -2031,12 +2063,15 @@ isf_imf_context_filter_event (Ecore_IMF_Context *ctx, Ecore_IMF_Event_Type type,
             ISF_SAVE_LOG ("Changed keyboard mode from S/W to H/W (code: %x, name: %s)\n", key.code, ev->keyname);
             LOGD ("Hardware keyboard mode, active helper option: %d", _active_helper_option);
         }
+
+        if (filter_keys (ev->keyname, SCIM_CONFIG_HOTKEYS_FRONTEND_IGNORE_KEY))
+            return EINA_TRUE;
     }
     else if (type == ECORE_IMF_EVENT_KEY_UP) {
         Ecore_IMF_Event_Key_Up *ev = (Ecore_IMF_Event_Key_Up *)event;
         timestamp = ev->timestamp;
 
-        if (filter_keys (ev->keyname, ignore_keys))
+        if (filter_keys (ev->keyname, SCIM_CONFIG_HOTKEYS_FRONTEND_IGNORE_KEY))
             return EINA_TRUE;
     }
 
@@ -3002,12 +3037,15 @@ filter_hotkeys (EcoreIMFContextISF *ic, const KeyEvent &key)
 }
 
 static bool
-filter_keys (const char *keyname, std::vector <String> &keys)
+filter_keys (const char *keyname, const char *config_path)
 {
     SCIM_DEBUG_FRONTEND(1) << __FUNCTION__ << "...\n";
 
     if (!keyname)
         return false;
+
+    std::vector <String> keys;
+    scim_split_string_list (keys, _config->read (String (config_path), String ("")), ',');
 
     for (unsigned int i = 0; i < keys.size (); ++i) {
         if (!strcmp (keyname, keys [i].c_str ())) {

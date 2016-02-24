@@ -66,12 +66,6 @@ class EAPI SocketFrontEnd : public FrontEndBase
         Ecore_Fd_Handler *handler;
     };
 
-    enum ContinueMark {
-        STATUS_NONE,
-        STATUS_CONTINUE,
-        STATUS_DISCONNECT
-    };
-
     /**
      * ::first = socket id, ::second = instance id.
      */
@@ -93,7 +87,6 @@ class EAPI SocketFrontEnd : public FrontEndBase
     Transaction       m_send_trans;
     Transaction       m_receive_trans;
     Transaction       m_temp_trans;
-    ContinueMark      m_continue_mark;
 
     SocketInstanceRepository m_socket_instance_repository;
 
@@ -172,7 +165,6 @@ private:
     void unregister_helper ();
 
     uint32 generate_key () const;
-    ContinueMark get_continue_mark();
 
     bool check_client_connection (const Socket &client) const;
 
