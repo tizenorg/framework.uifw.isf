@@ -869,7 +869,7 @@ msgstr "选择输入方法"
 
 #: ism/extras/efl_panel/iseselector.cpp:224
 msgid "Set up input methods"
-msgstr "设置输入法"
+msgstr "设置输入方法"
 
 #: ism/utils/scimstringview.c:201
 msgid "Cursor Position"

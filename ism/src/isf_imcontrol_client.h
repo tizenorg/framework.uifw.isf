@@ -2,7 +2,7 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  * Contact: Haifeng Deng <haifeng.deng@samsung.com>, Hengliang Luo <hl.luo@samsung.com>
  *
@@ -62,7 +62,7 @@ public:
     bool show_helper_ise_list (void);
     bool show_helper_ise_selector (void);
     bool is_helper_ise_enabled (const char* appid, int &enabled);
-    bool get_recent_ime_geometry (int *x, int *y, int *w, int *h, int angle = -1);
+    bool get_recent_ime_geometry (int *x, int *y, int *w, int *h);
 };
 
 }

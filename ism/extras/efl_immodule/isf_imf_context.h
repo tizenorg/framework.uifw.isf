@@ -2,7 +2,7 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  * Contact: Jihoon Kim <jihoon48.kim@samsung.com>, Haifeng Deng <haifeng.deng@samsung.com>
  *
@@ -53,8 +53,8 @@ struct _EcoreIMFContextISF {
     _EcoreIMFContextISF () : ctx(NULL), impl(NULL), id(0), next(NULL) {}
 };
 
-void register_key_handler ();
-void unregister_key_handler ();
+int register_key_handler ();
+int unregister_key_handler ();
 
 int get_panel_client_id ();
 Eina_Bool caps_mode_check (Ecore_IMF_Context *ctx, Eina_Bool force, Eina_Bool noti);

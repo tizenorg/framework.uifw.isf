@@ -34,12 +34,6 @@
 #include <scim_panel_common.h>
 #include "isf_query_utility.h"
 #include "isf_pkg.h"
-#include <dlog.h>
-
-#ifdef LOG_TAG
-# undef LOG_TAG
-#endif
-#define LOG_TAG             "ISF_PKG"
 
 using namespace scim;
 
@@ -73,7 +67,7 @@ int isf_pkg_ime_app_list_cb (const pkgmgrinfo_appinfo_h handle, void *user_data)
     if (ret == PMINFO_R_OK)
         ime_db.appid = String (appid ? appid : "");
     else {
-        LOGE ("pkgmgrinfo_appinfo_get_appid failed! error code=%d", ret);
+        ISF_SAVE_LOG ("appid is not available!\n");
         return 0;
     }
 
@@ -84,7 +78,7 @@ int isf_pkg_ime_app_list_cb (const pkgmgrinfo_appinfo_h handle, void *user_data)
     if (ret == PMINFO_R_OK)
         ime_db.pkgid = String (pkgid ? pkgid : "");
     else {
-        LOGE ("pkgmgrinfo_appinfo_get_pkgid failed! error code=%d", ret);
+        ISF_SAVE_LOG ("pkgid is not available!\n");
         return 0;
     }
 
@@ -93,7 +87,7 @@ int isf_pkg_ime_app_list_cb (const pkgmgrinfo_appinfo_h handle, void *user_data)
     if (ret == PMINFO_R_OK)
         ime_db.pkgtype = String (pkgtype ? pkgtype : "");
     else {
-        LOGE ("pkgmgrinfo_appinfo_get_pkgtype failed! error code=%d", ret);
+        ISF_SAVE_LOG ("pkgtype is not available!\n");
         return 0;
     }
 
@@ -102,7 +96,7 @@ int isf_pkg_ime_app_list_cb (const pkgmgrinfo_appinfo_h handle, void *user_data)
     if (ret == PMINFO_R_OK)
         ime_db.exec = String (exec ? exec : "");
     else {
-        LOGE ("pkgmgrinfo_appinfo_get_exec failed! error code=%d", ret);
+        ISF_SAVE_LOG ("exec is not available!\n");
         return 0;
     }
 
@@ -188,7 +182,7 @@ int isf_pkg_ime_app_list_cb (const pkgmgrinfo_appinfo_h handle, void *user_data)
             ime_db.has_option = -1; // At this point, we can't know IME has an option (setting) or not; -1 means unknown.
         }
         else {
-            LOGE ("Unsupported pkgtype(%s)", ime_db.pkgtype.c_str ());
+            ISF_SAVE_LOG ("Unsupported pkgtype(%s)\n", ime_db.pkgtype.c_str ());
             if (pkginfo_handle) {
                 pkgmgrinfo_pkginfo_destroy_pkginfo (pkginfo_handle);
                 pkginfo_handle = NULL;
@@ -206,7 +200,7 @@ int isf_pkg_ime_app_list_cb (const pkgmgrinfo_appinfo_h handle, void *user_data)
             }
         }
         if (ret < 1) {
-            LOGE ("isf_db_%s_ime_info failed(%d). appid=%s pkgid=%s", (result? "update" : "insert"), ret, ime_db.appid.c_str(), ime_db.pkgid.c_str());
+            ISF_SAVE_LOG("isf_db_%s_ime_info failed(%d). appid=%s pkgid=%s\n", (result? "update" : "insert"), ret, ime_db.appid.c_str(), ime_db.pkgid.c_str());
         }
     }
     else if (result && ret) {
@@ -234,13 +228,7 @@ void isf_pkg_reload_ime_info_db(void)
         if (ret == PMINFO_R_OK) {
             ret = pkgmgrinfo_appinfo_filter_foreach_appinfo (handle, isf_pkg_ime_app_list_cb, NULL);
         }
-        else {
-            LOGE ("pkgmgrinfo_appinfo_filter_add_string failed(%d)", ret);
-        }
         pkgmgrinfo_appinfo_filter_destroy (handle);
-    }
-    else {
-        LOGE ("pkgmgrinfo_appinfo_filter_create failed(%d)", ret);
     }
 }
 

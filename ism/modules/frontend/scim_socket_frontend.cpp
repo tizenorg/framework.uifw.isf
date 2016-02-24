@@ -7,7 +7,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -246,7 +246,7 @@ void SocketFrontEnd::run_helper (const Socket &client)
                                    0};
 
                 SCIM_DEBUG_MAIN (2) << " Call scim-helper-launcher.\n";
-                ISF_SAVE_LOG ("Exec scim_helper_launcher(%s %s)\n", __helpers [i].second.c_str (), __helpers [i].first.uuid.c_str ());
+                ISF_SAVE_LOG ("Exec scim_helper_launcher(%s)\n", __helpers [i].second.c_str ());
 
                 setsid ();
                 execv (SCIM_HELPER_LAUNCHER_PROGRAM, const_cast<char **>(argv));
@@ -323,7 +323,6 @@ SocketFrontEnd::SocketFrontEnd (const BackEndPointer &backend,
                                 const ConfigPointer  &config)
     : FrontEndBase (backend),
       m_config (config),
-      m_continue_mark (STATUS_NONE),
       m_stay (true),
       m_config_readonly (false),
       m_socket_timeout (scim_get_default_socket_timeout ()),
@@ -550,32 +549,10 @@ SocketFrontEnd::get_surrounding_text (int id, WideString &text, int &cursor, int
         if (maxlen_before < 0) maxlen_before = -1;
         if (maxlen_after < 0) maxlen_after = -1;
         Socket socket_client (m_current_socket_client);
-        if (m_send_trans.get_data_type () != SCIM_TRANS_DATA_UNKNOWN) {
+        if ( m_send_trans.get_data_type () != SCIM_TRANS_DATA_UNKNOWN) {
             m_send_trans.put_command (ISM_TRANS_CMD_TRANSACTION_CONTINUE);
             m_send_trans.write_to_socket (socket_client);
             cont = true;
-            /**
-             * After flushing transaction to APP, frontend maybe receives some Requests,
-             * receive and deal with this Requests until get ISM_TRANS_CMD_TRANSACTION_CONTINUE reply
-             */
-            while (true) {
-                /**
-                 * socket_receive_callback() will overwrite m_receive_trans,
-                 * but in previous frame of stack, m_receive_trans has not finished reading,
-                 */
-                Transaction _tran;
-                int _id = m_current_instance;
-                _tran.deep_copy (m_receive_trans);
-                m_continue_mark = STATUS_NONE;
-                socket_receive_callback (&m_socket_server, socket_client);
-                m_receive_trans.deep_copy (_tran);
-                m_current_instance = _id;
-                ContinueMark status = get_continue_mark ();
-                if (status == STATUS_DISCONNECT)
-                    return false;
-                else if (status == STATUS_CONTINUE)
-                    break;
-            }
         }
 
         m_temp_trans.clear ();
@@ -616,13 +593,45 @@ SocketFrontEnd::get_surrounding_text (int id, WideString &text, int &cursor, int
 bool
 SocketFrontEnd::delete_surrounding_text (int id, int offset, int len)
 {
+    bool ret = false;
     if (m_current_instance == id && m_current_socket_client >= 0 && len > 0) {
-        m_send_trans.put_command (SCIM_TRANS_CMD_DELETE_SURROUNDING_TEXT);
-        m_send_trans.put_data ((uint32) offset);
-        m_send_trans.put_data ((uint32) len);
-        return true;
+        bool cont = false;
+
+        Socket socket_client (m_current_socket_client);
+        if (m_send_trans.get_data_type () != SCIM_TRANS_DATA_UNKNOWN) {
+            m_send_trans.put_command (ISM_TRANS_CMD_TRANSACTION_CONTINUE);
+            m_send_trans.write_to_socket (socket_client);
+            cont = true;
+        }
+        m_temp_trans.clear ();
+        m_temp_trans.put_command (SCIM_TRANS_CMD_REPLY);
+        m_temp_trans.put_command (SCIM_TRANS_CMD_DELETE_SURROUNDING_TEXT);
+        m_temp_trans.put_data ((uint32) offset);
+        m_temp_trans.put_data ((uint32) len);
+
+        if (m_temp_trans.write_to_socket (socket_client) &&
+            m_temp_trans.read_from_socket (socket_client, m_socket_timeout)) {
+
+            int cmd;
+            uint32 key;
+
+            if (m_temp_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_REQUEST &&
+                m_temp_trans.get_data (key) && key == m_current_socket_client_key &&
+                m_temp_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_DELETE_SURROUNDING_TEXT &&
+                m_temp_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_OK)
+                ret = true;
+        }
+        if (cont) {
+            int cmd;
+            m_send_trans.clear ();
+            m_send_trans.put_command (SCIM_TRANS_CMD_REPLY);
+
+            // Move the read ptr to the end.
+            if (!m_send_trans.get_command (cmd))
+                SCIM_DEBUG_FRONTEND (1) << __func__ << " Get command is failed!!!\n";
+        }
     }
-    return false;
+    return ret;
 }
 
 bool
@@ -634,24 +643,10 @@ SocketFrontEnd::get_selection (int id, WideString &text)
     if (m_current_instance == id && m_current_socket_client >= 0) {
         bool cont = false;
         Socket socket_client (m_current_socket_client);
-        if (m_send_trans.get_data_type () != SCIM_TRANS_DATA_UNKNOWN) {
+        if ( m_send_trans.get_data_type () != SCIM_TRANS_DATA_UNKNOWN) {
             m_send_trans.put_command (ISM_TRANS_CMD_TRANSACTION_CONTINUE);
             m_send_trans.write_to_socket (socket_client);
             cont = true;
-            while (true) {
-                Transaction _tran;
-                int _id = m_current_instance;
-                _tran.deep_copy (m_receive_trans);
-                m_continue_mark = STATUS_NONE;
-                socket_receive_callback (&m_socket_server, socket_client);
-                m_receive_trans.deep_copy (_tran);
-                m_current_instance = _id;
-                ContinueMark status = get_continue_mark ();
-                if (status == STATUS_DISCONNECT)
-                    return false;
-                else if (status == STATUS_CONTINUE)
-                    break;
-            }
         }
 
         m_temp_trans.clear ();
@@ -688,13 +683,45 @@ SocketFrontEnd::get_selection (int id, WideString &text)
 bool
 SocketFrontEnd::set_selection (int id, int start, int end)
 {
+    bool ret = false;
     if (m_current_instance == id && m_current_socket_client >= 0) {
-        m_send_trans.put_command (SCIM_TRANS_CMD_SET_SELECTION);
-        m_send_trans.put_data ((uint32) start);
-        m_send_trans.put_data ((uint32) end);
-        return true;
+        bool cont = false;
+
+        Socket socket_client (m_current_socket_client);
+        if (m_send_trans.get_data_type () != SCIM_TRANS_DATA_UNKNOWN) {
+            m_send_trans.put_command (ISM_TRANS_CMD_TRANSACTION_CONTINUE);
+            m_send_trans.write_to_socket (socket_client);
+            cont = true;
+        }
+        m_temp_trans.clear ();
+        m_temp_trans.put_command (SCIM_TRANS_CMD_REPLY);
+        m_temp_trans.put_command (SCIM_TRANS_CMD_SET_SELECTION);
+        m_temp_trans.put_data ((uint32) start);
+        m_temp_trans.put_data ((uint32) end);
+
+        if (m_temp_trans.write_to_socket (socket_client) &&
+            m_temp_trans.read_from_socket (socket_client, m_socket_timeout)) {
+
+            int cmd;
+            uint32 key;
+
+            if (m_temp_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_REQUEST &&
+                m_temp_trans.get_data (key) && key == m_current_socket_client_key &&
+                m_temp_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_SET_SELECTION &&
+                m_temp_trans.get_command (cmd) && cmd == SCIM_TRANS_CMD_OK)
+                ret = true;
+        }
+        if (cont) {
+            int cmd;
+            m_send_trans.clear ();
+            m_send_trans.put_command (SCIM_TRANS_CMD_REPLY);
+
+            // Move the read ptr to the end.
+            if (!m_send_trans.get_command (cmd))
+                SCIM_DEBUG_FRONTEND (1) << __func__ << " Get command is failed!!!\n";
+        }
     }
-    return false;
+    return ret;
 }
 
 void
@@ -833,7 +860,6 @@ SocketFrontEnd::run ()
         if (_server_read_handler != NULL) {
             ecore_main_loop_begin ();
             ecore_main_fd_handler_del (_server_read_handler);
-            _server_read_handler = NULL;
         } else {
             SCIM_DEBUG_FRONTEND (1) << "Error occurred when calling ecore_main_fd_handler_add(server_fd)" << "\n";
         }
@@ -847,14 +873,6 @@ SocketFrontEnd::generate_key () const
     unsigned int seed = (unsigned int)time (NULL);
 
     return (uint32)rand_r (&seed);
-}
-
-SocketFrontEnd::ContinueMark
-SocketFrontEnd::get_continue_mark()
-{
-    ContinueMark _is_continue = m_continue_mark;
-    m_continue_mark = STATUS_NONE;
-    return _is_continue;
 }
 
 bool
@@ -918,7 +936,6 @@ SocketFrontEnd::socket_receive_callback (SocketServer *server, const Socket &cli
     if (!check_client_connection (client)) {
         SCIM_DEBUG_FRONTEND (2) << " closing client connection.\n";
         socket_close_connection (server, client);
-        m_continue_mark = STATUS_DISCONNECT;
         return;
     }
 
@@ -950,11 +967,7 @@ SocketFrontEnd::socket_receive_callback (SocketServer *server, const Socket &cli
         return;
 
     while (m_receive_trans.get_command (cmd)) {
-        if (cmd == ISM_TRANS_CMD_TRANSACTION_CONTINUE) {
-            m_continue_mark = STATUS_CONTINUE;
-            return;
-        }
-        else if (cmd == SCIM_TRANS_CMD_PROCESS_KEY_EVENT)
+        if (cmd == SCIM_TRANS_CMD_PROCESS_KEY_EVENT)
             socket_process_key_event (id);
         else if (cmd == SCIM_TRANS_CMD_MOVE_PREEDIT_CARET)
             socket_move_preedit_caret (id);
@@ -2049,7 +2062,7 @@ SocketFrontEnd::socket_update_ise_list (int /*client_id*/)
     if (m_receive_trans.get_data (strName) && strName.length () > 0) {
         //std::cout << "ISE name list:" << strName << "\n";
         //scim_split_string_list (name_list, strName);
-        LOGD ("%s\n", strName.c_str ());
+
         /* The strName has all appids but here module name is necessary. */
         HelperInfo   info;
         std::vector<ImeInfoDB> ime_info;

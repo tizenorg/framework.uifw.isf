@@ -864,7 +864,7 @@ msgstr "Виб. методу введення"
 
 #: ism/extras/efl_panel/iseselector.cpp:224
 msgid "Set up input methods"
-msgstr "Налаштування способів введення"
+msgstr "Настроювання способів введення"
 
 #: ism/utils/scimstringview.c:201
 msgid "Cursor Position"

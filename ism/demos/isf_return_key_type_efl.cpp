@@ -2,7 +2,7 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  * Contact: Shuo Liu <shuo0805.liu@samsung.com>, Jihoon Kim <jihoon48.kim@samsung.com>
  *
@@ -32,6 +32,7 @@ struct _menu_item {
 };
 
 static struct _menu_item _menu_its[] = {
+    { N_("DEFAULT"), N_("click to enter"), ELM_INPUT_PANEL_RETURN_KEY_TYPE_DEFAULT },
     { N_("DEFAULT"), N_("click to enter"), ELM_INPUT_PANEL_RETURN_KEY_TYPE_DEFAULT },
     { N_("DONE"), N_("click to enter"), ELM_INPUT_PANEL_RETURN_KEY_TYPE_DONE },
     { N_("GO"), N_("click to enter"), ELM_INPUT_PANEL_RETURN_KEY_TYPE_GO },

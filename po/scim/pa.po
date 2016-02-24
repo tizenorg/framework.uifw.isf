@@ -860,11 +860,11 @@ msgstr "ਵਰਚੁਅਲ ਕੀਬੋਰਡ ਦੀ ਵਰਤੋਂ ਕਰਨ �
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5751
 #: ism/extras/efl_panel/iseselector.cpp:217
 msgid "Select input method"
-msgstr "ਇਨਪੁਟ ਵਿਧੀ ਚੁਣੋ"
+msgstr "ਇਨਪੁਟ ਤਰੀਕਾ ਚੁਣੋ"
 
 #: ism/extras/efl_panel/iseselector.cpp:224
 msgid "Set up input methods"
-msgstr "ਇਨਪੁਟ ਵਿਧੀਆਂ ਸੈੱਟ ਅਪ ਕਰੋ"
+msgstr "ਇਨਪੁਟ ਤਰੀਕੇ ਸੈੱਟ ਅਪ ਕਰੋ"
 
 #: ism/utils/scimstringview.c:201
 msgid "Cursor Position"

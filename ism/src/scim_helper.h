@@ -12,7 +12,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2004-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -127,11 +127,11 @@ const uint32 ISM_HELPER_WITHOUT_IMENGINE         = (1<<18);
  */
 struct HelperInfo
 {
-    String uuid;            /**< The UUID of this Helper object, replaced with Application ID since tizen 2.4 */
-    String name;            /**< The Name of this Helper object, UTF-8 encoding. Deprecated since tizen 2.4 */
-    String icon;            /**< The Icon file path of this Helper object. Deprecated since tizen 2.4 */
-    String description;     /**< The short description of this Helper object. Deprecated since tizen 2.4 */
-    uint32 option;          /**< The options of this Helper object. @sa #SCIM_HELPER_STAND_ALONE etc. Deprecated since tizen 2.4 */
+    String uuid;            /**< The UUID of this Helper object */
+    String name;            /**< The Name of this Helper object, UTF-8 encoding. */
+    String icon;            /**< The Icon file path of this Helper object. */
+    String description;     /**< The short description of this Helper object. */
+    uint32 option;          /**< The options of this Helper object. @sa #SCIM_HELPER_STAND_ALONE etc.*/
 
     HelperInfo (const String &puuid = String (),
                 const String &pname = String (),

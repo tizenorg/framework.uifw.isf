@@ -864,7 +864,7 @@ msgstr "Velg inndatametode"
 
 #: ism/extras/efl_panel/iseselector.cpp:224
 msgid "Set up input methods"
-msgstr "Sett opp inndatametoder"
+msgstr "Konfigurer inndatametoder"
 
 #: ism/utils/scimstringview.c:201
 msgid "Cursor Position"

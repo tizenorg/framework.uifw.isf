@@ -51,18 +51,11 @@
 #include <scim_panel_common.h>
 #include "isf_query_utility.h"
 #include "isf_pkg.h"
-#include <dlog.h>
-
-#ifdef LOG_TAG
-# undef LOG_TAG
-#endif
-#define LOG_TAG             "SCIM"
 
 #define WAIT_WM
-#define ISF_SYSTEM_WM_READY_FILE    "/tmp/.wm_ready"
-#define ISF_SYSTEM_WM_WAIT_COUNT    200
-#define ISF_SYSTEM_WAIT_DELAY       100 * 1000
-#define MIN_RETRY_TIME              8.0
+#define ISF_SYSTEM_WM_READY_FILE                        "/tmp/.wm_ready"
+#define ISF_SYSTEM_WM_WAIT_COUNT                        200
+#define ISF_SYSTEM_WAIT_DELAY                           100 * 1000
 
 using namespace scim;
 using std::cout;
@@ -96,39 +89,22 @@ static bool check_panel (const String &display)
 {
     SocketAddress address;
     SocketClient client;
+
     uint32 magic;
-    struct tms     tiks_buf;
-    static bool check = true;   /* Added; 'start_tiks' can't be used to check if it's the first time because 'curr_tiks' could be also zero. */
-    static clock_t start_tiks = (clock_t)0;
-    static double  clock_tiks = (double)sysconf (_SC_CLK_TCK);
-    clock_t curr_tiks = times (&tiks_buf);  /* This can be a negative number or zero at boot up */
-    double  secs = (double)(curr_tiks - start_tiks) / clock_tiks;
 
-    if (secs > MIN_RETRY_TIME ||
-            (start_tiks == (clock_t)0 && check == true) /* Make sure it goes through at first time */
-            ) {
-        address.set_address (scim_get_default_panel_socket_address (display));
+    address.set_address (scim_get_default_panel_socket_address (display));
 
-        if (!client.connect (address)) {
-            start_tiks = curr_tiks;
-            check = false;
+    if (!client.connect (address))
+        return false;
+
+    if (!scim_socket_open_connection (magic,
+        String ("ConnectionTester"),
+        String ("Panel"),
+        client,
+        1000)) {
             return false;
-        }
-
-        if (!scim_socket_open_connection (magic,
-            String ("ConnectionTester"),
-            String ("Panel"),
-            client,
-            1000)) {
-                start_tiks = curr_tiks;
-                check = false;
-                return false;
-        }
     }
 
-    if (check == true)
-        start_tiks = curr_tiks;
-    check = false;
     return true;
 }
 
@@ -202,21 +178,9 @@ static void launch_helper (const char *exe, const char *name, const char *appid)
         if (pid < 0) return;
 
         if (pid == 0) {
-            if (exit_handler) {
-                ecore_event_handler_del (exit_handler);
-                exit_handler = NULL;
-            }
-
-            if (data_handler) {
-                ecore_event_handler_del (data_handler);
-                data_handler = NULL;
-            }
-
-            if (server) {
-                ecore_ipc_server_del (server);
-                server = NULL;
-            }
-
+            if (exit_handler) ecore_event_handler_del (exit_handler);
+            if (data_handler) ecore_event_handler_del (data_handler);
+            if (server) ecore_ipc_server_del (server);
             ecore_ipc_shutdown ();
 
             const char *argv [] = { exe,
@@ -227,7 +191,7 @@ static void launch_helper (const char *exe, const char *name, const char *appid)
                 appid,
                 0};
 
-            ISF_SAVE_LOG ("Exec scim_helper_launcher(%s %s)\n", name, appid);
+            ISF_SAVE_LOG ("Exec %s (%s %s)\n", exe, name, appid);
 
             setsid ();
             execv (SCIM_HELPER_LAUNCHER_PROGRAM, const_cast<char **>(argv));
@@ -250,7 +214,7 @@ static Eina_Bool handler_client_data (void *data, int ev_type, void *ev)
     Ecore_Ipc_Event_Client_Data *e = (Ecore_Ipc_Event_Client_Data *)ev;
     if (!e) return ECORE_CALLBACK_PASS_ON;
 
-    LOGD ("client %p sent [%i] [%i] [%i]", e->client, e->major, e->minor, e->size);
+    ISF_SAVE_LOG ("client %p sent [%i] [%i] [%i]\n", e->client, e->major, e->minor, e->size);
 
     char buffer[_POSIX_PATH_MAX + 1] = {0};
     strncpy (buffer, (char*)(e->data), (e->size > _POSIX_PATH_MAX) ? _POSIX_PATH_MAX : e->size);
@@ -266,11 +230,11 @@ static Eina_Bool handler_client_data (void *data, int ev_type, void *ev)
             return ECORE_CALLBACK_DONE;
         }
         else if (strcmp (buffer, "request_to_launch_panel") == 0) {
-            LOGD ("App requested to launch panel.");
+            ISF_SAVE_LOG ("App requested to launch panel.\n");
             try {
                 if (!check_panel ("")) {
                     cerr << "Launching Panel...\n";
-                    LOGD ("ppid:%d Launching panel process....", getppid ());
+                    ISF_SAVE_LOG ("ppid:%d Launching panel process......\n", getppid ());
 
                     scim_launch_panel (true, "socket", "", NULL);
                 }
@@ -285,9 +249,8 @@ static Eina_Bool handler_client_data (void *data, int ev_type, void *ev)
 
     const char *message = "Done";
     if (ecore_ipc_client_send (e->client, 0, 0, 0, 0, 0, message, strlen (message)) == 0) {
-        LOGW ("ecore_ipc_client_send FAILED!!");
+        ISF_SAVE_LOG ("ecore_ipc_client_send FAILED!!\n");
     }
-    ecore_ipc_client_flush (e->client);
 
     int blank_index = 0;
     for (int loop = 0; loop < (int)strlen (buffer); loop++) {
@@ -307,22 +270,11 @@ static Eina_Bool handler_client_data (void *data, int ev_type, void *ev)
         /* Only for Native IME, execute applicaiton's exec */
         if (imeInfo.pkgtype.compare("tpk") == 0) {
             if (!check_lfile (imeInfo.exec.c_str ())) {
-                // Make bin directory and set smack label
-                String path = imeInfo.exec.substr (0, imeInfo.exec.find_last_of (SCIM_PATH_DELIM)).c_str ();
-                if (path.length () > 0) {
-                    ecore_file_mkpath (path.c_str ());  // If path exists, this function returns EINA_TRUE.
-                    if (smack_setlabel (path.c_str (), imeInfo.pkgid.c_str (), SMACK_LABEL_ACCESS) < 0) {
-                        ISF_SAVE_LOG ("Fail to set smack label (%s) for %s\n", imeInfo.pkgid.c_str (), path.c_str ());
-                    }
-                }
-
-                // Make symbolic link file
                 if (EINA_FALSE == ecore_file_symlink (SCIM_HELPER_LAUNCHER_PROGRAM, imeInfo.exec.c_str ())) {
-                    ISF_SAVE_LOG ("Fail to make symlink file: %s\n", imeInfo.exec.c_str ());
+                    ISF_SAVE_LOG ("Fail to make symlink file!\n");
                 }
-                // Set smack label
                 if (smack_lsetlabel (imeInfo.exec.c_str (), imeInfo.pkgid.c_str (), SMACK_LABEL_ACCESS) < 0) {
-                    ISF_SAVE_LOG ("Fail to set smack label (%s) for %s\n", imeInfo.pkgid.c_str (), imeInfo.exec.c_str ());
+                    ISF_SAVE_LOG ("Fail to set smack label!\n");
                 }
             }
             launch_helper (imeInfo.exec.c_str (), ise_name, ise_appid);
@@ -338,12 +290,12 @@ static Eina_Bool handler_client_data (void *data, int ev_type, void *ev)
 static void run_broker (int argc, char *argv [])
 {
     if (!ecore_init ()) {
-        LOGE ("Failed to init ecore!!");
+        ISF_SAVE_LOG ("Failed to init ecore!!\n");
         return;
     }
 
     if (!ecore_ipc_init ()) {
-        LOGE ("Failed to init ecore_ipc!!");
+        ISF_SAVE_LOG ("Failed to init ecore_ipc!!\n");
         ecore_shutdown ();
         return;
     }
@@ -354,7 +306,7 @@ static void run_broker (int argc, char *argv [])
     server = ecore_ipc_server_add (ECORE_IPC_LOCAL_SYSTEM, "scim-helper-broker", 0, NULL);
 
     if (server == NULL) {
-        LOGW ("ecore_ipc_server_add returned NULL!!");
+        ISF_SAVE_LOG ("ecore_ipc_server_add returned NULL!!\n");
     }
 
     ecore_main_loop_begin ();
@@ -393,7 +345,7 @@ int main (int argc, char *argv [])
     int   new_argc = 0;
     char *new_argv [80];
 
-    LOGD ("ppid : %d Waiting for wm_ready", getppid ());
+    ISF_SAVE_LOG ("ppid : %d Waiting for wm_ready\n", getppid ());
 
     if (!check_wm_ready ()) {
         std::cerr << "[ISF-PANEL-EFL] WM ready timeout\n";
@@ -424,11 +376,6 @@ int main (int argc, char *argv [])
     for (it = helper_list.begin (); it != helper_list.end (); it++) {
         all_engine_list.push_back (*it);
         load_engine_list.push_back (*it);
-    }
-
-    /* Unless the target is no-keyboard model, we have a problem. */
-    if (load_engine_list.size () < 1) {
-        LOGW ("There is no helper/imeengine!");
     }
 
     /* Use x11 FrontEnd as default if available. */
@@ -603,7 +550,7 @@ int main (int argc, char *argv [])
 
     /* Try to start a SocketFrontEnd daemon first. */
     if (socket) {
-        LOGD ("ppid:%d Now socket frontend....", getppid ());
+        ISF_SAVE_LOG ("ppid:%d Now socket frontend......\n", getppid ());
 
         /* If no Socket FrontEnd is running, then launch one.
            And set manual to false. */
@@ -645,7 +592,7 @@ int main (int argc, char *argv [])
 
     cerr << "Launching a process with " << def_frontend << " FrontEnd...\n";
 
-    LOGD ("ppid:%d Now default frontend....", getppid ());
+    ISF_SAVE_LOG ("ppid:%d Now default frontend......\n", getppid ());
 
     /* Launch the scim process. */
     if (scim_launch (daemon,
@@ -660,13 +607,13 @@ int main (int argc, char *argv [])
 
         gettime (clock_start, "ISM launch time");
 
-        LOGD ("ppid:%d Now checking panel process....", getppid ());
+        ISF_SAVE_LOG ("ppid:%d Now checking panel process......\n", getppid ());
 
         /* When finished launching scim-launcher, let's create panel process also, for the default display :0 */
         try {
             if (!check_panel ("")) {
                cerr << "Launching Panel...\n";
-               LOGD ("ppid:%d Launching panel process....%s", getppid (), def_config.c_str ());
+               ISF_SAVE_LOG ("ppid:%d Launching panel process......%s\n", getppid (), def_config.c_str ());
 
                scim_launch_panel (true, "socket", "", NULL);
             }

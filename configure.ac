@@ -1,6 +1,6 @@
 # Process this file with autoconf to produce a configure script
 #AC_INIT(scim, 1.4.7, suzhe@tsinghua.org.cn)
-AC_INIT(isf, 2.4.9516, isf@samsung.com)
+AC_INIT(isf, 2.4.9322, isf@samsung.com)
 AC_CONFIG_SRCDIR([ism/src/scim.h])
 
 ###########################################################
@@ -10,7 +10,7 @@ AC_CONFIG_SRCDIR([ism/src/scim.h])
 # ISF version
 ISF_MAJOR_VERSION=2
 ISF_MINOR_VERSION=4
-ISF_MICRO_VERSION=9516
+ISF_MICRO_VERSION=9322
 
 ISF_VERSION=$ISF_MAJOR_VERSION.$ISF_MINOR_VERSION.$ISF_MICRO_VERSION
 
@@ -83,7 +83,7 @@ AM_CONFIG_HEADER([config.h])
 PLATFORM_INIT
 
 # Init gettext
-ALL_LINGUAS="ar as az be_BY bg bn bn_BD ca cs da de el_GR en en_PH en_US es_ES es_MX es_US et eu fa fi fr fr_CA ga gl gu he hi hr hu hy id is it_IT ja_JP ka kk km kn ko_KR ky_KG lo lt lv mg mk ml mn_MN mr ms my_MM my_ZG nb ne nl or pa pl pl_SP pt_BR pt_PT ro ru_RU si sk sl sq sr sv sw ta te tg_TJ th tk_TM tl tr_TR uk ur uz vi xh zh_CN zh_HK zh_TW zh_TW zu"
+ALL_LINGUAS="hy az eu bg ca zh_CN zh_HK zh_TW hr cs da nl_NL en en_US et fi fr_FR gl ka de_DE el_GR hu is ga it_IT ja_JP kk ko_KR lv lt mk nb pl pt_PT pt_BR ro ru_RU sr sk sl es_ES es_US es_MX sv tr_TR uk uz ar zh_SG hi en_PH fr_CA fa th ur as bn gu id km kn lo ml mn_MN mr ms my ne or pa si ta te tl vi"
 AM_GNU_GETTEXT
 
 # Init libtool

@@ -838,7 +838,7 @@ msgstr ""
 #: ism/extras/efl_panel/isf_panel_efl.cpp:3927
 #, c-format
 msgid "%s selected"
-msgstr "%s منتخب کیا"
+msgstr "%s منتخب ہوگئے"
 
 #: ism/extras/efl_panel/isf_panel_efl.cpp:3930
 #, fuzzy, c-format
@@ -849,12 +849,12 @@ msgstr "صرف %s دستیاب"
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5614
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5620
 msgid "Input detected from hardware keyboard"
-msgstr "ہارڈ ویئر کی بورڈ سے ان پٹ کا سراغ لگ گیا۔"
+msgstr ""
 
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5530
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5614
 msgid "Tap to use virtual keyboard"
-msgstr "مجازی کی بورڈ استعمال کرنے کے لئے تھپتھپائیں"
+msgstr ""
 
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5537
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5751
@@ -864,7 +864,7 @@ msgstr "ان پٹ طریقہ منتخب کریں"
 
 #: ism/extras/efl_panel/iseselector.cpp:224
 msgid "Set up input methods"
-msgstr "ان پٹ کے طریقے سیٹ کریں"
+msgstr "ان پٹ کے طریقے کار سیٹ اپ کریں"
 
 #: ism/utils/scimstringview.c:201
 msgid "Cursor Position"

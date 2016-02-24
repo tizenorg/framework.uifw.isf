@@ -34,8 +34,8 @@
 		<filesystem path="/usr/share/locale/*" label="_"/>
 		<filesystem path="/etc/profile.d/isf.sh" label="_" exec_label="none" />
 		<filesystem path="/opt/etc/dump.d/module.d/isf_log_dump.sh" label="_" exec_label="none" />
-		<filesystem path="/opt/dbspace/.ime_info.db" label="isf" exec_label="none"/>
-		<filesystem path="/opt/dbspace/.ime_info.db-journal" label="isf" exec_label="none"/>
+		<filesystem path="/opt/usr/dbspace/.ime_info.db" label="isf" exec_label="none"/>
+		<filesystem path="/opt/usr/dbspace/.ime_info.db-journal" label="isf" exec_label="none"/>
 	</assign>
 	<request>
 		<domain name="isf"/>

@@ -1,6 +1,6 @@
 Name:       isf
 Summary:    Input Service Framework
-Version:    2.4.9516
+Version:    2.4.9322
 Release:    1
 Group:      System Environment/Libraries
 License:    LGPL-2.1+
@@ -101,15 +101,16 @@ mkdir -p %{buildroot}%{_datadir}/license
 mkdir -p %{buildroot}/opt/etc/dump.d/module.d
 install -m0644 %{_builddir}/%{buildsubdir}/COPYING %{buildroot}%{_datadir}/license/%{name}
 cp -af ism/dump/isf_log_dump.sh %{buildroot}/opt/etc/dump.d/module.d
-mkdir -p %{buildroot}/opt/dbspace
-if [ ! -s %{buildroot}/opt/dbspace/.ime_info.db ]; then
+mkdir -p %{buildroot}/opt/usr/dbspace
+if [ ! -s %{buildroot}/opt/usr/dbspace/.ime_info.db ]; then
 echo "The database file for ime will be created."
-sqlite3 %{buildroot}/opt/dbspace/.ime_info.db <<EOF
+sqlite3 %{buildroot}/opt/usr/dbspace/.ime_info.db <<EOF
 CREATE TABLE ime_info (appid TEXT PRIMARY KEY NOT NULL, label TEXT, pkgid TEXT, pkgtype TEXT, exec TEXT, mname TEXT, mpath TEXT, mode INTEGER, options INTEGER, is_enabled INTEGER, is_preinstalled INTEGER, has_option INTEGER, disp_lang TEXT);
 EOF
 fi
 
 %post
+/sbin/ldconfig
 mkdir -p /etc/scim/conf
 mkdir -p /opt/apps/scim/lib/scim-1.0/1.4.0/Helper
 mkdir -p /opt/apps/scim/lib/scim-1.0/1.4.0/SetupUI
@@ -118,8 +119,6 @@ mkdir -p /opt/apps/scim/lib/scim-1.0/1.4.0/IMEngine
 mkdir -p %{_sysconfdir}/systemd/default-extra-dependencies/ignore-units.d/
 ln -sf %{_libdir}/systemd/system/scim.service %{_sysconfdir}/systemd/default-extra-dependencies/ignore-units.d/
 %endif
-ln -sf %{_libdir}/ecore_imf/modules/isf/v-1.13/module.so %{_libdir}/ecore_imf/modules/isf/v-1.13/libisfmodule.so
-/sbin/ldconfig
 
 
 %postun -p /sbin/ldconfig
@@ -153,7 +152,7 @@ ln -sf %{_libdir}/ecore_imf/modules/isf/v-1.13/module.so %{_libdir}/ecore_imf/mo
 %{_libdir}/libscim-*.so*
 %{_datadir}/license/%{name}
 /opt/etc/dump.d/module.d/*
-%config %attr(660,root,app) /opt/dbspace/.ime_info.db*
+%attr(660,root,app) /opt/usr/dbspace/.ime_info.db*
 
 %files devel
 %defattr(-,root,root,-)

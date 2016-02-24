@@ -929,7 +929,7 @@ msgstr "Modalità di inserimento"
 
 #: ism/extras/efl_panel/iseselector.cpp:224
 msgid "Set up input methods"
-msgstr "Imposta modo di inserimento"
+msgstr "Imposta metodi di inserimento"
 
 #: ism/utils/scimstringview.c:201
 msgid "Cursor Position"

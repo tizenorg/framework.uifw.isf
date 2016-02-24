@@ -2,7 +2,7 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  * Contact: Haifeng Deng <haifeng.deng@samsung.com>, Jihoon Kim <jihoon48.kim@samsung.com>
  *
@@ -223,7 +223,7 @@ static void       slot_get_ise_language                (char *name, std::vector<
 static bool       slot_get_ise_info                    (const String &uuid, ISE_INFO &info);
 static void       slot_get_candidate_geometry          (struct rectinfo &info);
 static void       slot_get_input_panel_geometry        (struct rectinfo &info);
-static void       slot_get_recent_ise_geometry         (int angle, struct rectinfo &info);
+static void       slot_get_recent_ise_geometry         (struct rectinfo &info);
 static bool       slot_check_privilege_by_sockfd       (int client_id, int cmd, String mode);
 static void       slot_set_keyboard_ise                (const String &uuid);
 static void       slot_get_keyboard_ise                (String &ise_name, String &ise_uuid);
@@ -248,8 +248,6 @@ static Eina_Bool  panel_agent_handler                  (void *data, Ecore_Fd_Han
 static Eina_Bool  efl_create_control_window            (void);
 static Ecore_X_Window efl_get_app_window               (void);
 static Ecore_X_Window efl_get_quickpanel_window        (void);
-static Ecore_X_Window efl_get_global_navigation_window (void);
-
 static void       change_keyboard_mode                 (TOOLBAR_MODE_T mode);
 static unsigned int get_ise_index                      (const String uuid);
 static bool       set_active_ise                       (const String &uuid, bool launch_ise);
@@ -920,21 +918,12 @@ static struct rectinfo get_ise_geometry ()
 
     struct rectinfo info = {0, 0, 0, 0};
 
-    int w = 0, h = 0;
-    Ecore_X_Window gnb_win = efl_get_global_navigation_window ();
-    if (gnb_win > 0)
-        ecore_x_window_size_get (gnb_win, &w, &h);
-
     int win_w = _screen_width, win_h = _screen_height;
     int angle = (_ise_angle == -1) ? efl_get_app_window_angle () : _ise_angle;
-
-    /* The height of global navigation bar */
-    int gnb_height = h;
 
     if (angle == 90 || angle == 270) {
         win_w = _screen_height;
         win_h = _screen_width;
-        gnb_height = w;
     }
 
     /* If we have geometry reported by ISE, use the geometry information */
@@ -970,7 +959,7 @@ static struct rectinfo get_ise_geometry ()
                 info.height = 0;
             } else {
                 if (_ise_state == WINDOW_STATE_SHOW) {
-                    info.pos_y = win_h - info.height - gnb_height;
+                    info.pos_y = win_h - info.height;
                 } else {
                     info.pos_y = (win_h > win_w) ? win_h : win_w;
                     info.width = 0;
@@ -1015,10 +1004,9 @@ static void set_keyboard_geometry_atom_info (Ecore_X_Window window, struct recti
                 ise_rect.height = _candidate_height;
             }
         } else if (_candidate_mode == SOFT_CANDIDATE_WINDOW) {
-            ise_rect.width  = _soft_candidate_width;
-            ise_rect.height = _soft_candidate_height;
+                ise_rect.width  = _soft_candidate_width;
+                ise_rect.height = _soft_candidate_height;
         }
-
         int angle = efl_get_app_window_angle ();
         if (angle == 90 || angle == 270)
             ise_rect.pos_y = _screen_width - ise_rect.height;
@@ -1051,7 +1039,9 @@ static void set_keyboard_geometry_atom_info (Ecore_X_Window window, struct recti
     } else {
         ecore_x_e_virtual_keyboard_state_set (window, ECORE_X_VIRTUAL_KEYBOARD_STATE_ON);
 
-        if (_ise_angle == 0 || _ise_angle == 180) {
+        int angle = efl_get_ise_window_angle ();
+
+        if (angle == 0 || angle == 180) {
             _portrait_recent_ise_geometry.valid = true;
             _portrait_recent_ise_geometry.geometry = ise_rect;
         }
@@ -1266,7 +1256,7 @@ Update package (change the source codes in IME project and Run As again), there 
    At UPDATE event, pkgid (package parameter) is valid, and only appid is changed; the previous appid is invalid.
 
 If multiple packages (including non-IME pkgs) are uninstalled and installed; Z300H UPS (ultra power saving) mode scenario.
-For example, A and B packages are uninstalled and installed, the package manager works in this order: A UNINSTALL -> B UNINSTALL -> A INSTALL -> B INSTALL
+For example, A and B packages are uninstalled and installed, the package manager works in this order: A UNINSTALL ¡æB UNINSTALL ¡æA INSTALL ¡æB INSTALL
 
 Assuming IMEngine won't be changed through this. IMEngine might have multiple appids for one pkgid.
 Assuming preinstalled IME won't be changed through this.
@@ -1680,17 +1670,17 @@ static bool set_helper_ise (const String &uuid, bool launch_ise)
     String pre_uuid = _panel_agent->get_current_helper_uuid ();
     LOGD("pre_appid=%s, appid=%s, launch_ise=%d, %d", pre_uuid.c_str(), uuid.c_str(), launch_ise, _soft_keyboard_launched);
     if (pre_uuid == uuid && _soft_keyboard_launched)
-        return true;
+        return false;
 
     if (TOOLBAR_HELPER_MODE == mode && pre_uuid.length () > 0 && _soft_keyboard_launched) {
         _panel_agent->hide_helper (pre_uuid);
         _panel_agent->stop_helper (pre_uuid);
         _soft_keyboard_launched = false;
-        LOGD ("stop helper : %s", pre_uuid.c_str ());
+        ISF_SAVE_LOG("stop helper : %s\n", pre_uuid.c_str ());
     }
 
     if (launch_ise) {
-        LOGD ("Start helper (%s)", uuid.c_str ());
+        ISF_SAVE_LOG ("Start helper (%s)\n", uuid.c_str ());
 
         set_keyboard_engine (String (SCIM_COMPOSE_KEY_FACTORY_UUID));
         if (_panel_agent->start_helper (uuid))
@@ -1712,7 +1702,7 @@ static bool set_helper_ise (const String &uuid, bool launch_ise)
 static bool set_active_ise (const String &uuid, bool launch_ise)
 {
     SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
-    LOGD ("set ISE (%s) %d", uuid.c_str(), launch_ise);
+    ISF_SAVE_LOG ("set ISE (%s) %d\n", uuid.c_str(), launch_ise);
 
     if (uuid.length () <= 0)
         return false;
@@ -2473,9 +2463,7 @@ static void ui_candidate_hide (bool bForce, bool bSetVirtualKbd, bool will_hide)
         if (!will_hide) {
             /* If we are not in will_hide state, hide the candidate window immediately */
             candidate_window_hide ();
-
-            if (_preedit_window)
-                evas_object_hide (_preedit_window);
+            evas_object_hide (_preedit_window);
         }
     }
 }
@@ -2982,9 +2970,6 @@ static void ui_mouse_click (int focus_index)
 static void ui_create_preedit_window (void)
 {
     SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
-
-    if (_candidate_mode == SOFT_CANDIDATE_WINDOW)
-        return;
 
     _preedit_width  = 100;
     _preedit_height = _preedit_height * _height_rate;
@@ -3586,32 +3571,34 @@ static Eina_Bool efl_create_control_window (void)
 }
 
 /**
- * @brief Get an window's x window id.
+ * @brief Get app window's x window id.
  *
- * @param name the property name.
- * @return X window id.
+ * @param win_obj The Evas_Object handler of app window.
  */
-static Ecore_X_Window efl_get_window (const char *name)
+static Ecore_X_Window efl_get_app_window (void)
 {
-    /* Gets the XID of the window from the root window property */
+    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
+
+    /* Gets the current XID of the active window from the root window property */
     int  ret = 0;
     Atom type_return;
     int  format_return;
     unsigned long    nitems_return;
     unsigned long    bytes_after_return;
     unsigned char   *data = NULL;
-    Ecore_X_Window   window = 0;
+    Ecore_X_Window   xAppWindow = 0;
 
     ret = XGetWindowProperty ((Display *)ecore_x_display_get (),
                               ecore_x_window_root_get (_control_window),
-                              ecore_x_atom_get (name),
+                              ecore_x_atom_get ("_ISF_ACTIVE_WINDOW"),
                               0, G_MAXLONG, False, XA_WINDOW, &type_return,
                               &format_return, &nitems_return, &bytes_after_return,
                               &data);
 
     if (ret == Success) {
         if ((type_return == XA_WINDOW) && (format_return == 32) && (data)) {
-            window = *(Window *)data;
+            void *pvoid = data;
+            xAppWindow = *(Window *)pvoid;
             if (data)
                 XFree (data);
         }
@@ -3619,50 +3606,46 @@ static Ecore_X_Window efl_get_window (const char *name)
         std::cerr << "XGetWindowProperty () is failed!!!\n";
     }
 
-    return window;
-}
-
-/**
- * @brief Get app window's x window id.
- *
- * @return the X window id of application to have focus or to request to show IME.
- */
-static Ecore_X_Window efl_get_app_window (void)
-{
-    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
-
-    return efl_get_window ("_ISF_ACTIVE_WINDOW");
+    return xAppWindow;
 }
 
 /**
  * @brief Get clipboard window's x window id.
  *
- * @return the X window id of clipboard.
  */
 static Ecore_X_Window efl_get_clipboard_window (void)
 {
     SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
 
-    return efl_get_window ("CBHM_ELM_WIN");
+    /* Gets the XID of the clipboard window from the root window property */
+    int  ret = 0;
+    Atom type_return;
+    int  format_return;
+    unsigned long    nitems_return;
+    unsigned long    bytes_after_return;
+    unsigned char   *data = NULL;
+    Ecore_X_Window   clipboard_window = 0;
+
+    ret = XGetWindowProperty ((Display *)ecore_x_display_get (),
+                              ecore_x_window_root_get (_control_window),
+                              ecore_x_atom_get ("CBHM_ELM_WIN"),
+                              0, G_MAXLONG, False, XA_WINDOW, &type_return,
+                              &format_return, &nitems_return, &bytes_after_return,
+                              &data);
+
+    if (ret == Success) {
+        if ((type_return == XA_WINDOW) && (format_return == 32) && (data)) {
+            clipboard_window = *(Window *)data;
+            if (data)
+                XFree (data);
+        }
+    } else {
+        std::cerr << "XGetWindowProperty () is failed!!!\n";
+    }
+
+    return clipboard_window;
 }
 
-/**
- * @brief Get global natigation window's x window id.
- *
- * @return the X window id of global navigation.
- */
-static Ecore_X_Window efl_get_global_navigation_window (void)
-{
-    SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
-
-    return efl_get_window ("GNB_WIN");
-}
-
-/**
- * @brief Get app window's x window id.
- *
- * @return the X window id of quick panel.
- */
 static Ecore_X_Window efl_get_quickpanel_window (void)
 {
     SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
@@ -3769,7 +3752,7 @@ static bool initialize_panel_agent (const String &config, const String &display,
 {
     SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
 
-    LOGD ("initializing panel agent");
+    ISF_SAVE_LOG ("initializing panel agent\n");
 
     _panel_agent = new PanelAgent ();
 
@@ -3841,7 +3824,7 @@ static bool initialize_panel_agent (const String &config, const String &display,
     std::vector<String> load_ise_list;
     _panel_agent->get_active_ise_list (load_ise_list);
 
-    LOGD ("initializing panel agent succeeded");
+    ISF_SAVE_LOG ("initializing panel agent succeeded\n");
 
     return true;
 }
@@ -3973,11 +3956,11 @@ static bool update_ise_list (std::vector<String> &list)
                 LOGD("package_manager_set_event_cb succeeded.");
             }
             else {
-                LOGE("package_manager_set_event_cb failed(%d)", ret);
+                LOGW("package_manager_set_event_cb failed(%d)", ret);
             }
         }
         else {
-            LOGE("package_manager_create failed(%d)", ret);
+            LOGW("package_manager_create failed(%d)", ret);
         }
     }
 #endif
@@ -4008,7 +3991,7 @@ static void slot_focus_in (void)
         if (_launch_ise_on_request && !_soft_keyboard_launched) {
             String uuid = _config->read (SCIM_CONFIG_DEFAULT_HELPER_ISE, String (""));
             if (uuid.length () > 0 && (_ime_info[get_ise_index(uuid)].options & ISM_HELPER_PROCESS_KEYBOARD_KEYEVENT)) {
-                LOGD ("Start helper (%s)", uuid.c_str ());
+                ISF_SAVE_LOG ("Start helper (%s)\n", uuid.c_str ());
 
                 set_keyboard_engine (String (SCIM_COMPOSE_KEY_FACTORY_UUID));
                 if (_panel_agent->start_helper (uuid))
@@ -4211,17 +4194,15 @@ static void slot_update_ise_geometry (int x, int y, int width, int height)
         ui_settle_candidate_window ();
     }
 
-    if (_ise_state == WINDOW_STATE_SHOW || _ise_state == WINDOW_STATE_WILL_SHOW) {
+    if (_ise_state == WINDOW_STATE_SHOW) {
         _ise_reported_geometry.valid = true;
         _ise_reported_geometry.angle = efl_get_ise_window_angle ();
         _ise_reported_geometry.geometry.pos_x = x;
         _ise_reported_geometry.geometry.pos_y = y;
         _ise_reported_geometry.geometry.width = width;
         _ise_reported_geometry.geometry.height = height;
-        if (_ise_state == WINDOW_STATE_SHOW) {
-            set_keyboard_geometry_atom_info (_app_window, _ise_reported_geometry.geometry);
-            _panel_agent->update_input_panel_event (ECORE_IMF_INPUT_PANEL_GEOMETRY_EVENT, 0);
-        }
+        set_keyboard_geometry_atom_info (_app_window, _ise_reported_geometry.geometry);
+        _panel_agent->update_input_panel_event (ECORE_IMF_INPUT_PANEL_GEOMETRY_EVENT, 0);
     }
 }
 
@@ -4231,12 +4212,9 @@ static void slot_update_ise_geometry (int x, int y, int width, int height)
 static void slot_show_preedit_string (void)
 {
     SCIM_DEBUG_MAIN (3) << __FUNCTION__ << "...\n";
-
-    if (_candidate_mode == SOFT_CANDIDATE_WINDOW)
-        return;
-
     if (_preedit_window == NULL) {
         ui_create_preedit_window ();
+        int angle = efl_get_app_window_angle ();
 
         /* Move preedit window according to candidate window position */
         if (_candidate_window) {
@@ -4245,8 +4223,6 @@ static void slot_show_preedit_string (void)
             ecore_evas_geometry_get (ecore_evas_ecore_evas_get (evas_object_evas_get (_candidate_window)), &x, &y, &width, &height);
 
             int height2 = ui_candidate_get_valid_height ();
-            int angle = efl_get_app_window_angle ();
-
             if (angle == 90) {
                 x -= _preedit_height;
                 y = _screen_height - _preedit_width;
@@ -4258,19 +4234,15 @@ static void slot_show_preedit_string (void)
             } else {
                 y -= _preedit_height;
             }
-
-            if (_preedit_window)
-                evas_object_move (_preedit_window, x, y);
+            evas_object_move (_preedit_window, x, y);
         }
     }
 
-    if (_preedit_window && evas_object_visible_get (_preedit_window))
+    if (evas_object_visible_get (_preedit_window))
         return;
 
     slot_show_candidate_table ();
-
-    if (_preedit_window)
-        evas_object_show (_preedit_window);
+    evas_object_show (_preedit_window);
 }
 
 /**
@@ -5038,18 +5010,14 @@ static void slot_get_input_panel_geometry (struct rectinfo &info)
 /**
  * @brief Get the recent input panel geometry slot function for PanelAgent.
  *
- * @param angle the rotation angle of application window.
  * @param info The data is used to store input panel position and size.
  */
-static void slot_get_recent_ise_geometry (int angle, struct rectinfo &info)
+static void slot_get_recent_ise_geometry (struct rectinfo &info)
 {
     LOGD ("slot_get_recent_ise_geometry\n");
 
     /* If we have geometry reported by ISE, use the geometry information */
-    if (angle < 0) {
-        angle = _ise_angle;
-    }
-
+    int angle = efl_get_app_window_angle ();
     if (angle == 0 || angle == 180) {
         if (_portrait_recent_ise_geometry.valid) {
             info = _portrait_recent_ise_geometry.geometry;
@@ -5831,7 +5799,7 @@ static void slot_start_default_ise (void)
         if (_launch_ise_on_request && !_soft_keyboard_launched) {
             String uuid  = _config->read (SCIM_CONFIG_DEFAULT_HELPER_ISE, String (""));
 
-            LOGD ("Start helper (%s)", uuid.c_str ());
+            ISF_SAVE_LOG ("Start helper (%s)\n", uuid.c_str ());
 
             set_keyboard_engine (String (SCIM_COMPOSE_KEY_FACTORY_UUID));
             if (_panel_agent->start_helper (uuid))
@@ -5851,7 +5819,7 @@ static void slot_stop_default_ise (void)
             _panel_agent->hide_helper (uuid);
             _panel_agent->stop_helper (uuid);
             _soft_keyboard_launched = false;
-            LOGD ("stop helper (%s)", uuid.c_str ());
+            ISF_SAVE_LOG ("stop helper (%s)\n", uuid.c_str ());
         }
     }
 }
@@ -5900,7 +5868,6 @@ static Eina_Bool _terminate_timer_cb(void *data)
     Ecore_Ipc_Server *server = (Ecore_Ipc_Server *)data;
     if (server)
         ecore_ipc_server_del (server);
-    ecore_ipc_shutdown ();
     elm_exit ();
     return ECORE_CALLBACK_CANCEL;
 }
@@ -5919,15 +5886,13 @@ static Eina_Bool helper_manager_input_handler (void *data, Ecore_Fd_Handler *fd_
     if (_panel_agent->has_helper_manager_pending_event ()) {
         if (!_panel_agent->filter_helper_manager_event ()) {
             std::cerr << "_panel_agent->filter_helper_manager_event () is failed!!!\n";
-            LOGE ("_panel_agent->filter_helper_manager_event () is failed!!!");
+            ISF_SAVE_LOG ("_panel_agent->filter_helper_manager_event () is failed!!!\n");
 #if defined(HAVE_SYSTEMD)
-            ecore_ipc_init ();
             Ecore_Ipc_Server *server = ecore_ipc_server_connect (ECORE_IPC_LOCAL_SYSTEM, (char *)"scim-helper-broker", 0, NULL);
             if (server) {
                 const char *message = "request_to_terminate_scim";
                 LOGD("Request to terminate scim...");
                 ecore_ipc_server_send (server, 2, 4, 0, 0, 0, message, strlen (message));
-                ecore_ipc_server_flush (server);
             }
 
             /* isf-panel-process will be terminated when the parent scim process is terminated.
@@ -5941,7 +5906,7 @@ static Eina_Bool helper_manager_input_handler (void *data, Ecore_Fd_Handler *fd_
         }
     } else {
         std::cerr << "_panel_agent->has_helper_manager_pending_event () is failed!!!\n";
-        LOGE ("_panel_agent->has_helper_manager_pending_event () is failed!!!");
+        ISF_SAVE_LOG ("_panel_agent->has_helper_manager_pending_event () is failed!!!\n");
     }
 
     return ECORE_CALLBACK_RENEW;

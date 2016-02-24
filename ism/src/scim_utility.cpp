@@ -4,7 +4,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -1340,12 +1340,12 @@ scim_usleep (unsigned int usec)
 EXAPI void scim_daemon ()
 {
 #if HAVE_DAEMON
-    LOGD ("ppid:%d  calling daemon()\n", getppid ());
+    ISF_SAVE_LOG ("ppid:%d  calling daemon()\n", getppid ());
 
     if (daemon (0, 0) == -1)
         std::cerr << "Error to make SCIM into a daemon!\n";
 
-    LOGD ("ppid:%d  daemon() called\n", getppid ());
+    ISF_SAVE_LOG ("ppid:%d  daemon() called\n", getppid ());
 
     return;
 #else
@@ -1384,7 +1384,7 @@ EXAPI void isf_save_log (const char *fmt, ...)
     vsnprintf (buf, sizeof (buf), fmt, ap);
     va_end (ap);
 
-    const int MAX_LOG_FILE_SIZE = 12 * 1024; /* 12KB */
+    const int MAX_LOG_FILE_SIZE = 10 * 1024; /* 10KB */
 
     static bool size_exceeded = false;
     static struct stat st;

@@ -13,7 +13,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2004-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -177,9 +177,6 @@ typedef Slot6<bool, String, String &, String &, int &, int &, String &>
 
 typedef Slot3<bool, int, int, String>
         PanelAgentSlotIntIntString;
-
-typedef Slot2<void, int, struct rectinfo &>
-        PanelAgentSlotIntRect;
 
 typedef struct DefaultIse
 {
@@ -1211,7 +1208,7 @@ public:
      *
      * slot prototype: void set_keyboard_mode (void);
      */
-    Connection signal_connect_set_keyboard_mode          (PanelAgentSlotInt                 *slot);
+    Connection signal_connect_set_keyboard_mode (PanelAgentSlotInt                *slot);
 
     /**
      * @brief Signal: Notifies the client finished handling WILL_HIDE event for candidate
@@ -1230,9 +1227,9 @@ public:
     /**
      * @brief Signal: Get the recent input panel geometry information.
      *
-     * slot prototype: void get_recent_ise_geometry (int angle, rectinfo &info);
+     * slot prototype: void get_recent_ise_geometry (rectinfo &info);
      */
-    Connection signal_connect_get_recent_ise_geometry    (PanelAgentSlotIntRect             *slot);
+    Connection signal_connect_get_recent_ise_geometry    (PanelAgentSlotRect                *slot);
 
     Connection signal_connect_check_privilege_by_sockfd  (PanelAgentSlotIntIntString        *slot);
 };

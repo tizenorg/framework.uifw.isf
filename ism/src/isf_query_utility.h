@@ -2,7 +2,7 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  * Contact: Haifeng Deng <haifeng.deng@samsung.com>, Hengliang Luo <hl.luo@samsung.com>
  *
@@ -63,6 +63,7 @@ typedef struct {
 
 EXAPI int isf_db_select_all_ime_info(std::vector<ImeInfoDB> &ime_info);
 EXAPI int isf_db_select_ime_info_by_appid(const char *appid, ImeInfoDB *pImeInfo);
+EXAPI int isf_db_select_ime_info_by_module_name(const char *mname, ImeInfoDB *pImeInfo);
 EXAPI int isf_db_select_module_name_by_mode(TOOLBAR_MODE_T mode, std::vector<String> &mname);
 EXAPI int isf_db_select_module_path_by_mode(TOOLBAR_MODE_T mode, std::vector<String> &mpath);
 EXAPI int isf_db_select_appids_by_pkgid(const char *pkgid, std::vector<String> &appids);

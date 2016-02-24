@@ -9,7 +9,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -94,7 +94,7 @@ class EXAPI Transaction
     TransactionReader * m_reader;
 
     Transaction (const Transaction &);
-    Transaction & operator = (const Transaction &);
+    const Transaction & operator = (const Transaction &);
 public:
     /**
      * @brief Constructor.
@@ -107,11 +107,6 @@ public:
      * @brief Destructor.
      */
     ~Transaction ();
-
-    /**
-     * @brief Copy the transaction in a new data holder.
-     */
-    void deep_copy(const Transaction &);
 
     /**
      * @brief Check if the transaction is valid.
@@ -504,18 +499,6 @@ public:
      * @brief Print the read pos.
      */
     void dump ();
-
-    /**
-     * @brief Get current read position.
-     *
-     * @return The current read position.
-     */
-    size_t get_position();
-
-    /**
-     * @brief Set a position to read.
-     */
-    void set_position(size_t pos);
 };
 
 /** @} */

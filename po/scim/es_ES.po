@@ -843,7 +843,7 @@ msgstr "%s se ha seleccionado."
 #: ism/extras/efl_panel/isf_panel_efl.cpp:3930
 #, fuzzy, c-format
 msgid "Only %s available"
-msgstr "Solo está disponible %s."
+msgstr "Solo está disponible  %s."
 
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5530
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5614

@@ -8,7 +8,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -59,9 +59,6 @@ class TransactionHolder
 {
     mutable int    m_ref;
 
-    TransactionHolder (const TransactionHolder &);
-    TransactionHolder & operator = (const TransactionHolder &);
-
 public:
     size_t         m_buffer_size;
     size_t         m_write_pos;
@@ -77,8 +74,37 @@ public:
             throw Exception ("TransactionHolder::TransactionHolder() Out of memory");
     }
 
+    TransactionHolder (TransactionHolder &other)
+        : m_ref (other.m_ref),
+          m_buffer_size (other.m_buffer_size),
+          m_write_pos (other.m_write_pos),
+          m_buffer ((unsigned char*) malloc (other.m_buffer_size)) {
+        if (!m_buffer)
+            throw Exception ("TransactionHolder::TransactionHolder() Out of memory");
+
+        if (m_buffer_size && m_buffer)
+            memcpy (m_buffer, other.m_buffer, m_buffer_size);
+    }
+
     ~TransactionHolder () {
         free (m_buffer);
+    }
+
+    TransactionHolder & operator = (const TransactionHolder &other) {
+        m_ref = other.m_ref;
+        m_buffer_size = other.m_buffer_size;
+        m_write_pos = other.m_write_pos;
+        if (m_buffer)
+            free (m_buffer);
+
+        m_buffer = (unsigned char*) malloc (other.m_buffer_size);
+        if (!m_buffer)
+            throw Exception ("TransactionHolder::TransactionHolder() Out of memory");
+
+        if (m_buffer_size && m_buffer)
+            memcpy (m_buffer, other.m_buffer, m_buffer_size);
+
+        return *this;
     }
 
     bool valid () const {
@@ -142,21 +168,6 @@ Transaction::Transaction (size_t bufsize)
 {
     m_holder->ref ();
     m_reader->attach (*this);
-}
-
-void
-Transaction::deep_copy(const Transaction & _tran)
-{
-    m_reader->detach ();
-    m_holder->unref ();
-    m_holder = new TransactionHolder (_tran.get_size ());
-    m_holder->ref ();
-    m_reader->attach (*this);
-
-    m_holder->request_buffer_size (_tran.get_size ());
-    _tran.write_to_buffer (m_holder->m_buffer,_tran.get_size ());
-    m_holder->m_write_pos = _tran.get_size ();
-    m_reader->set_position (_tran.m_reader->get_position ());
 }
 
 Transaction::~Transaction ()
@@ -294,7 +305,7 @@ Transaction::read_from_buffer (const void *buf, size_t bufsize)
 
         memcpy (m_holder->m_buffer, buf, size);
 
-        m_holder->m_write_pos = SCIM_TRANS_HEADER_SIZE + size;
+        m_holder->m_write_pos = SCIM_TRANS_HEADER_SIZE;
 #ifdef ENABLE_CHECKMSG
         if (checksum == m_holder->calc_checksum ())
             return true;
@@ -1504,21 +1515,6 @@ void
 TransactionReader::dump ()
 {
     m_impl->dump ();
-}
-
-size_t
-TransactionReader::get_position()
-{
-    return m_impl->m_read_pos;
-}
-
-void
-TransactionReader::set_position(size_t pos)
-{
-    if (pos > m_impl->m_holder->m_write_pos)
-        m_impl->m_read_pos = m_impl->m_holder->m_write_pos;
-    else
-        m_impl->m_read_pos = pos;
 }
 
 } // namespace scim

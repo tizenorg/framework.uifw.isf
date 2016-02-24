@@ -2,7 +2,7 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  * Contact: Jihoon Kim <jihoon48.kim@samsung.com>, Haifeng Deng <haifeng.deng@samsung.com>
  *
@@ -65,8 +65,6 @@ static Eina_Bool          will_hide = EINA_FALSE;
 static bool               _support_hw_keyboard_mode = false;
 
 extern void scim_initialize (void);
-
-static std::vector <String> lock_screen_class_names;
 
 static void _send_input_panel_hide_request ();
 
@@ -443,16 +441,11 @@ Eina_Bool check_focus_out_by_popup_win (Ecore_IMF_Context *ctx)
         LOGD ("client window : %#x, focus window : %#x\n", client_win, focus_win);
 
         if (client_win != focus_win) {
-            ret = EINA_TRUE;
             ecore_x_icccm_name_class_get (focus_win, NULL, &class_name);
 
             if (class_name) {
-                LOGD ("window class name : %s\n", class_name);
-                for (unsigned int i = 0; i < lock_screen_class_names.size (); ++i) {
-                    if (!strcmp (class_name, lock_screen_class_names [i].c_str ())) {
-                        ret = EINA_FALSE;
-                        break;
-                    }
+                if (strncmp (class_name, "LOCK_SCREEN", 11) != 0) {
+                    ret = EINA_TRUE;
                 }
 
                 free (class_name);
@@ -496,8 +489,6 @@ void isf_imf_input_panel_init (void)
 
     _prop_change_handler = ecore_event_handler_add (ECORE_X_EVENT_WINDOW_PROPERTY, _prop_change, NULL);
     _support_hw_keyboard_mode = scim_global_config_read (String (SCIM_GLOBAL_CONFIG_SUPPORT_HW_KEYBOARD_MODE), _support_hw_keyboard_mode);
-
-    scim_split_string_list (lock_screen_class_names, scim_global_config_read (String (SCIM_GLOBAL_CONFIG_LOCK_SCREEN_CLASS_NAME), String ("")), ',');
 
     if (_support_hw_keyboard_mode){
         if (!prop_x_keyboard_input_detected)
@@ -555,7 +546,7 @@ void isf_imf_context_input_panel_show (Ecore_IMF_Context* ctx)
     bool input_panel_show = false;
     input_panel_ctx = ctx;
 
-    scim_initialize ();
+    scim_initialize();
 
     if (IfInitContext == false) {
         _isf_imf_context_init ();
@@ -924,8 +915,6 @@ Ecore_IMF_Input_Panel_State isf_imf_context_input_panel_state_get (Ecore_IMF_Con
     Ecore_IMF_Input_Panel_State state;
     if (!IfInitContext)
         _isf_imf_context_init ();
-
-    scim_initialize ();
 
     _isf_imf_context_input_panel_state_get (_get_context_id (ctx), state);
     LOGD ("    state:%d\n", state);

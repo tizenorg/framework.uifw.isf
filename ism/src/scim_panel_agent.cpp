@@ -8,7 +8,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -71,7 +71,7 @@
 #ifdef LOG_TAG
 # undef LOG_TAG
 #endif
-#define LOG_TAG             "ISF_PANEL_EFL"
+#define LOG_TAG             "ISF_PANEL_AGENT"
 
 #define MIN_REPEAT_TIME     2.0
 
@@ -173,9 +173,6 @@ typedef Signal6<bool, String, String &, String &, int &, int &, String &>
 
 typedef Signal3<bool, int, int, String>
         PanelAgentSignalIntIntString;
-
-typedef Signal2<void, int, struct rectinfo &>
-        PanelAgentSignalIntRect;
 
 enum ClientType {
     UNKNOWN_CLIENT,
@@ -398,7 +395,7 @@ class PanelAgent::PanelAgentImpl
     PanelAgentSignalVoid                m_signal_candidate_will_hide_ack;
     PanelAgentSignalInt2                m_signal_get_ise_state;
 
-    PanelAgentSignalIntRect             m_signal_get_recent_ise_geometry;
+    PanelAgentSignalRect                m_signal_get_recent_ise_geometry;
 
     PanelAgentSignalIntIntString        m_signal_check_privilege_by_sockfd;
 public:
@@ -1343,7 +1340,7 @@ public:
     bool start_helper (const String  &uuid, int client, uint32 context)
     {
         SCIM_DEBUG_MAIN(1) << "PanelAgent::start_helper (" << uuid << ")\n";
-        LOGD ("start ISE(%s)", uuid.c_str ());
+        ISF_SAVE_LOG ("start ISE(%s)\n", uuid.c_str ());
 
         if (uuid.length () <= 0)
             return false;
@@ -1366,7 +1363,7 @@ public:
         char buf[256] = {0};
         snprintf (buf, sizeof (buf), "time:%ld  pid:%d  %s  %s  prepare to stop ISE(%s)\n",
             time (0), getpid (), __FILE__, __func__, uuid.c_str ());
-        LOGD ("prepare to stop ISE(%s)", uuid.c_str ());
+        ISF_SAVE_LOG ("prepare to stop ISE(%s)\n", uuid.c_str ());
 
         SCIM_DEBUG_MAIN(1) << "PanelAgent::stop_helper (" << uuid << ")\n";
         if (uuid.length () <= 0)
@@ -1389,7 +1386,7 @@ public:
             m_send_trans.put_command (SCIM_TRANS_CMD_EXIT);
             m_send_trans.write_to_socket (client_socket);
             SCIM_DEBUG_MAIN(1) << "Stop helper\n";
-            ISF_SAVE_LOG ("send SCIM_TRANS_CMD_EXIT message to %s\n", uuid.c_str ());
+            ISF_SAVE_LOG ("send SCIM_TRANS_CMD_EXIT message\n");
         }
 
         unlock ();
@@ -1446,12 +1443,10 @@ public:
             m_send_trans.put_data (data, len);
             m_send_trans.write_to_socket (client_socket);
 
-            LOGD ("Send ISM_TRANS_CMD_SHOW_ISE_PANEL message");
+            ISF_SAVE_LOG ("Send ISM_TRANS_CMD_SHOW_ISE_PANEL message\n");
 
             return true;
         }
-
-        LOGW ("Can't find %s", m_current_helper_uuid.c_str ());
         return false;
     }
 
@@ -1476,7 +1471,7 @@ public:
             m_send_trans.put_command (ISM_TRANS_CMD_HIDE_ISE_PANEL);
             m_send_trans.write_to_socket (client_socket);
 
-            LOGD ("Send ISM_TRANS_CMD_HIDE_ISE_PANEL message");
+            ISF_SAVE_LOG ("Send ISM_TRANS_CMD_HIDE_ISE_PANEL message\n");
         }
     }
 
@@ -1829,7 +1824,7 @@ public:
             m_send_trans.put_command (ISM_TRANS_CMD_SHOW_ISE_OPTION_WINDOW);
             m_send_trans.write_to_socket (client_socket);
 
-            LOGD ("Send ISM_TRANS_CMD_SHOW_ISE_OPTION_WINDOW message");
+            ISF_SAVE_LOG ("Send ISM_TRANS_CMD_SHOW_ISE_OPTION_WINDOW message\n");
 
             return true;
         }
@@ -1855,7 +1850,7 @@ public:
         String initial_uuid = scim_global_config_read (String (SCIM_GLOBAL_CONFIG_INITIAL_ISE_UUID), String (""));
         String default_uuid = scim_global_config_read (String (SCIM_GLOBAL_CONFIG_DEFAULT_ISE_UUID), String (""));
 
-        LOGD ("prepare to show ISE %d [%s] [%s]", client_id, initial_uuid.c_str(), default_uuid.c_str());
+        ISF_SAVE_LOG ("prepare to show ISE %d [%s] [%s]\n", client_id, initial_uuid.c_str(), default_uuid.c_str());
 
         char   *data = NULL;
         size_t  len;
@@ -1902,7 +1897,7 @@ public:
     void hide_ise_panel (int client_id)
     {
         SCIM_DEBUG_MAIN(4) << "PanelAgent::hide_ise_panel ()\n";
-        LOGD ("prepare to hide ISE, %d %d", client_id, m_show_request_client_id);
+        ISF_SAVE_LOG ("prepare to hide ISE, %d %d\n", client_id, m_show_request_client_id);
 
         uint32 client;
         uint32 context;
@@ -2409,7 +2404,7 @@ public:
                         if (!trans.read_from_socket (client_socket, m_socket_timeout) ||
                             !trans.get_command (cmd) || cmd != SCIM_TRANS_CMD_REPLY ||
                             !trans.get_data (avail)) {
-                            LOGW("ISM_TRANS_CMD_CHECK_OPTION_WINDOW failed");
+                            ISF_SAVE_LOG("ISM_TRANS_CMD_CHECK_OPTION_WINDOW failed\n");
                         }
                         if (avail < 2) {
                             info.has_option [i] = avail;
@@ -3111,7 +3106,7 @@ public:
         String initial_uuid = scim_global_config_read (String (SCIM_GLOBAL_CONFIG_INITIAL_ISE_UUID), String (""));
         String default_uuid = scim_global_config_read (String (SCIM_GLOBAL_CONFIG_DEFAULT_ISE_UUID), String (""));
 
-        LOGD ("prepare to show ISE option window %d [%s] [%s]", client_id, initial_uuid.c_str(), default_uuid.c_str());
+        ISF_SAVE_LOG ("prepare to show ISE option window %d [%s] [%s]\n", client_id, initial_uuid.c_str(), default_uuid.c_str());
 
         if (TOOLBAR_HELPER_MODE == m_current_toolbar_mode) {
             show_helper_option_window (m_current_helper_uuid);
@@ -3122,28 +3117,19 @@ public:
     {
         SCIM_DEBUG_MAIN(4) << __func__ << "\n";
 
-        uint32 angle;
+        struct rectinfo info = {0, 0, 0, 0};
+        m_signal_get_recent_ise_geometry (info);
 
         Transaction trans;
         Socket client_socket (client_id);
 
         trans.clear ();
         trans.put_command (SCIM_TRANS_CMD_REPLY);
-
-        if (m_recv_trans.get_data (angle)) {
-            struct rectinfo info = {0, 0, 0, 0};
-            m_signal_get_recent_ise_geometry (angle, info);
-
-            trans.put_command (SCIM_TRANS_CMD_OK);
-            trans.put_data (info.pos_x);
-            trans.put_data (info.pos_y);
-            trans.put_data (info.width);
-            trans.put_data (info.height);
-        }
-        else {
-            trans.put_command (SCIM_TRANS_CMD_FAIL);
-        }
-
+        trans.put_command (SCIM_TRANS_CMD_OK);
+        trans.put_data (info.pos_x);
+        trans.put_data (info.pos_y);
+        trans.put_data (info.width);
+        trans.put_data (info.height);
         trans.write_to_socket (client_socket);
     }
 
@@ -3502,7 +3488,7 @@ public:
         return m_signal_will_hide_ack.connect (slot);
     }
 
-    Connection signal_connect_set_keyboard_mode          (PanelAgentSlotInt                *slot)
+    Connection signal_connect_set_keyboard_mode (PanelAgentSlotInt                *slot)
     {
         return m_signal_set_keyboard_mode.connect (slot);
     }
@@ -3517,7 +3503,7 @@ public:
         return m_signal_get_ise_state.connect (slot);
     }
 
-    Connection signal_connect_get_recent_ise_geometry    (PanelAgentSlotIntRect                *slot)
+    Connection signal_connect_get_recent_ise_geometry    (PanelAgentSlotRect                *slot)
     {
         return m_signal_get_recent_ise_geometry.connect (slot);
     }
@@ -4365,10 +4351,10 @@ private:
                     if (restart_uuid != uuid || secs > MIN_REPEAT_TIME) {
                         m_helper_manager.run_helper (uuid, m_config_name, m_display_name);
                         restart_uuid = uuid;
-                        LOGE ("Auto restart soft ISE:%s", uuid.c_str ());
+                        LOGE ("Auto restart soft ISE:%s\n", uuid.c_str ());
                     } else {
                         reset_default_ise (0);
-                        ISF_SAVE_LOG ("Auto restart is abnormal, reset default ISE\n");
+                        LOGE ("Auto restart is abnormal, reset default ISE\n");
                     }
                     start_tiks = curr_tiks;
                 }
@@ -6805,7 +6791,7 @@ PanelAgent::signal_connect_remove_helper              (PanelAgentSlotInt        
 }
 
 Connection
-PanelAgent::signal_connect_set_active_ise_by_uuid     (PanelAgentSlotStringBool          *slot)
+PanelAgent::signal_connect_set_active_ise_by_uuid     (PanelAgentSlotStringBool              *slot)
 {
     return m_impl->signal_connect_set_active_ise_by_uuid (slot);
 }
@@ -6847,19 +6833,19 @@ PanelAgent::signal_connect_get_ise_list               (PanelAgentSlotBoolStringV
 }
 
 Connection
-PanelAgent::signal_connect_get_all_helper_ise_info    (PanelAgentSlotBoolHelperInfo      *slot)
+PanelAgent::signal_connect_get_all_helper_ise_info    (PanelAgentSlotBoolHelperInfo    *slot)
 {
     return m_impl->signal_connect_get_all_helper_ise_info (slot);
 }
 
 Connection
-PanelAgent::signal_connect_set_has_option_helper_ise_info (PanelAgentSlotStringBool      *slot)
+PanelAgent::signal_connect_set_has_option_helper_ise_info (PanelAgentSlotStringBool    *slot)
 {
     return m_impl->signal_connect_set_has_option_helper_ise_info (slot);
 }
 
 Connection
-PanelAgent::signal_connect_set_enable_helper_ise_info      (PanelAgentSlotStringBool     *slot)
+PanelAgent::signal_connect_set_enable_helper_ise_info      (PanelAgentSlotStringBool    *slot)
 {
     return m_impl->signal_connect_set_enable_helper_ise_info (slot);
 }
@@ -7003,7 +6989,7 @@ PanelAgent::signal_connect_will_hide_ack              (PanelAgentSlotVoid       
 }
 
 Connection
-PanelAgent::signal_connect_set_keyboard_mode          (PanelAgentSlotInt                 *slot)
+PanelAgent::signal_connect_set_keyboard_mode (PanelAgentSlotInt                *slot)
 {
     return m_impl->signal_connect_set_keyboard_mode (slot);
 }
@@ -7021,7 +7007,7 @@ PanelAgent::signal_connect_get_ise_state              (PanelAgentSlotInt2       
 }
 
 Connection
-PanelAgent::signal_connect_get_recent_ise_geometry    (PanelAgentSlotIntRect             *slot)
+PanelAgent::signal_connect_get_recent_ise_geometry    (PanelAgentSlotRect                *slot)
 {
     return m_impl->signal_connect_get_recent_ise_geometry (slot);
 }

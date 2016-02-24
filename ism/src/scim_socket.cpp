@@ -8,7 +8,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2002-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -55,18 +55,12 @@
 #include <sys/time.h>
 #include <fcntl.h>
 #include <sys/prctl.h>
-#include <dlog.h>
 
 #include "scim_private.h"
 #include "scim.h"
 #if defined(HAVE_SYSTEMD)
 #include <systemd/sd-daemon.h>
 #endif
-
-#ifdef LOG_TAG
-# undef LOG_TAG
-#endif
-#define LOG_TAG "ISF_SOCKET"
 
 /* Experimental modification for avoiding multiple scim process problem */
 #define DISABLE_MULTIPLE_SOCKETS
@@ -507,12 +501,12 @@ public:
             if (fcntl (m_id, F_SETFL, flags | O_NONBLOCK) == -1) {
                 char buf_err[256];
                 m_err = errno;
-                LOGW ("ppid : %d fcntl() failed, %d %s\n", getppid (), m_err, strerror_r (m_err, buf_err, sizeof (buf_err)));
+                ISF_SAVE_LOG ("ppid : %d fcntl() failed, %d %s\n", getppid (), m_err, strerror_r (m_err, buf_err, sizeof (buf_err)));
             }
 
             char proc_name[17] = {0}; /* the buffer provided shall at least be 16+1 bytes long */
             if (-1 != prctl (PR_GET_NAME, proc_name, 0, 0, 0)) {
-                LOGD ("ppid:%d  trying connect() to %s, %s\n", getppid (), addr.get_address ().c_str (), proc_name);
+                ISF_SAVE_LOG ("ppid:%d  trying connect() to %s, %s\n", getppid (), addr.get_address ().c_str (), proc_name);
             }
 
             if ((m_err = ::connect (m_id, data, len)) == 0) {
@@ -521,7 +515,7 @@ public:
                 }
                 m_address = addr;
 
-                LOGD ("connect() succeeded\n");
+                ISF_SAVE_LOG ("connect() succeeded\n");
 
                 return true;
             }
@@ -538,15 +532,15 @@ public:
                 tval.tv_sec = nsec;
                 tval.tv_usec = 0;
 
-                LOGW ("EINPROGRESS, select() with timeout %d\n", nsec);
+                ISF_SAVE_LOG ("EINPROGRESS, select() with timeout %d\n", nsec);
 
                 if (select (m_id + 1, &rset, &wset, NULL, nsec ? &tval : NULL) == 0) {
                     m_err = ETIMEDOUT;
 
-                    LOGW ("timeout in select()\n");
+                    ISF_SAVE_LOG ("timeout in select()\n");
                 } else {
                     // We've got something, connection succeeded
-                    LOGD ("finally connected\n");
+                    ISF_SAVE_LOG ("finally connected\n");
 
                     if (fcntl (m_id, F_SETFL, flags) == -1) {
                         m_err = errno;
@@ -557,7 +551,7 @@ public:
             } else {
                 char buf_err[256];
                 m_err = errno;
-                LOGW ("connect() failed with %d (%s)\n", m_err, strerror_r (m_err, buf_err, sizeof (buf_err)));
+                ISF_SAVE_LOG ("connect() failed with %d (%s)\n", m_err, strerror_r (m_err, buf_err, sizeof (buf_err)));
             }
             if (fcntl (m_id, F_SETFL, flags) == -1) {
                 m_err = errno;
@@ -1577,7 +1571,7 @@ scim_socket_open_connection   (uint32       &key,
             if (trans.write_to_socket (socket))
                 return true;
         } else {
-            LOGW ("read_from_socket() failed %d\n", timeout);
+            ISF_SAVE_LOG ("read_from_socket() failed %d\n", timeout);
 
             trans.clear ();
             trans.put_command (SCIM_TRANS_CMD_REPLY);
@@ -1585,7 +1579,7 @@ scim_socket_open_connection   (uint32       &key,
             trans.write_to_socket (socket);
         }
     } else {
-        LOGW ("write_to_socket() failed\n");
+        ISF_SAVE_LOG ("write_to_socket() failed\n");
     }
 
     return false;

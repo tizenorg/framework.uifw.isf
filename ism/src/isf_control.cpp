@@ -2,7 +2,7 @@
  * ISF(Input Service Framework)
  *
  * ISF is based on SCIM 1.4.7 and extended for supporting more mobile fitable.
- * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  * Contact: Haifeng Deng <haifeng.deng@samsung.com>, Hengliang Luo <hl.luo@samsung.com>
  *
@@ -457,24 +457,16 @@ EXAPI int isf_control_is_ime_enabled (const char *appid, bool *enabled)
 
 EXAPI int isf_control_get_recent_ime_geometry (int *x, int *y, int *w, int *h)
 {
-    return isf_control_get_recent_ime_geometry_with_rotation_angle (-1, x, y, w, h);
-}
-
-EXAPI int isf_control_get_recent_ime_geometry_with_rotation_angle (int angle, int * x,int * y,int * w,int * h)
-{
     int ime_x = -1, ime_y = -1, ime_w = -1, ime_h = -1;
 
     IMControlClient imcontrol_client;
     int ret = 0;
 
-    if ((angle != -1) && (angle % 90 != 0))
-        return -1;
-
     if (!imcontrol_client.open_connection ())
         return -1;
 
     imcontrol_client.prepare ();
-    if (!imcontrol_client.get_recent_ime_geometry (&ime_x, &ime_y, &ime_w, &ime_h, angle))
+    if (!imcontrol_client.get_recent_ime_geometry (&ime_x, &ime_y, &ime_w, &ime_h))
         ret = -1;
 
     imcontrol_client.close_connection ();

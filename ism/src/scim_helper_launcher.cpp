@@ -4,7 +4,7 @@
  * Smart Common Input Method
  *
  * Copyright (c) 2004-2005 James Su <suzhe@tsinghua.org.cn>
- * Copyright (c) 2012-2015 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2012-2014 Samsung Electronics Co., Ltd.
  *
  *
  * This library is free software; you can redistribute it and/or
@@ -50,10 +50,9 @@ int main (int argc, char *argv [])
     String helper;
     String uuid;
     bool   daemon = false;
+
     char *p =  getenv ("DISPLAY");
     if (p) display = String (p);
-
-    ISF_SAVE_LOG ("Start %s\n", ((argc > 0)? argv[0] : "scim_helper_launcher"));
 
     config = scim_global_config_read (SCIM_GLOBAL_CONFIG_DEFAULT_CONFIG_MODULE, String ("simple"));
 
@@ -151,9 +150,9 @@ int main (int argc, char *argv [])
     }
 
     SCIM_DEBUG_MAIN(1) << "scim-helper-launcher: " << config << " " << display << " " << helper << " " << uuid << "\n";
+    ISF_SAVE_LOG ("Helper ISE (%s %s) is launching...\n", helper.c_str (), uuid.c_str ());
 
     if (!helper.length () || !uuid.length ()) {
-        ISF_SAVE_LOG ("Module name or Helper UUID is missing.\n");
         std::cerr << "Module name or Helper UUID is missing.\n";
         return -1;
     }
@@ -161,14 +160,18 @@ int main (int argc, char *argv [])
     int ret = ise_preexec (helper.c_str (), uuid.c_str ());
     if (ret < 0) {
         ISF_SAVE_LOG ("ise_preexec failed (%s, %d)\n", helper.c_str (), ret);
+
         std::cerr << "ise_preexec failed(" << helper << ret << ")\n";
         return -1;
     }
+
+    perm_app_set_privilege ("isf", NULL, NULL);
 
     HelperModule helper_module (helper);
 
     if (!helper_module.valid () || helper_module.number_of_helpers () == 0) {
         ISF_SAVE_LOG ("Unable to load helper module(%s)\n", helper.c_str ());
+
         std::cerr << "Unable to load helper module(" << helper << ")\n";
         return -1;
     }
@@ -182,7 +185,6 @@ int main (int argc, char *argv [])
 //    if (daemon) scim_daemon ();
 
     helper_module.set_arg_info (argc, argv);
-    ISF_SAVE_LOG ("Helper ISE (%s) is launching...\n", uuid.c_str ());
     helper_module.run_helper (uuid, config_pointer, display);
     helper_module.unload ();
 
@@ -190,7 +192,6 @@ int main (int argc, char *argv [])
         config_pointer.reset ();
     ConfigBase::set (0);
     ISF_SAVE_LOG ("Helper ISE (%s) is destroyed!!!\n", uuid.c_str ());
-    return 0;
 }
 
 /*
