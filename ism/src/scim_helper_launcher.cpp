@@ -165,8 +165,6 @@ int main (int argc, char *argv [])
         return -1;
     }
 
-    perm_app_set_privilege ("isf", NULL, NULL);
-
     HelperModule helper_module (helper);
 
     if (!helper_module.valid () || helper_module.number_of_helpers () == 0) {

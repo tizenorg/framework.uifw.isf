@@ -27,6 +27,7 @@
 
 static Ecore_IMF_Context *imf_context = NULL;
 static Elm_Genlist_Item_Class itci;
+static Evas_Object *win = NULL;
 
 static void test_input_panel_geometry_get (void *data, Evas_Object *obj, void *event_info);
 static void test_input_panel_show (void *data, Evas_Object *obj, void *event_info);
@@ -297,10 +298,19 @@ static void test_get_recent_ise_geometry_get (void *data, Evas_Object *obj, void
 {
     int x, y, w, h;
     if (isf_control_get_recent_ime_geometry (&x, &y, &w, &h) == 0) {
-        LOGD ("x=%d, y=%d, width=%d, height=%d\n", x, y, w, h);
+        LOGD ("x : %d, y : %d, width : %d, height : %d\n", x, y, w, h);
     }
     else {
         LOGW ("Failed to get recent ime geometry\n");
+    }
+
+    int angle = elm_win_rotation_get (win);
+
+    if (isf_control_get_recent_ime_geometry_with_rotation_angle (angle, &x, &y, &w, &h) == 0) {
+        LOGD ("angle : %d, x : %d, y : %d, width : %d, height : %d\n", angle, x, y, w, h);
+    }
+    else {
+        LOGW ("Failed to get recent ime geometry with rotation angle\n");
     }
 }
 
@@ -310,7 +320,7 @@ static char *gli_label_get (void *data, Evas_Object *obj, const char *part)
     return strdup (imcontrol_menu_its[j].name);
 }
 
-static void test_api (void *data, Evas_Object *obj, void *event_info)
+static void _selected_cb (void *data, Evas_Object *obj, void *event_info)
 {
     int j = (int)data;
     Elm_Object_Item *it = (Elm_Object_Item *)event_info;
@@ -345,12 +355,39 @@ static Evas_Object *_create_imcontrolapi_list (Evas_Object *parent)
 
     while (imcontrol_menu_its[i].name != NULL) {
         elm_genlist_item_append (gl, &itci,
-                                 (void *)i/* item data */, NULL/* parent */, ELM_GENLIST_ITEM_NONE, test_api/* func */,
-                                 (void *)i/* func data */);
+                                 (void *)i/* item data */, NULL/* parent */, ELM_GENLIST_ITEM_NONE, _selected_cb /* func */,
+                                 (void *)i /* func data */);
         i++;
     }
 
     return gl;
+}
+
+static void
+win_rotation_changed_cb (void *data, Evas_Object *obj, void *event_info)
+{
+    struct appdata *ad = (struct appdata *)data;
+    int x, y, w, h;
+    if (ad == NULL || ad->win_main == NULL)
+        return;
+
+    int angle = elm_win_rotation_get (ad->win_main);
+
+    LOGD ("rotate. angle : %d\n", angle);
+
+    if (isf_control_get_recent_ime_geometry (&x, &y, &w, &h) == 0) {
+        LOGD ("x : %d, y : %d, width : %d, height : %d\n", x, y, w, h);
+    }
+    else {
+        LOGW ("Failed to get recent ime geometry\n");
+    }
+
+    if (isf_control_get_recent_ime_geometry_with_rotation_angle (angle, &x, &y, &w, &h) == 0) {
+        LOGD ("angle : %d, x : %d, y : %d, width : %d, height : %d\n", angle, x, y, w, h);
+    }
+    else {
+        LOGW ("Failed to get recent ime geometry with rotation angle\n");
+    }
 }
 
 void imcontrolapi_bt (void *data, Evas_Object *obj, void *event_info)
@@ -368,9 +405,14 @@ void imcontrolapi_bt (void *data, Evas_Object *obj, void *event_info)
 
     gl = _create_imcontrolapi_list (ad->naviframe);
 
+    win = ad->win_main;
+
     Evas_Object *back_btn = create_naviframe_back_button (ad);
     Elm_Object_Item *navi_it = elm_naviframe_item_push (ad->naviframe, _("IM Control"), back_btn, NULL, gl, NULL);
     elm_naviframe_item_pop_cb_set (navi_it, _nf_back_event_cb, ad);
+
+    evas_object_smart_callback_add (ad->win_main, "rotation,changed", win_rotation_changed_cb, ad);
+    evas_object_smart_callback_add (ad->win_main, "wm,rotation,changed", win_rotation_changed_cb, ad);
 }
 
 /*

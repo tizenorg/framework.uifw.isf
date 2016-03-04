@@ -838,7 +838,7 @@ msgstr ""
 #: ism/extras/efl_panel/isf_panel_efl.cpp:3927
 #, c-format
 msgid "%s selected"
-msgstr "%s "
+msgstr "%s сонгосон"
 
 #: ism/extras/efl_panel/isf_panel_efl.cpp:3930
 #, c-format
@@ -854,17 +854,17 @@ msgstr "Гар товчлуураас оролт илэрсэн."
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5530
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5614
 msgid "Tap to use virtual keyboard"
-msgstr "     "
+msgstr "Виртуал гар товчлуур ашиглахын тулд товш"
 
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5537
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5751
 #: ism/extras/efl_panel/iseselector.cpp:217
 msgid "Select input method"
-msgstr "Select input method"
+msgstr "Оруулах арга сонгох"
 
 #: ism/extras/efl_panel/iseselector.cpp:224
 msgid "Set up input methods"
-msgstr "  "
+msgstr "Оруулах аргууд тохируулах"
 
 #: ism/utils/scimstringview.c:201
 msgid "Cursor Position"

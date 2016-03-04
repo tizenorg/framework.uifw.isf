@@ -1,6 +1,6 @@
 Name:       isf
 Summary:    Input Service Framework
-Version:    2.4.9401
+Version:    2.4.9516
 Release:    1
 Group:      System Environment/Libraries
 License:    LGPL-2.1+
@@ -110,7 +110,6 @@ EOF
 fi
 
 %post
-/sbin/ldconfig
 mkdir -p /etc/scim/conf
 mkdir -p /opt/apps/scim/lib/scim-1.0/1.4.0/Helper
 mkdir -p /opt/apps/scim/lib/scim-1.0/1.4.0/SetupUI
@@ -119,6 +118,8 @@ mkdir -p /opt/apps/scim/lib/scim-1.0/1.4.0/IMEngine
 mkdir -p %{_sysconfdir}/systemd/default-extra-dependencies/ignore-units.d/
 ln -sf %{_libdir}/systemd/system/scim.service %{_sysconfdir}/systemd/default-extra-dependencies/ignore-units.d/
 %endif
+ln -sf %{_libdir}/ecore_imf/modules/isf/v-1.13/module.so %{_libdir}/ecore_imf/modules/isf/v-1.13/libisfmodule.so
+/sbin/ldconfig
 
 
 %postun -p /sbin/ldconfig
@@ -152,7 +153,7 @@ ln -sf %{_libdir}/systemd/system/scim.service %{_sysconfdir}/systemd/default-ext
 %{_libdir}/libscim-*.so*
 %{_datadir}/license/%{name}
 /opt/etc/dump.d/module.d/*
-%config(noreplace) %attr(660,root,app) /opt/dbspace/.ime_info.db*
+%config %attr(660,root,app) /opt/dbspace/.ime_info.db*
 
 %files devel
 %defattr(-,root,root,-)

@@ -174,6 +174,9 @@ typedef Signal6<bool, String, String &, String &, int &, int &, String &>
 typedef Signal3<bool, int, int, String>
         PanelAgentSignalIntIntString;
 
+typedef Signal2<void, int, struct rectinfo &>
+        PanelAgentSignalIntRect;
+
 enum ClientType {
     UNKNOWN_CLIENT,
     FRONTEND_CLIENT,
@@ -395,7 +398,7 @@ class PanelAgent::PanelAgentImpl
     PanelAgentSignalVoid                m_signal_candidate_will_hide_ack;
     PanelAgentSignalInt2                m_signal_get_ise_state;
 
-    PanelAgentSignalRect                m_signal_get_recent_ise_geometry;
+    PanelAgentSignalIntRect             m_signal_get_recent_ise_geometry;
 
     PanelAgentSignalIntIntString        m_signal_check_privilege_by_sockfd;
 public:
@@ -3119,19 +3122,28 @@ public:
     {
         SCIM_DEBUG_MAIN(4) << __func__ << "\n";
 
-        struct rectinfo info = {0, 0, 0, 0};
-        m_signal_get_recent_ise_geometry (info);
+        uint32 angle;
 
         Transaction trans;
         Socket client_socket (client_id);
 
         trans.clear ();
         trans.put_command (SCIM_TRANS_CMD_REPLY);
-        trans.put_command (SCIM_TRANS_CMD_OK);
-        trans.put_data (info.pos_x);
-        trans.put_data (info.pos_y);
-        trans.put_data (info.width);
-        trans.put_data (info.height);
+
+        if (m_recv_trans.get_data (angle)) {
+            struct rectinfo info = {0, 0, 0, 0};
+            m_signal_get_recent_ise_geometry (angle, info);
+
+            trans.put_command (SCIM_TRANS_CMD_OK);
+            trans.put_data (info.pos_x);
+            trans.put_data (info.pos_y);
+            trans.put_data (info.width);
+            trans.put_data (info.height);
+        }
+        else {
+            trans.put_command (SCIM_TRANS_CMD_FAIL);
+        }
+
         trans.write_to_socket (client_socket);
     }
 
@@ -3490,7 +3502,7 @@ public:
         return m_signal_will_hide_ack.connect (slot);
     }
 
-    Connection signal_connect_set_keyboard_mode (PanelAgentSlotInt                *slot)
+    Connection signal_connect_set_keyboard_mode          (PanelAgentSlotInt                *slot)
     {
         return m_signal_set_keyboard_mode.connect (slot);
     }
@@ -3505,7 +3517,7 @@ public:
         return m_signal_get_ise_state.connect (slot);
     }
 
-    Connection signal_connect_get_recent_ise_geometry    (PanelAgentSlotRect                *slot)
+    Connection signal_connect_get_recent_ise_geometry    (PanelAgentSlotIntRect                *slot)
     {
         return m_signal_get_recent_ise_geometry.connect (slot);
     }
@@ -6793,7 +6805,7 @@ PanelAgent::signal_connect_remove_helper              (PanelAgentSlotInt        
 }
 
 Connection
-PanelAgent::signal_connect_set_active_ise_by_uuid     (PanelAgentSlotStringBool              *slot)
+PanelAgent::signal_connect_set_active_ise_by_uuid     (PanelAgentSlotStringBool          *slot)
 {
     return m_impl->signal_connect_set_active_ise_by_uuid (slot);
 }
@@ -6835,19 +6847,19 @@ PanelAgent::signal_connect_get_ise_list               (PanelAgentSlotBoolStringV
 }
 
 Connection
-PanelAgent::signal_connect_get_all_helper_ise_info    (PanelAgentSlotBoolHelperInfo    *slot)
+PanelAgent::signal_connect_get_all_helper_ise_info    (PanelAgentSlotBoolHelperInfo      *slot)
 {
     return m_impl->signal_connect_get_all_helper_ise_info (slot);
 }
 
 Connection
-PanelAgent::signal_connect_set_has_option_helper_ise_info (PanelAgentSlotStringBool    *slot)
+PanelAgent::signal_connect_set_has_option_helper_ise_info (PanelAgentSlotStringBool      *slot)
 {
     return m_impl->signal_connect_set_has_option_helper_ise_info (slot);
 }
 
 Connection
-PanelAgent::signal_connect_set_enable_helper_ise_info      (PanelAgentSlotStringBool    *slot)
+PanelAgent::signal_connect_set_enable_helper_ise_info      (PanelAgentSlotStringBool     *slot)
 {
     return m_impl->signal_connect_set_enable_helper_ise_info (slot);
 }
@@ -6991,7 +7003,7 @@ PanelAgent::signal_connect_will_hide_ack              (PanelAgentSlotVoid       
 }
 
 Connection
-PanelAgent::signal_connect_set_keyboard_mode (PanelAgentSlotInt                *slot)
+PanelAgent::signal_connect_set_keyboard_mode          (PanelAgentSlotInt                 *slot)
 {
     return m_impl->signal_connect_set_keyboard_mode (slot);
 }
@@ -7009,7 +7021,7 @@ PanelAgent::signal_connect_get_ise_state              (PanelAgentSlotInt2       
 }
 
 Connection
-PanelAgent::signal_connect_get_recent_ise_geometry    (PanelAgentSlotRect                *slot)
+PanelAgent::signal_connect_get_recent_ise_geometry    (PanelAgentSlotIntRect             *slot)
 {
     return m_impl->signal_connect_get_recent_ise_geometry (slot);
 }

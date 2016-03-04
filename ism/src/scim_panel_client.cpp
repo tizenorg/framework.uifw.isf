@@ -58,6 +58,12 @@
 #if defined(HAVE_SYSTEMD)
 #include <Ecore_Ipc.h>
 #endif
+#include <dlog.h>
+
+#ifdef LOG_TAG
+# undef LOG_TAG
+#endif
+#define LOG_TAG             "IMMODULE"
 
 namespace scim {
 
@@ -99,6 +105,9 @@ class PanelClient::PanelClientImpl
     Transaction                                 m_recv_trans;
     int                                         m_current_icid;
     int                                         m_send_refcount;
+#if defined(HAVE_SYSTEMD)
+    Ecore_Ipc_Server                           *m_server;
+#endif
 
     PanelClientSignalVoid                       m_signal_reload_config;
     PanelClientSignalVoid                       m_signal_exit;
@@ -142,11 +151,15 @@ public:
           m_socket_magic_key (0), m_socket_magic_key_active (0),
           m_current_icid (-1),
           m_send_refcount (0)
+#if defined(HAVE_SYSTEMD)
+          ,m_server(NULL)
+#endif
     {
     }
 
     int  open_connection        (const String &config, const String &display)
     {
+        LOGD ("");
         String panel_address = scim_get_default_panel_socket_address (display);
         SocketAddress addr (panel_address);
 
@@ -155,16 +168,26 @@ public:
         bool ret;
         int  i, count = 0;
 
+        ecore_ipc_init ();
+
         /* Try three times. */
         while (1) {
             ret = m_socket.connect (addr);
             if (ret == false) {
 #if defined(HAVE_SYSTEMD)
-                Ecore_Ipc_Server *server = ecore_ipc_server_connect (ECORE_IPC_LOCAL_SYSTEM, (char *)"scim-helper-broker", 0, NULL);
-                if (server) {
-                    const char *message = "request_to_launch_panel";
-                    ISF_SAVE_LOG("Request to launch panel...\n");
-                    ecore_ipc_server_send (server, 2, 4, 0, 0, 0, message, strlen (message));
+                if (!m_server) {
+                    m_server = ecore_ipc_server_connect (ECORE_IPC_LOCAL_SYSTEM, (char *)"scim-helper-broker", 0, NULL);
+                    if (m_server) {
+                        const char *message = "request_to_launch_panel";
+                        LOGD ("Request to launch panel...");
+                        if (ecore_ipc_server_send (m_server, 2, 4, 0, 0, 0, message, strlen (message)) == 0) {
+                            LOGW ("ecore_ipc_server_send failed!");
+                        }
+                        ecore_ipc_server_flush (m_server);
+                    }
+                    else {
+                        LOGW ("ecore_ipc_server_connect failed!");
+                    }
                 }
 #else
                 scim_usleep (100000);
@@ -215,6 +238,13 @@ public:
 
     void close_connection       ()
     {
+        LOGD ("");
+#if defined(HAVE_SYSTEMD)
+        if (m_server)
+            ecore_ipc_server_del (m_server);
+        m_server = NULL;
+        ecore_ipc_shutdown ();
+#endif
         m_socket.close ();
         m_socket_active.close ();
         m_socket_magic_key        = 0;

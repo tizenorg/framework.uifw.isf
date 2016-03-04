@@ -1228,19 +1228,9 @@ SocketInstance::do_transaction (Transaction &trans, bool &ret)
                 {
                     uint32 offset;
                     uint32 len;
-                    Transaction temp_trans;
                     if (trans.get_data (offset) && trans.get_data (len)) {
-                        global->init_transaction (temp_trans);
-                        if (delete_surrounding_text ((int) offset, (int) len)) {
-                            temp_trans.put_command (SCIM_TRANS_CMD_DELETE_SURROUNDING_TEXT);
-                            temp_trans.put_command (SCIM_TRANS_CMD_OK);
-                        } else {
-                            temp_trans.put_command (SCIM_TRANS_CMD_FAIL);
-                        }
-                        if (!global->send_transaction (temp_trans))
-                            std::cerr << "DELETE_SURROUNDING_TEXT: global->send_transaction () is failed!!!\n";
+                        delete_surrounding_text ((int) offset, (int) len);
                     }
-                    cont = true;
                     break;
                 }
                 case SCIM_TRANS_CMD_GET_SELECTION:
@@ -1265,19 +1255,9 @@ SocketInstance::do_transaction (Transaction &trans, bool &ret)
                 {
                     uint32 start;
                     uint32 end;
-                    Transaction temp_trans;
                     if (trans.get_data (start) && trans.get_data (end)) {
-                        global->init_transaction (temp_trans);
-                        if (set_selection ((int) start, (int) end)) {
-                            temp_trans.put_command (SCIM_TRANS_CMD_SET_SELECTION);
-                            temp_trans.put_command (SCIM_TRANS_CMD_OK);
-                        } else {
-                            temp_trans.put_command (SCIM_TRANS_CMD_FAIL);
-                        }
-                        if (!global->send_transaction (temp_trans))
-                            std::cerr << "SET_SELECTION: global->send_transaction () is failed!!!\n";
+                        set_selection ((int) start, (int) end);
                     }
-                    cont = true;
                     break;
                 }
                 case SCIM_TRANS_CMD_SEND_PRIVATE_COMMAND:
@@ -1310,6 +1290,11 @@ SocketInstance::do_transaction (Transaction &trans, bool &ret)
                 }
                 case ISM_TRANS_CMD_TRANSACTION_CONTINUE:
                 {
+                    Transaction temp_trans;
+                    global->init_transaction (temp_trans);
+                    temp_trans.put_command (ISM_TRANS_CMD_TRANSACTION_CONTINUE);
+                    if (!global->send_transaction (temp_trans))
+                        std::cerr << "TRANSACTION_CONTINUE: global->send_transaction () is failed!!!\n";
                     cont = true;
                     break;
                 }

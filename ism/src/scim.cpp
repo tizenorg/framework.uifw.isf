@@ -59,9 +59,10 @@
 #define LOG_TAG             "SCIM"
 
 #define WAIT_WM
-#define ISF_SYSTEM_WM_READY_FILE                        "/tmp/.wm_ready"
-#define ISF_SYSTEM_WM_WAIT_COUNT                        200
-#define ISF_SYSTEM_WAIT_DELAY                           100 * 1000
+#define ISF_SYSTEM_WM_READY_FILE    "/tmp/.wm_ready"
+#define ISF_SYSTEM_WM_WAIT_COUNT    200
+#define ISF_SYSTEM_WAIT_DELAY       100 * 1000
+#define MIN_RETRY_TIME              8.0
 
 using namespace scim;
 using std::cout;
@@ -95,22 +96,39 @@ static bool check_panel (const String &display)
 {
     SocketAddress address;
     SocketClient client;
-
     uint32 magic;
+    struct tms     tiks_buf;
+    static bool check = true;   /* Added; 'start_tiks' can't be used to check if it's the first time because 'curr_tiks' could be also zero. */
+    static clock_t start_tiks = (clock_t)0;
+    static double  clock_tiks = (double)sysconf (_SC_CLK_TCK);
+    clock_t curr_tiks = times (&tiks_buf);  /* This can be a negative number or zero at boot up */
+    double  secs = (double)(curr_tiks - start_tiks) / clock_tiks;
 
-    address.set_address (scim_get_default_panel_socket_address (display));
+    if (secs > MIN_RETRY_TIME ||
+            (start_tiks == (clock_t)0 && check == true) /* Make sure it goes through at first time */
+            ) {
+        address.set_address (scim_get_default_panel_socket_address (display));
 
-    if (!client.connect (address))
-        return false;
-
-    if (!scim_socket_open_connection (magic,
-        String ("ConnectionTester"),
-        String ("Panel"),
-        client,
-        1000)) {
+        if (!client.connect (address)) {
+            start_tiks = curr_tiks;
+            check = false;
             return false;
+        }
+
+        if (!scim_socket_open_connection (magic,
+            String ("ConnectionTester"),
+            String ("Panel"),
+            client,
+            1000)) {
+                start_tiks = curr_tiks;
+                check = false;
+                return false;
+        }
     }
 
+    if (check == true)
+        start_tiks = curr_tiks;
+    check = false;
     return true;
 }
 
@@ -184,9 +202,21 @@ static void launch_helper (const char *exe, const char *name, const char *appid)
         if (pid < 0) return;
 
         if (pid == 0) {
-            if (exit_handler) ecore_event_handler_del (exit_handler);
-            if (data_handler) ecore_event_handler_del (data_handler);
-            if (server) ecore_ipc_server_del (server);
+            if (exit_handler) {
+                ecore_event_handler_del (exit_handler);
+                exit_handler = NULL;
+            }
+
+            if (data_handler) {
+                ecore_event_handler_del (data_handler);
+                data_handler = NULL;
+            }
+
+            if (server) {
+                ecore_ipc_server_del (server);
+                server = NULL;
+            }
+
             ecore_ipc_shutdown ();
 
             const char *argv [] = { exe,
@@ -257,6 +287,7 @@ static Eina_Bool handler_client_data (void *data, int ev_type, void *ev)
     if (ecore_ipc_client_send (e->client, 0, 0, 0, 0, 0, message, strlen (message)) == 0) {
         LOGW ("ecore_ipc_client_send FAILED!!");
     }
+    ecore_ipc_client_flush (e->client);
 
     int blank_index = 0;
     for (int loop = 0; loop < (int)strlen (buffer); loop++) {

@@ -35,7 +35,7 @@ msgstr ""
 
 #: ism/src/scim_utility.cpp:801
 msgid "Arabic"
-msgstr "عربي"
+msgstr ""
 
 #: ism/src/scim_utility.cpp:802
 msgid "Arabic (Egypt)"
@@ -51,11 +51,11 @@ msgstr "العربية"
 
 #: ism/src/scim_utility.cpp:805
 msgid "Assamese"
-msgstr "অসমীয়া"
+msgstr "অসমীয়া"
 
 #: ism/src/scim_utility.cpp:806 ism/src/scim_utility.cpp:964
 msgid "Azerbaijani"
-msgstr "Azərbaycan"
+msgstr "Azərbaycanca"
 
 #: ism/src/scim_utility.cpp:807
 msgid "Belarusian"
@@ -67,7 +67,7 @@ msgstr "Български"
 
 #: ism/src/scim_utility.cpp:809 ism/src/scim_utility.cpp:810
 msgid "Bengali"
-msgstr "বাংলা"
+msgstr ""
 
 #: ism/src/scim_utility.cpp:811
 msgid "Bengali (India)"
@@ -87,7 +87,7 @@ msgstr "Català"
 
 #: ism/src/scim_utility.cpp:815 ism/src/scim_keyboard_layout_data.h:4596
 msgid "Czech"
-msgstr "Čeština"
+msgstr "Český"
 
 #: ism/src/scim_utility.cpp:816 ism/src/scim_utility.cpp:966
 msgid "Welsh"
@@ -172,7 +172,7 @@ msgstr "Français"
 
 #: ism/src/scim_utility.cpp:837
 msgid "Irish"
-msgstr "Gaeilge"
+msgstr ""
 
 #: ism/src/scim_utility.cpp:838
 msgid "Galician"
@@ -180,15 +180,15 @@ msgstr "Galego"
 
 #: ism/src/scim_utility.cpp:839
 msgid "Gujarati"
-msgstr "ગુજરાતી"
+msgstr ""
 
 #: ism/src/scim_utility.cpp:840 ism/src/scim_utility.cpp:849
 msgid "Hebrew"
-msgstr "עברית"
+msgstr ""
 
 #: ism/src/scim_utility.cpp:841
 msgid "Hindi"
-msgstr "हिन्दी"
+msgstr ""
 
 #: ism/src/scim_utility.cpp:842 ism/src/scim_keyboard_layout_data.h:4595
 msgid "Croatian"
@@ -208,7 +208,7 @@ msgstr ""
 
 #: ism/src/scim_utility.cpp:846
 msgid "Indonesian"
-msgstr "Bahasa Indonesia"
+msgstr ""
 
 #: ism/src/scim_utility.cpp:847 ism/src/scim_keyboard_layout_data.h:4628
 msgid "Icelandic"
@@ -236,7 +236,7 @@ msgstr ""
 
 #: ism/src/scim_utility.cpp:854
 msgid "Kannada"
-msgstr "ಕನ್ನಡ"
+msgstr ""
 
 #: ism/src/scim_utility.cpp:855
 msgid "Korean"
@@ -244,7 +244,7 @@ msgstr "한국어"
 
 #: ism/src/scim_utility.cpp:856
 msgid "Lao"
-msgstr "ພາສາລາວ"
+msgstr "ລາວ"
 
 #: ism/src/scim_utility.cpp:857
 msgid "Laothian"
@@ -260,11 +260,11 @@ msgstr "Latviešu"
 
 #: ism/src/scim_utility.cpp:860
 msgid "Macedonian"
-msgstr "Македонски"
+msgstr ""
 
 #: ism/src/scim_utility.cpp:861
 msgid "Malayalam"
-msgstr "മലയാളം"
+msgstr ""
 
 #: ism/src/scim_utility.cpp:862
 msgid "Mongolian"
@@ -272,7 +272,7 @@ msgstr "Монгол"
 
 #: ism/src/scim_utility.cpp:863
 msgid "Marathi"
-msgstr "मराठी"
+msgstr ""
 
 #: ism/src/scim_utility.cpp:864
 msgid "Malay"
@@ -284,7 +284,7 @@ msgstr "မြန်မာဘာသာ"
 
 #: ism/src/scim_utility.cpp:866
 msgid "Nepali"
-msgstr "नेपाली"
+msgstr ""
 
 #: ism/src/scim_utility.cpp:867 ism/src/scim_keyboard_layout_data.h:4599
 msgid "Dutch"
@@ -304,7 +304,7 @@ msgstr ""
 
 #: ism/src/scim_utility.cpp:871
 msgid "Punjabi"
-msgstr "ਪੰਜਾਬੀ"
+msgstr ""
 
 #: ism/src/scim_utility.cpp:872 ism/src/scim_keyboard_layout_data.h:4614
 msgid "Polish"
@@ -345,12 +345,12 @@ msgstr "Slovenščina"
 
 #: ism/src/scim_utility.cpp:884
 msgid "Albanian"
-msgstr "shqip"
+msgstr ""
 
 #: ism/src/scim_utility.cpp:885 ism/src/scim_utility.cpp:886
 #: ism/src/scim_utility.cpp:887
 msgid "Serbian"
-msgstr "Srpski"
+msgstr ""
 
 #: ism/src/scim_utility.cpp:888 ism/src/scim_utility.cpp:890
 #: ism/src/scim_keyboard_layout_data.h:4625
@@ -363,15 +363,15 @@ msgstr ""
 
 #: ism/src/scim_utility.cpp:891
 msgid "Tamil"
-msgstr "தமிழ்"
+msgstr ""
 
 #: ism/src/scim_utility.cpp:892
 msgid "Telugu"
-msgstr "తెలుగు"
+msgstr ""
 
 #: ism/src/scim_utility.cpp:893
 msgid "Thai"
-msgstr "ภาษาไทย"
+msgstr ""
 
 #: ism/src/scim_utility.cpp:894 ism/src/scim_keyboard_layout_data.h:4626
 msgid "Turkish"
@@ -387,7 +387,7 @@ msgstr "Українська"
 
 #: ism/src/scim_utility.cpp:897
 msgid "Urdu"
-msgstr "اردو"
+msgstr ""
 
 #: ism/src/scim_utility.cpp:898
 msgid "Uzbek"
@@ -395,7 +395,7 @@ msgstr "o'zbek tili"
 
 #: ism/src/scim_utility.cpp:899
 msgid "Vietnamese"
-msgstr "Tiếng Việt"
+msgstr ""
 
 #: ism/src/scim_utility.cpp:900
 msgid "Walloon"
@@ -567,7 +567,7 @@ msgstr ""
 
 #: ism/src/scim_utility.cpp:944 ism/src/scim_utility.cpp:973
 msgid "Afrikaans"
-msgstr "Afrikaans"
+msgstr ""
 
 #: ism/src/scim_utility.cpp:945
 msgid "Malay (Brunei Darussalam)"
@@ -575,7 +575,7 @@ msgstr ""
 
 #: ism/src/scim_utility.cpp:946 ism/src/scim_keyboard_layout_data.h:4613
 msgid "Norwegian"
-msgstr "Norsk"
+msgstr ""
 
 #: ism/src/scim_utility.cpp:947
 msgid "Serbian (Latin)"
@@ -679,7 +679,7 @@ msgstr "Basa Jawa"
 
 #: ism/src/scim_utility.cpp:975
 msgid "Khmer"
-msgstr "ខ្មែរ"
+msgstr "ភាសាខ្មែរ"
 
 #: ism/src/scim_utility.cpp:976
 msgid "Filipino"
@@ -691,7 +691,7 @@ msgstr "ျမန္မာ"
 
 #: ism/src/scim_utility.cpp:978
 msgid "Odia"
-msgstr "ଓଡ଼ିଆ"
+msgstr "ଓଡ଼ିଆ"
 
 #: ism/src/scim_utility.cpp:979 ism/src/scim_keyboard_layout_data.h:4624
 msgid "Spanish (Latin America)"
@@ -838,33 +838,33 @@ msgstr ""
 #: ism/extras/efl_panel/isf_panel_efl.cpp:3927
 #, c-format
 msgid "%s selected"
-msgstr "%s er valgt."
+msgstr "%s saýlandy"
 
 #: ism/extras/efl_panel/isf_panel_efl.cpp:3930
 #, fuzzy, c-format
 msgid "Only %s available"
-msgstr "Bare %s er tilgjengelig."
+msgstr "Diňe %s elýeterli."
 
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5530
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5614
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5620
 msgid "Input detected from hardware keyboard"
-msgstr "Signaler oppdaget fra det fysiske tastaturet."
+msgstr "Fiziki klawiaturadan giriziş tapyldy."
 
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5530
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5614
 msgid "Tap to use virtual keyboard"
-msgstr "Trykk for å bruke virtuelt tastatur."
+msgstr "Hyýaly klawiatura ulanmak üçin basyň."
 
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5537
 #: ism/extras/efl_panel/isf_panel_efl.cpp:5751
 #: ism/extras/efl_panel/iseselector.cpp:217
 msgid "Select input method"
-msgstr "Velg inndatametode"
+msgstr "Giriziş usuly saýla"
 
 #: ism/extras/efl_panel/iseselector.cpp:224
 msgid "Set up input methods"
-msgstr "Sett opp inndatametoder"
+msgstr "Giriş usullaryny dörediň"
 
 #: ism/utils/scimstringview.c:201
 msgid "Cursor Position"
@@ -1196,6 +1196,3 @@ msgstr ""
 #: ism/demos/isf_imcontrol_efl.cpp:288
 msgid "IM Control"
 msgstr ""
-
-#~ msgid "Virtual keyboard is on"
-#~ msgstr "Virtuelt tastatur aktivert"
