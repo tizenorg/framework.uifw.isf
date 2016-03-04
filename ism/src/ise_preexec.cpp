@@ -294,47 +294,22 @@ static void __set_oom ()
     fclose (fp);
 }
 
-static inline int __set_dac ()
+static inline int __set_dac (const char *pkg_type, const char *app_path)
 {
     //Copied from control_privilege () in the libprivilege-control package
+
+    if (!pkg_type || !app_path)
+        return PC_ERR_INVALID_PARAM;
 
     if (getuid () == APP_UID) // current user is 'app'
         return PC_OPERATION_SUCCESS;
 
-    if (perm_app_set_privilege ("com.samsung.", NULL, NULL) == PC_OPERATION_SUCCESS) {
+    if (perm_app_set_privilege ("com.samsung.", pkg_type, app_path) == PC_OPERATION_SUCCESS) {
         return PC_OPERATION_SUCCESS;
     } else {
         LOGW ("perm_app_set_privilege failed (not permitted).");
         return PC_ERR_NOT_PERMITTED;
     }
-}
-
-static inline int __set_smack (char* path)
-{
-    /*
-     * This is additional option.
-     * Though such a application fails in this function, that error is ignored.
-     */
-    char label[LABEL_LEN + 1] = {0, };
-    int fd = 0;
-    int result = -1;
-
-    result = lgetxattr (path, "security.SMACK64EXEC", label, LABEL_LEN);
-    if (result < 0)  // fail to get extended attribute
-        return 0;   // ignore error
-
-    fd = open ("/proc/self/attr/current", O_RDWR);
-    if (fd < 0)      // fail to open file
-        return 0;   // ignore error
-
-    result = write (fd, label, strlen (label));
-    if (result < 0) {    // fail to write label
-        close (fd);
-        return 0;   // ignore error
-    }
-
-    close (fd);
-    return 0;
 }
 
 typedef struct {
@@ -472,11 +447,8 @@ int ise_preexec (const char *helper, const char *uuid)
     /* SET OOM*/
     __set_oom ();
 
-    /* SET SMACK LABEL */
-    __set_smack (const_cast<char*>(info.app_path.c_str ()));
-
     /* SET DAC*/
-    if (__set_dac () < 0) {
+    if (__set_dac (info.package_type.c_str (), info.app_path.c_str ()) < 0) {
         LOGW ("fail to set DAC - check your package's credential\n");
         return -2;
     }
