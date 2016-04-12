@@ -90,7 +90,7 @@ public:
         free (m_buffer);
     }
 
-    const TransactionHolder & operator = (const TransactionHolder &other) {
+    TransactionHolder & operator = (const TransactionHolder &other) {
         m_ref = other.m_ref;
         m_buffer_size = other.m_buffer_size;
         m_write_pos = other.m_write_pos;

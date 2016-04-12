@@ -652,15 +652,18 @@ EAPI String
 scim_get_home_dir ()
 {
     const char * home_dir = 0;
-
-    struct passwd *pw;
+    struct passwd pw;
+    struct passwd *result;
+    char buf [2048] = {0,};
 
     setpwent ();
-    pw = getpwuid (getuid ());
+    getpwuid_r (getuid (), &pw, buf, sizeof (buf), &result);
     endpwent ();
 
-    if (pw) {
-        home_dir = pw->pw_dir;
+    if (result && pw.pw_dir) {
+        home_dir = pw.pw_dir;
+    } else {
+        LOGD ("Fail to getpwuid_r");
     }
 
     if (!home_dir) {
@@ -676,17 +679,20 @@ scim_get_home_dir ()
 EAPI String
 scim_get_user_name ()
 {
-    struct passwd *pw;
     const char *user_name;
+    struct passwd pw;
+    struct passwd *result;
+    char buf [2048] = {0,};
 
     setpwent ();
-    pw = getpwuid (getuid ());
+    getpwuid_r (getuid (), &pw, buf, sizeof (buf), &result);
     endpwent ();
 
-    if (pw && pw->pw_name)
-        return String (pw->pw_name);
-    else if ((user_name = getenv ("USER")) != NULL)
+    if (result && pw.pw_name) {
+        return String (pw.pw_name);
+    } else if ((user_name = getenv ("USER")) != NULL) {
         return String (user_name);
+    }
 
     char uid_str [10];
 

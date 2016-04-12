@@ -147,7 +147,7 @@ public:
         if (m_data) delete m_data;
     }
 
-    const SocketAddressImpl & operator = (const SocketAddressImpl &other) {
+    SocketAddressImpl & operator = (const SocketAddressImpl &other) {
         m_family = other.m_family;
         m_address = other.m_address;
         if (m_data)
