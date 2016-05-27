@@ -42,7 +42,7 @@ isf_demo_efl_SOURCES  = isf_demo_efl.cpp \
                         isf_input_hint_efl.cpp \
                         isf_password_mode_efl.cpp
 
-isf_demo_efl_CXXFLAGS = @EFL_CFLAGS@ \
+isf_demo_efl_CXXFLAGS = @ECOREX_CFLAGS@ \
                         @ELEMENTARY_CFLAGS@ \
                         @APPCORE_EFL_CFLAGS@ \
                         @VCONF_CFLAGS@ \
@@ -52,7 +52,8 @@ isf_demo_efl_CXXFLAGS = @EFL_CFLAGS@ \
                         @PKGMGR_INFO_CFLAGS@ \
                         -fPIE
 
-isf_demo_efl_LDFLAGS  = @EFL_LIBS@ @LTLIBINTL@ -rpath $(libdir) \
+isf_demo_efl_LDFLAGS  = @LTLIBINTL@ -rpath $(libdir) \
+                        @ECOREX_LIBS@ \
                         @ELEMENTARY_LIBS@ \
                         @VCONF_LIBS@ \
                         @APPCORE_EFL_LIBS@ \

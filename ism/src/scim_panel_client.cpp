@@ -168,7 +168,9 @@ public:
         bool ret;
         int  i, count = 0;
 
+#if defined(HAVE_SYSTEMD)
         ecore_ipc_init ();
+#endif
 
         /* Try three times. */
         while (1) {

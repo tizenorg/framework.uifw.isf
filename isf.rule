@@ -41,3 +41,4 @@ isf privilege::tizen::package.info rw
 isf system::ext_storage rxl
 isf app-svc::db rwxa
 isf privilege::tizen::appmanager.launch rw
+isf privacy-manager::db rl

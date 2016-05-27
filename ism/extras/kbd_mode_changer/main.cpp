@@ -23,7 +23,6 @@
  */
 
 #include <Ecore_X.h>
-#include <Elementary.h>
 #include "main.h"
 
 typedef enum

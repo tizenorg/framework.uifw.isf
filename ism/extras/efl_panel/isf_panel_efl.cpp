@@ -37,7 +37,6 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
-#include <list>
 #include <glib.h>
 #include <Evas.h>
 #include <Ecore.h>
@@ -727,7 +726,7 @@ static Evas_Object* get_candidate (const String& str, Evas_Object *parent, int *
                     if (candidate_is_long)
                         break;
                     tokenize_result = tokenize_tag (sub_splited_string [j], &image_data);
-                    if (tokenize_result && _candidate_image_count < SCIM_LOOKUP_TABLE_MAX_PAGESIZE) {
+                    if (tokenize_result && _candidate_image_count < SCIM_LOOKUP_TABLE_MAX_PAGESIZE && _candidate_text_count < SCIM_LOOKUP_TABLE_MAX_PAGESIZE) {
                         _candidate_image [_candidate_image_count] = elm_image_add (parent);
                         snprintf (image_key, sizeof (image_key), "%d",_candidate_image_count);
                         elm_image_file_set (_candidate_image [_candidate_image_count], image_data.path.c_str (), image_key);
@@ -3092,6 +3091,8 @@ static void ui_create_native_candidate_window (void)
         elm_scroller_policy_set (_candidate_0_scroll, ELM_SCROLLER_POLICY_AUTO, ELM_SCROLLER_POLICY_OFF);
         evas_object_resize (_candidate_0_scroll, _candidate_scroll_0_width_min, (_item_min_height+2)*_candidate_port_line-2);
         evas_object_move (_candidate_0_scroll, _candidate_area_1_pos[0], _candidate_area_1_pos[1]);
+
+        /* Create candidate table */
         _candidate_0_table = elm_table_add (_candidate_window);
         evas_object_size_hint_weight_set (_candidate_0_table, 0.0, 0.0);
         evas_object_size_hint_align_set (_candidate_0_table, 0.0, 0.0);
@@ -3126,6 +3127,8 @@ static void ui_create_native_candidate_window (void)
         evas_object_resize (_scroller_bg, _candidate_scroll_width, _candidate_scroll_height_max + 6);
         elm_scroller_page_size_set (_candidate_scroll, 0, _item_min_height+_v_padding);
         evas_object_move (_candidate_scroll, 0, _candidate_port_height_min);
+
+        /* Create candidate table */
         _candidate_table = elm_table_add (_candidate_window);
         evas_object_size_hint_weight_set (_candidate_table, 0.0, 0.0);
         evas_object_size_hint_align_set (_candidate_table, 0.0, 0.0);
@@ -3258,8 +3261,51 @@ static void ui_destroy_candidate_window (void)
         _aux_area         = NULL;
         _candidate_area_1 = NULL;
         _candidate_area_2 = NULL;
-        _scroller_bg      = NULL;
-        _tts_focus_rect   = NULL;
+    }
+
+    if (_tts_focus_rect) {
+        evas_object_del (_tts_focus_rect);
+        _tts_focus_rect = NULL;
+    }
+
+    if (_candidate_bg) {
+        evas_object_del (_candidate_bg);
+        _candidate_bg = NULL;
+    }
+
+    if (_more_btn) {
+        evas_object_del (_more_btn);
+        _more_btn = NULL;
+    }
+
+    if (_scroller_bg) {
+        evas_object_del (_scroller_bg);
+        _scroller_bg = NULL;
+    }
+
+    if (_close_btn) {
+        evas_object_del (_close_btn);
+        _close_btn = NULL;
+    }
+
+    if (_aux_line) {
+        evas_object_del (_aux_line);
+        _aux_line = NULL;
+    }
+
+    if (_tmp_candidate_text) {
+        evas_object_del (_tmp_candidate_text);
+        _tmp_candidate_text = NULL;
+    }
+
+    if (_tmp_preedit_text) {
+        evas_object_del (_tmp_preedit_text);
+        _tmp_preedit_text = NULL;
+    }
+
+    if (_tmp_aux_text) {
+        evas_object_del (_tmp_aux_text);
+        _tmp_aux_text = NULL;
     }
 
     if (_preedit_text) {
@@ -3875,6 +3921,8 @@ static void hide_ise ()
     if (_candidate_window) {
         if (_panel_agent->get_current_toolbar_mode () == TOOLBAR_KEYBOARD_MODE)
             ui_candidate_hide (true, true, true);
+        else
+            ui_candidate_hide (true, false, true);
     }
 }
 
@@ -5957,7 +6005,6 @@ static void signalhandler (int sig)
     std::cerr << __FUNCTION__ << " Signal=" << sig << "\n";
     ISF_SAVE_LOG ("Signal=%d\n", sig);
 
-    unregister_edbus_signal_handler ();
     elm_exit ();
 }
 
@@ -7115,6 +7162,7 @@ int main (int argc, char *argv [])
 #endif
 
 cleanup:
+    ui_destroy_candidate_window ();
     ui_candidate_delete_check_size_timer ();
     ui_candidate_delete_longpress_timer ();
     ui_candidate_delete_destroy_timer ();
@@ -7127,6 +7175,8 @@ cleanup:
     ui_close_tts ();
 
     unregister_edbus_signal_handler ();
+
+    elm_shutdown ();
 
     if (!_config.null ())
         _config.reset ();

@@ -25,7 +25,6 @@
 #ifndef __MAIN_H__
 #define __MAIN_H__
 
-#include <Elementary.h>
 #include <app.h>
 #include <dlog.h>
 

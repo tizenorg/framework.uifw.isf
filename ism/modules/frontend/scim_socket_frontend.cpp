@@ -68,6 +68,9 @@
 #include <unistd.h>
 #include <signal.h>
 #include <dlog.h>
+#ifdef HAVE_SYSTEMD
+#include <Ecore_Ipc.h>
+#endif
 
 #ifdef LOG_TAG
 # undef LOG_TAG
@@ -139,6 +142,44 @@ typedef std::vector < std::pair <HelperInfo, String> >                      Help
 
 static HelperRepository     __helpers;
 static std::vector<String>  __load_engine_list;
+
+#ifdef HAVE_SYSTEMD
+static void send_message_to_broker ()
+{
+    Ecore_Ipc_Server *server = NULL;
+
+    LOGD ("send_message_to_broker () starting\n");
+    if (!ecore_ipc_init ()) {
+        LOGW ("failed to init ecore_ipc\n");
+        return;
+    }
+
+    const char *sever_name = "scim-helper-broker";
+    server = ecore_ipc_server_connect (ECORE_IPC_LOCAL_SYSTEM, const_cast<char*>(sever_name), 0, NULL);
+    LOGD ("connect_broker () : %p\n", server);
+
+    if (server) {
+        const char *message = "request_to_terminate_scim";
+        LOGD ("Request to terminate scim...");
+        ecore_ipc_server_send (server, 2, 4, 0, 0, 0, message, strlen (message));
+        ecore_ipc_server_flush (server);
+        ecore_ipc_server_del (server);
+        server = NULL;
+    }
+    ecore_ipc_shutdown ();
+}
+#endif
+
+static void signalhandler (int sig)
+{
+    LOGD ("Sinal handler!! sig: %d\n", sig);
+    ISF_SAVE_LOG ("Sinal handler!! sig: %d\n", sig);
+
+#ifdef HAVE_SYSTEMD
+    send_message_to_broker ();
+#endif
+    ecore_main_loop_quit ();
+}
 
 void SocketFrontEnd::load_helper_modules (const std::vector<String> &load_engine_list)
 {
@@ -831,6 +872,12 @@ SocketFrontEnd::run ()
         Ecore_Fd_Handler *_server_read_handler = ecore_main_fd_handler_add (m_socket_server.get_id (),
                 ECORE_FD_READ, frontend_handler, &m_socket_server, NULL, NULL);
         if (_server_read_handler != NULL) {
+
+            signal (SIGQUIT, signalhandler);
+            signal (SIGTERM, signalhandler);
+            signal (SIGINT,  signalhandler);
+            signal (SIGHUP,  signalhandler);
+
             ecore_main_loop_begin ();
             ecore_main_fd_handler_del (_server_read_handler);
             _server_read_handler = NULL;

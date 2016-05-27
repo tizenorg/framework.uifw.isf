@@ -29,7 +29,6 @@
 #define Uses_SCIM_HELPER_MODULE
 
 #include <string.h>
-#include <vconf.h>
 #include "scim.h"
 
 

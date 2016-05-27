@@ -2521,8 +2521,8 @@ static __KeyName __scim_keys_by_code [] = {
   { 0xffed, "Hyper_L" },
   { 0xffee, "Hyper_R" },
   { 0xffff, "Delete" },
-  { 0x1008d064, "XF86LSGT" },
-  { 0x1008ff26, "XF86Back" }
+  { 0x1008ff26, "XF86Back" },
+  { 0x10100027, "XF86LSGT" }
 };
 
 static __KeyName __scim_keys_by_name [] = {
@@ -3596,7 +3596,7 @@ static __KeyName __scim_keys_by_name [] = {
   { 0x20A9, "WonSign" },
   { 0x0058, "X" },
   { 0x1008ff26, "XF86Back" },
-  { 0x1008d064, "XF86LSGT" },
+  { 0x10100027, "XF86LSGT" },
   { 0x16A3, "Xabovedot" },
   { 0x0059, "Y" },
   { 0x00DD, "Yacute" },

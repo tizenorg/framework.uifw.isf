@@ -34,7 +34,10 @@ module_la_SOURCES  = isf_imf_module.cpp \
                      isf_imf_control_ui.cpp \
                      isf_imf_control.cpp
 
-module_la_CXXFLAGS = @EFL_CFLAGS@ \
+module_la_CXXFLAGS = @ECORE_IMF_CFLAGS@ \
+                     @ECOREX_CFLAGS@ \
+                     @ECORE_EVAS_CFLAGS@ \
+                     @EVAS_CFLAGS@ \
                      @VCONF_CFLAGS@ \
                      @DLOG_CFLAGS@
 
@@ -44,7 +47,10 @@ module_la_LDFLAGS  = -rpath $(moduledir) \
 
 module_la_LIBADD   = -lstdc++ \
                      $(LD_VERSION_SCRIPT_OPTION) \
-                     @EFL_LIBS@ \
+                     @ECORE_IMF_LIBS@ \
+                     @ECOREX_LIBS@ \
+                     @ECORE_EVAS_LIBS@ \
+                     @EVAS_LIBS@ \
                      @VCONF_LIBS@ \
                      @DLOG_LIBS@ \
                      $(top_builddir)/ism/src/libscim@SCIM_EPOCH@.la

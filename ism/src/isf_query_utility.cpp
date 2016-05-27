@@ -151,9 +151,9 @@ static inline int _db_create_ime_info(void)
 {
     char* pException = NULL;
     static const char* pQuery = "CREATE TABLE ime_info (appid TEXT PRIMARY KEY NOT NULL, label TEXT, pkgid TEXT, pkgtype TEXT, exec TEXT, mname TEXT, mpath TEXT, mode INTEGER, options INTEGER, is_enabled INTEGER, is_preinstalled INTEGER, has_option INTEGER, disp_lang TEXT);";
-
-    if (sqlite3_exec(databaseInfo.pHandle, pQuery, NULL, NULL, &pException) != SQLITE_OK) {
-        LOGE("sqlite3_exec: %s", pException);
+    int ret = sqlite3_exec(databaseInfo.pHandle, pQuery, NULL, NULL, &pException);
+    if (ret != SQLITE_OK) {
+        LOGE("sqlite3_exec returned %d: %s", ret, pException);
         sqlite3_free(pException);
         return -EIO;
     }
@@ -181,25 +181,28 @@ static inline void _db_create_table(void)
 static inline int _db_init(void)
 {
     struct stat stat;
-
     int ret = db_util_open(databaseInfo.pPath, &databaseInfo.pHandle, DB_UTIL_REGISTER_HOOK_METHOD);
     if (ret != SQLITE_OK) {
-        ISF_SAVE_LOG("db_util_open(%s, ~) failed, error code: %d\n", databaseInfo.pPath, ret);
-        LOGE("db_util_open failed, error code: %d\n", ret);
+        LOGE("db_util_open(\"%s\", ~) returned %d: %s\n", databaseInfo.pPath, ret, sqlite3_errmsg(databaseInfo.pHandle));
+        if (databaseInfo.pHandle)
+            db_util_close(databaseInfo.pHandle);
+        databaseInfo.pHandle = NULL;
         return -EIO;
     }
 
     if (lstat(databaseInfo.pPath, &stat) < 0) {
         char buf_err[256];
         LOGE("%s", strerror_r (errno, buf_err, sizeof (buf_err)));
-        db_util_close(databaseInfo.pHandle);
+        if (databaseInfo.pHandle)
+            db_util_close(databaseInfo.pHandle);
         databaseInfo.pHandle = NULL;
         return -EIO;
     }
 
     if (!S_ISREG(stat.st_mode)) {
         LOGE("S_ISREG failed.");
-        db_util_close(databaseInfo.pHandle);
+        if (databaseInfo.pHandle)
+            db_util_close(databaseInfo.pHandle);
         databaseInfo.pHandle = NULL;
         return -EINVAL;
     }

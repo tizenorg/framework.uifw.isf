@@ -63,11 +63,6 @@
 #define SHIFT_MODE_ENABLE 0x9fe7
 #define SHIFT_MODE_DISABLE 0x9fe8
 
-#define REMOTE_CONTROLLER                               "HWKeys"
-#define PANEL_KEY                                       "Virtual Remote"
-#define SMART_RC_REMOTE                                 "Advanced Touch REMOTE"
-#define FUNCTION_OSD                                    "function-osd"
-
 #define E_PROP_DEVICEMGR_INPUTWIN                       "DeviceMgr Input Window"
 
 using namespace scim;
@@ -659,6 +654,9 @@ _key_up_cb (void *data, int type, void *event)
     }
 
     if (_support_hw_keyboard_mode && !strcmp (ev->keyname, "XF86MenuKB")) {
+        if (!ecore_imf_context_input_panel_enabled_get (active_ctx)) {
+            return ECORE_CALLBACK_PASS_ON;
+        }
         if (ecore_imf_context_input_panel_state_get (active_ctx) == ECORE_IMF_INPUT_PANEL_STATE_SHOW) {
             ecore_imf_context_input_panel_hide (active_ctx);
         } else {
@@ -2095,16 +2093,12 @@ isf_imf_context_filter_event (Ecore_IMF_Context *ctx, Ecore_IMF_Event_Type type,
             scim_string_to_key (key, ev->key) &&
 #ifdef _TV
             key.code != 0xFF69 && !((key.code >= SCIM_KEY_Left) && (key.code <= SCIM_KEY_Down)) && key.code != 0xFF0D && key.code != 0x002d && key.code != 0xff67 &&  key.code != 0x1008ff26 &&
-            !((key.code >= SCIM_KEY_0) && (key.code <= SCIM_KEY_9)) &&
-                /* Cancel (Power + Volume down), Right, Left, Up, Down, Return, minus, menu,0~9 key */
+            !((key.code >= SCIM_KEY_0) && (key.code <= SCIM_KEY_9))) {
+                /* Cancel (Power + Volume down), Right, Left, Up, Down, Return, minus, menu,0~9 key, XF86Back */
 #else
-            key.code != 0xFF69 && ev->dev_name &&
+            key.code != 0xFF69 && ev->dev_name) {
 #endif
-            strcmp (ev->dev_name, REMOTE_CONTROLLER) &&
-            strcmp (ev->dev_name, PANEL_KEY) &&
-            strcmp (ev->dev_name, FUNCTION_OSD) &&
-            strcmp (ev->dev_name, SMART_RC_REMOTE)) {
-                /* 0xFF69 is "Cancel" (Power + Volume down)*/
+            /* 0xFF69 is "Cancel" (Power + Volume down)*/
             isf_imf_context_set_keyboard_mode (ctx, TOOLBAR_KEYBOARD_MODE);
             _panel_client.prepare (ic->id);
             _panel_client.get_active_helper_option (&_active_helper_option);
@@ -3857,7 +3851,6 @@ static XKeyEvent createKeyEvent (bool press, int keycode, int modifiers, bool fa
     event.time        = 0;
     if (fake) {
         modifiers     |= Mod5Mask;
-        LOGD ("Mod5Mask:%x", Mod5Mask);
     }
 
     event.x           = 1;
@@ -3919,7 +3912,7 @@ static void send_x_key_event (const KeyEvent &key, bool fake)
     // get x keysym, keycode, keyname, and key
     keysym = XStringToKeysym (keysym_str);
     if (keysym == NoSymbol) {
-        SECURE_LOGW ("NoSymbol\n");
+        LOGW ("NoSymbol\n");
         return;
     }
 
@@ -3934,34 +3927,8 @@ static void send_x_key_event (const KeyEvent &key, bool fake)
     }
 
     if (keycode == 0) {
-        static int mod = 0;
-        KeySym *keysyms;
-        int keycode_min, keycode_max, keycode_num;
-        int i;
-
-        XDisplayKeycodes (display, &keycode_min, &keycode_max);
-        keysyms = XGetKeyboardMapping (display, keycode_min,
-                keycode_max - keycode_min + 1,
-                &keycode_num);
-
-        if (keysyms) {
-            mod = (mod + 1) & 0x7;
-            i = (keycode_max - keycode_min - mod - 1) * keycode_num;
-
-            keysyms[i] = keysym;
-            XChangeKeyboardMapping (display, keycode_min, keycode_num,
-                    keysyms, (keycode_max - keycode_min));
-            XFree (keysyms);
-            XSync (display, False);
-            keycode = keycode_max - mod - 1;
-        }
-
-        if (XkbKeycodeToKeysym (display, keycode, 0, 0) != keysym) {
-            if (XkbKeycodeToKeysym (display, keycode, 0, 1) == keysym)
-                shift = true;
-        } else {
-            shift = false;
-        }
+        LOGW ("No Key code in the current keymap table\n");
+        return;
     }
 
     unsigned int modifier = scim_x11_keymask_scim_to_x11 (display, key.mask);

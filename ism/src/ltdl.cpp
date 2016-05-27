@@ -2637,6 +2637,7 @@ foreach_dirinpath (
       {
         if (filename[lendir -1] != '/')
           filename[lendir++] = '/';
+
         strncpy (filename + lendir, base_name, filenamesize - lendir);
       }
 
@@ -3420,6 +3421,7 @@ lt_dlopenext (
 
   strncpy (tmp, filename, len + strlen (archive_ext) + 1);
   strncat (tmp, archive_ext, (len + strlen (archive_ext) + 1) - strlen (tmp) - 1);
+  tmp[len + strlen (archive_ext)] = LT_EOS_CHAR;
   errors = try_dlopen (&handle, tmp);
 
   /* If we found FILENAME, stop searching -- whether we were able to
@@ -3440,7 +3442,7 @@ lt_dlopenext (
       LT_DLFREE (tmp);
       tmp = LT_EMALLOC (char, len + strlen (shlib_ext) + 1);
       if (!tmp)
-	return 0;
+        return 0;
 
       strncpy (tmp, filename, len + strlen (shlib_ext) + 1);
     }
@@ -3450,6 +3452,7 @@ lt_dlopenext (
     }
 
   strncat(tmp, shlib_ext,(len + strlen (shlib_ext) + 1) - strlen (tmp) - 1);
+  tmp[len + strlen (shlib_ext)] = LT_EOS_CHAR;
   errors = try_dlopen (&handle, tmp);
 
   /* As before, if the file was found but loading failed, return now

@@ -111,26 +111,28 @@ void send_message_to_broker (const char *message)
 
     LOGD ("connect_broker () : %p\n", server);
 
-    if (server && message) {
-        ecore_ipc_server_send (server, 0, 0, 0, 0, 0, message, strlen (message));
-        ecore_ipc_server_flush (server);
-        LOGD ("send message : %s\n", message);
+    if (server) {
+        if (message) {
+            ecore_ipc_server_send (server, 0, 0, 0, 0, 0, message, strlen (message));
+            ecore_ipc_server_flush (server);
+            LOGD ("send message : %s\n", message);
+        }
 
         /* We need a ecore loop for sending the ipc message */
         ecore_main_loop_begin ();
 
-        if (exit_handler) {
-            ecore_event_handler_del (exit_handler);
-            exit_handler = NULL;
-        }
-
-        if (data_handler) {
-            ecore_event_handler_del (data_handler);
-            data_handler = NULL;
-        }
-
         ecore_ipc_server_del (server);
         server = NULL;
+    }
+
+    if (exit_handler) {
+        ecore_event_handler_del (exit_handler);
+        exit_handler = NULL;
+    }
+
+    if (data_handler) {
+        ecore_event_handler_del (data_handler);
+        data_handler = NULL;
     }
 
     ecore_ipc_shutdown ();

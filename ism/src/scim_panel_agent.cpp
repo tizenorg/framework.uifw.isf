@@ -1908,8 +1908,8 @@ public:
         uint32 context;
         if (m_recv_trans.get_data (client) && m_recv_trans.get_data (context)) {
             SCIM_DEBUG_MAIN(4) << __func__ << " (client:" << client << " context:" << context << ")\n";
-            if ((m_panel_client_map[client_id] == m_current_socket_client || client_id == m_show_request_client_id)
-                && (TOOLBAR_HELPER_MODE == m_current_toolbar_mode || m_current_helper_option & ISM_HELPER_PROCESS_KEYBOARD_KEYEVENT)) {
+            if (m_panel_client_map[client_id] == m_current_socket_client || client_id == m_show_request_client_id) {
+//                && (TOOLBAR_HELPER_MODE == m_current_toolbar_mode || m_current_helper_option & ISM_HELPER_PROCESS_KEYBOARD_KEYEVENT)) {
                 int    focused_client;
                 uint32 focused_context;
                 get_focused_context (focused_client, focused_context);

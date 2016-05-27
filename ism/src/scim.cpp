@@ -63,6 +63,10 @@
 #define ISF_SYSTEM_WM_WAIT_COUNT    200
 #define ISF_SYSTEM_WAIT_DELAY       100 * 1000
 #define MIN_RETRY_TIME              8.0
+#define IME_DB_PATH         "/opt/dbspace/.ime_info.db"
+#define IME_DB_JOURNAL_PATH "/opt/dbspace/.ime_info.db-journal"
+#define USER_ROOT   0
+#define GROUP_APP   5000
 
 using namespace scim;
 using std::cout;
@@ -359,7 +363,21 @@ static void run_broker (int argc, char *argv [])
 
     ecore_main_loop_begin ();
 
-    ecore_ipc_server_del (server);
+    if (exit_handler) {
+        ecore_event_handler_del (exit_handler);
+        exit_handler = NULL;
+    }
+
+    if (data_handler) {
+        ecore_event_handler_del (data_handler);
+        data_handler = NULL;
+    }
+
+    if (server) {
+        ecore_ipc_server_del (server);
+        server = NULL;
+    }
+
     ecore_ipc_shutdown ();
     ecore_shutdown ();
 }
@@ -389,6 +407,7 @@ int main (int argc, char *argv [])
     bool daemon = false;
     bool socket = true;
     bool manual = false;
+    bool db_exist = false;
 
     int   new_argc = 0;
     char *new_argv [80];
@@ -408,8 +427,36 @@ int main (int argc, char *argv [])
     config_list.push_back ("simple");
     config_list.push_back ("socket");
 
+    db_exist = check_file (IME_DB_PATH);
+
     scim_get_helper_module_list (helper_list);
-    if (helper_list.size () < 1) {  // If there is no IME, that is, if ime_info DB is empty...
+
+    /* If IME_DB_PATH didn't exist, it would be made by scim_get_helper_module_list(). Need to change owner/group and mode. */
+    if (db_exist == false) {
+        char buf[512] = {0};
+        int j = 0, ret;
+        char *files[3];
+        files[0] = (char *)IME_DB_PATH;
+        files[1] = (char *)IME_DB_JOURNAL_PATH;
+        files[2] = NULL;
+
+        while (files[j]) {
+            ret = chown (files[j], USER_ROOT, GROUP_APP);
+            if (ret < 0) {
+                strerror_r (errno, buf, sizeof(buf));
+                LOGE ("chown(%s %d %d) failed. %s", files[j], USER_ROOT, GROUP_APP, buf);
+            }
+
+            ret = chmod (files[j], S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
+            if (ret < 0) {
+                strerror_r (errno, buf, sizeof(buf));
+                LOGE ("chmod(%s 0660) failed. %s", files[j], buf);
+            }
+            j++;
+        }
+    }
+
+    if (helper_list.size () < 1) {  // If there is no IME, that is, if ime_info DB is empty, try to reload it.
         isf_pkg_reload_ime_info_db();
         scim_get_helper_module_list (helper_list);  // Assuming ime_info DB is initialized, try again.
     }

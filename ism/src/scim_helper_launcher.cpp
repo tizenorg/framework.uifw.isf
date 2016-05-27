@@ -35,7 +35,6 @@
 #include <stdlib.h>
 #include "scim_private.h"
 #include "scim.h"
-#include <privilege-control.h>
 #include <unistd.h>
 #include "ise_preexec.h"
 

@@ -1,6 +1,6 @@
 # Process this file with autoconf to produce a configure script
 #AC_INIT(scim, 1.4.7, suzhe@tsinghua.org.cn)
-AC_INIT(isf, 2.4.9516, isf@samsung.com)
+AC_INIT(isf, 2.4.9923, isf@samsung.com)
 AC_CONFIG_SRCDIR([ism/src/scim.h])
 
 ###########################################################
@@ -10,7 +10,7 @@ AC_CONFIG_SRCDIR([ism/src/scim.h])
 # ISF version
 ISF_MAJOR_VERSION=2
 ISF_MINOR_VERSION=4
-ISF_MICRO_VERSION=9516
+ISF_MICRO_VERSION=9923
 
 ISF_VERSION=$ISF_MAJOR_VERSION.$ISF_MINOR_VERSION.$ISF_MICRO_VERSION
 
@@ -205,21 +205,27 @@ AC_CHECK_FUNCS([gethostbyname gethostbyname_r socket bind accept connect listen]
 
 AM_ICONV
 
+# Check EINA
+PKG_CHECK_MODULES(EINA, [eina])
+
 # Check ECORE
 PKG_CHECK_MODULES(ECORE, [ecore])
 
 # Check ECORE_IPC library
 PKG_CHECK_MODULES(ECORE_IPC, [ecore-ipc])
 
-# Check ELEMENTARY library
-PKG_CHECK_MODULES(ELEMENTARY, [elementary edje])
+# Check ECORE FILE library
+PKG_CHECK_MODULES(ECORE_FILE, [ecore-file])
 
-# Check EFL library
-PKG_CHECK_MODULES(EFL, [ecore-x evas ecore ecore-evas ecore-file ecore-input ecore-imf],
-                  [ISF_HAS_EFL=yes],
-                  [ISF_HAS_EFL=no])
+# Check ECORE EVAS library
+PKG_CHECK_MODULES(ECORE_EVAS, [ecore-evas])
 
-if test "$ISF_HAS_EFL" = "yes"; then
+# Check ECORE IMF
+PKG_CHECK_MODULES(ECORE_IMF, [ecore-imf],
+                  [ISF_HAS_ECORE_IMF=yes],
+                  [ISF_HAS_ECORE_IMF=no])
+
+if test "$ISF_HAS_ECORE_IMF" = "yes"; then
   EFL_LIBDIR=`$PKG_CONFIG --variable=libdir ecore-imf`
   ECORE_IMF_MODULE_ARCH=`$PKG_CONFIG --variable=module_arch ecore`
   if test -z "$EFL_LIBDIR)"; then
@@ -229,6 +235,20 @@ if test "$ISF_HAS_EFL" = "yes"; then
   AC_SUBST(EFL_LIBDIR)
   AC_SUBST(EFL_IM_MODULEDIR)
 fi
+
+# Check ECORE X library
+PKG_CHECK_MODULES(ECOREX, [ecore-x])
+
+# Check EVAS
+PKG_CHECK_MODULES(EVAS, [evas])
+
+# Check EDJE library
+PKG_CHECK_MODULES(EDJE, [edje])
+
+# Check ELEMENTARY library
+PKG_CHECK_MODULES(ELEMENTARY, [elementary],
+                  [ISF_HAS_ELM=yes],
+                  [ISF_HAS_ELM=no])
 
 # Check EFL assist library
 PKG_CHECK_MODULES(EFL_EXTENSION, [efl-extension])
@@ -586,7 +606,7 @@ else
   enable_multiwindow_support=no
 fi
 
-if test "$enable_efl_immodule" = "yes" -a "$ISF_HAS_EFL" = "yes"; then
+if test "$enable_efl_immodule" = "yes" -a "$ISF_HAS_ECORE_IMF" = "yes"; then
   ISF_BUILD_EFL_IMMODULE=1
 else
   ISF_BUILD_EFL_IMMODULE=0
@@ -596,7 +616,7 @@ fi
 ISF_BUILD_PANEL_EFL=0
 if test "$enable_panel_efl" != "no"; then
   enable_panel_efl=no
-  if test "$ISF_HAS_EFL" = "yes"; then
+  if test "$ISF_HAS_ELM" = "yes"; then
     ISF_BUILD_PANEL_EFL=1
     enable_panel_efl=yes
   fi
